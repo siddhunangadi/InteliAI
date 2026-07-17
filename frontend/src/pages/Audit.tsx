@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react'
+import { isAxiosError } from 'axios'
 import { motion } from 'framer-motion'
-import { Download, Filter } from 'lucide-react'
+import { Download } from 'lucide-react'
 import { apiClient } from '@/lib/api'
 import { AuditEventsResponse } from '@/lib/types'
 import { Card, Button } from '@/components/ui'
@@ -9,19 +10,35 @@ import AuditTimeline from '@/components/Audit/AuditTimeline'
 export default function Audit() {
   const [events, setEvents] = useState<AuditEventsResponse | null>(null)
   const [loading, setLoading] = useState(true)
+  const [error, setError] = useState<string>()
   const [dateRange, setDateRange] = useState({ start: '', end: '' })
 
   useEffect(() => {
     apiClient.getAuditEvents(100, 0)
       .then(setEvents)
+      .catch(err => {
+        console.error('Failed to load audit events:', err)
+        if (isAxiosError(err) && err.response?.status === 401) {
+          setError('Your API key is missing or invalid. Add it in Settings to view the audit trail.')
+        } else {
+          setError('Unable to load audit events. Please try again later.')
+        }
+      })
       .finally(() => setLoading(false))
   }, [])
 
+  const filteredEvents = (events?.events || []).filter(e => {
+    const ts = e.timestamp.slice(0, 10)
+    if (dateRange.start && ts < dateRange.start) return false
+    if (dateRange.end && ts > dateRange.end) return false
+    return true
+  })
+
   const handleExportCSV = () => {
-    if (!events?.events) return
+    if (!filteredEvents.length) return
     const csv = [
       ['Timestamp', 'Event Type', 'Action', 'Status'],
-      ...events.events.map(e => [
+      ...filteredEvents.map(e => [
         e.timestamp,
         e.event_type,
         e.action,
@@ -66,15 +83,17 @@ export default function Audit() {
             placeholder="End date"
           />
         </div>
-        <Button variant="secondary" className="flex items-center gap-2">
-          <Filter className="w-4 h-4" />
-          Filters
-        </Button>
-        <Button onClick={handleExportCSV} className="flex items-center gap-2">
+        <Button onClick={handleExportCSV} disabled={!filteredEvents.length} className="flex items-center gap-2">
           <Download className="w-4 h-4" />
           Export CSV
         </Button>
       </div>
+
+      {error && (
+        <Card className="bg-red-500/10 border-red-500/30">
+          <p className="text-red-400 text-sm">{error}</p>
+        </Card>
+      )}
 
       {/* Timeline */}
       {loading ? (
@@ -83,17 +102,17 @@ export default function Audit() {
             <div key={i} className="h-20 bg-slate-800/50 rounded animate-pulse" />
           ))}
         </div>
-      ) : (
+      ) : error ? null : (
         <Card>
           <h3 className="text-lg font-semibold mb-6">Activity Timeline</h3>
-          <AuditTimeline events={events?.events || []} />
+          <AuditTimeline events={filteredEvents} />
         </Card>
       )}
 
-      {events && (
+      {events && !error && (
         <Card>
           <p className="text-sm text-slate-400">
-            Showing {events.events.length} of {events.total} events
+            Showing {filteredEvents.length} of {events.total} events
           </p>
         </Card>
       )}

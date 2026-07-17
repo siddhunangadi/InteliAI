@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react'
+import { isAxiosError } from 'axios'
 import { motion } from 'framer-motion'
 import { FileText } from 'lucide-react'
 import { apiClient } from '@/lib/api'
@@ -11,6 +12,7 @@ export default function Regulations() {
   const [searchTerm, setSearchTerm] = useState('')
   const [selectedDoc, setSelectedDoc] = useState<DocumentSummary | null>(null)
   const [loading, setLoading] = useState(true)
+  const [error, setError] = useState<string>()
 
   const pageSize = 20
 
@@ -21,6 +23,11 @@ export default function Regulations() {
       setLoading(false)
     }).catch(err => {
       console.error('Failed to load documents:', err)
+      if (isAxiosError(err) && err.response?.status === 401) {
+        setError('Your API key is missing or invalid. Add it in Settings to view regulations.')
+      } else {
+        setError('Unable to load regulations. Please try again later.')
+      }
       setLoading(false)
     })
   }, [])
@@ -52,6 +59,12 @@ export default function Regulations() {
         </div>
       </motion.div>
 
+      {error && (
+        <Card className="bg-red-500/10 border-red-500/30">
+          <p className="text-red-400 text-sm">{error}</p>
+        </Card>
+      )}
+
       {/* Documents List */}
       {loading ? (
         <div className="space-y-3">
@@ -59,7 +72,7 @@ export default function Regulations() {
             <div key={i} className="h-16 bg-slate-800/50 rounded animate-pulse" />
           ))}
         </div>
-      ) : (
+      ) : error ? null : (
         <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.2 }}>
           <Card>
             {filteredDocs.length === 0 ? (
@@ -111,11 +124,13 @@ export default function Regulations() {
       )}
 
       {/* Summary */}
-      <Card>
-        <p className="text-sm text-slate-400">
-          Total: {filteredDocs.length} document{filteredDocs.length !== 1 ? 's' : ''} ({docs.reduce((sum, d) => sum + d.chunk_count, 0)} chunks)
-        </p>
-      </Card>
+      {!error && (
+        <Card>
+          <p className="text-sm text-slate-400">
+            Total: {filteredDocs.length} document{filteredDocs.length !== 1 ? 's' : ''} ({docs.reduce((sum, d) => sum + d.chunk_count, 0)} chunks)
+          </p>
+        </Card>
+      )}
     </div>
   )
 }
