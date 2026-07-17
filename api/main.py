@@ -9,6 +9,7 @@ from typing import AsyncIterator
 
 from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import FileResponse
 from fastapi.staticfiles import StaticFiles
 
 import time
@@ -127,7 +128,17 @@ def create_app(settings: Settings | None = None) -> FastAPI:
         }
 
     if _FRONTEND_DIR.is_dir():
-        app.mount("/", StaticFiles(directory=str(_FRONTEND_DIR), html=True), name="frontend")
+        app.mount("/assets", StaticFiles(directory=str(_FRONTEND_DIR / "assets")), name="frontend-assets")
+
+        @app.get("/{full_path:path}", include_in_schema=False)
+        def spa_fallback(full_path: str):
+            """Serve index.html for any non-API path so React Router can
+            handle client-side routes (/admin, /chat, ...) on hard refresh
+            instead of hitting FastAPI's default 404."""
+            requested = _FRONTEND_DIR / full_path
+            if requested.is_file():
+                return FileResponse(requested)
+            return FileResponse(_FRONTEND_DIR / "index.html")
 
     return app
 
