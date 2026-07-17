@@ -2,7 +2,11 @@
 import axios, { AxiosInstance } from 'axios'
 import * as Types from './types'
 
-const BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000'
+// Production serves frontend and API from the same origin (see Dockerfile /
+// api/main.py), so the safe default there is a relative baseURL. Local `vite
+// dev` runs on a separate port from the backend, so it still needs an
+// absolute default unless VITE_API_URL is set explicitly.
+const BASE_URL = import.meta.env.VITE_API_URL || (import.meta.env.DEV ? 'http://localhost:8000' : '')
 
 class ApiClient {
   private client: AxiosInstance
