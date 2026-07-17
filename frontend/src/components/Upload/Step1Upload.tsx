@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useRef, useState } from 'react'
 import { Upload as UploadIcon } from 'lucide-react'
 import { Card, Button } from '@/components/ui'
 
@@ -7,6 +7,7 @@ interface Step1UploadProps {
 }
 
 export default function Step1Upload({ onComplete }: Step1UploadProps) {
+  const fileInputRef = useRef<HTMLInputElement>(null)
   const [files, setFiles] = useState<File[]>([])
   const [dragActive, setDragActive] = useState(false)
 
@@ -50,16 +51,15 @@ export default function Step1Upload({ onComplete }: Step1UploadProps) {
         <UploadIcon className="w-12 h-12 mx-auto mb-4 text-slate-400" />
         <h3 className="text-lg font-semibold mb-2">Drag documents here</h3>
         <p className="text-slate-400 mb-4">or select files (PDF, DOCX, XLSX, CSV, MD, TXT, HTML)</p>
-        <label className="inline-block">
-          <input
-            type="file"
-            multiple
-            className="hidden"
-            onChange={e => e.target.files && addFiles(Array.from(e.target.files))}
-            accept=".pdf,.docx,.xlsx,.csv,.md,.txt,.html"
-          />
-          <Button>Select Files</Button>
-        </label>
+        <input
+          ref={fileInputRef}
+          type="file"
+          multiple
+          className="hidden"
+          onChange={e => e.target.files && addFiles(Array.from(e.target.files))}
+          accept=".pdf,.docx,.xlsx,.csv,.md,.txt,.html"
+        />
+        <Button onClick={() => fileInputRef.current?.click()}>Select Files</Button>
       </div>
 
       {files.length > 0 && (
