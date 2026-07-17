@@ -16,8 +16,15 @@ class ApiClient {
       baseURL: BASE_URL,
       headers: {
         'Content-Type': 'application/json',
-        'X-Debug-Token': localStorage.getItem('debugToken') || '',
       },
+    })
+    // Read fresh on every request (not just once at construction) so saving
+    // a new key in Settings takes effect without a page reload. Backend
+    // requires this exact header name (see api/auth.py get_identity).
+    this.client.interceptors.request.use(config => {
+      const apiKey = localStorage.getItem('apiKey')
+      if (apiKey) config.headers['X-API-Key'] = apiKey
+      return config
     })
   }
 
