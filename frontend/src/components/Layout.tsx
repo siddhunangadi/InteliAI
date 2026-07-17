@@ -1,6 +1,6 @@
 import { Link, useLocation } from 'react-router-dom'
-import { BarChart3, Upload, MessageCircle, BookOpen, History, Activity, Settings, ChevronRight } from 'lucide-react'
-import { ReactNode } from 'react'
+import { BarChart3, Upload, MessageCircle, BookOpen, History, Activity, Settings, ChevronRight, Menu, X } from 'lucide-react'
+import { ReactNode, useState } from 'react'
 import { motion } from 'framer-motion'
 import clsx from 'clsx'
 
@@ -11,6 +11,7 @@ interface LayoutProps {
 export default function Layout({ children }: LayoutProps) {
   const location = useLocation()
   const isActive = (path: string) => location.pathname === path
+  const [mobileNavOpen, setMobileNavOpen] = useState(false)
 
   const navItems = [
     { href: '/', icon: BarChart3, label: 'Dashboard' },
@@ -24,8 +25,21 @@ export default function Layout({ children }: LayoutProps) {
 
   return (
     <div className="flex h-screen bg-slate-950">
-      <aside className="w-64 border-r border-slate-800 bg-gradient-to-b from-slate-900 to-slate-950 flex flex-col">
-        <motion.div initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }} className="p-6 border-b border-slate-800/50">
+      {mobileNavOpen && (
+        <div
+          className="fixed inset-0 bg-black/60 z-30 md:hidden"
+          onClick={() => setMobileNavOpen(false)}
+        />
+      )}
+
+      <aside
+        className={clsx(
+          'w-64 border-r border-slate-800 bg-gradient-to-b from-slate-900 to-slate-950 flex flex-col',
+          'fixed inset-y-0 left-0 z-40 transition-transform duration-200 md:static md:translate-x-0',
+          mobileNavOpen ? 'translate-x-0' : '-translate-x-full'
+        )}
+      >
+        <motion.div initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }} className="p-6 border-b border-slate-800/50 flex items-center justify-between">
           <div className="flex items-center gap-3">
             <div className="w-8 h-8 bg-gradient-to-br from-blue-500 to-blue-600 rounded-lg shadow-lg" />
             <div>
@@ -33,6 +47,13 @@ export default function Layout({ children }: LayoutProps) {
               <p className="text-xs text-slate-400">Enterprise Edition</p>
             </div>
           </div>
+          <button
+            className="md:hidden text-slate-400 hover:text-slate-100"
+            onClick={() => setMobileNavOpen(false)}
+            aria-label="Close navigation"
+          >
+            <X className="w-5 h-5" />
+          </button>
         </motion.div>
 
         <nav className="flex-1 px-3 py-6 space-y-1 overflow-y-auto scrollbar-thin">
@@ -45,6 +66,7 @@ export default function Layout({ children }: LayoutProps) {
             >
               <Link
                 to={item.href}
+                onClick={() => setMobileNavOpen(false)}
                 className={clsx(
                   'flex items-center justify-between gap-3 px-4 py-2.5 rounded-lg transition-all duration-200 group',
                   isActive(item.href)
@@ -69,7 +91,14 @@ export default function Layout({ children }: LayoutProps) {
       </aside>
 
       <main className="flex-1 overflow-auto bg-slate-950">
-        <div className="max-w-7xl mx-auto px-8 py-8">{children}</div>
+        <button
+          className="md:hidden m-4 p-2 rounded-lg bg-slate-800 text-slate-300 hover:text-slate-100"
+          onClick={() => setMobileNavOpen(true)}
+          aria-label="Open navigation"
+        >
+          <Menu className="w-5 h-5" />
+        </button>
+        <div className="max-w-7xl mx-auto px-4 md:px-8 py-4 md:py-8">{children}</div>
       </main>
     </div>
   )
