@@ -110,6 +110,22 @@ def create_app(settings: Settings | None = None) -> FastAPI:
 
     app.include_router(router)
 
+    @app.get("/debug/frontend-path")
+    def debug_frontend_path():
+        """Debug endpoint: prove what frontend directory FastAPI is using."""
+        import os
+        frontend_index = _FRONTEND_DIR / "index.html"
+        return {
+            "cwd": os.getcwd(),
+            "frontend_dir_configured": str(_FRONTEND_DIR),
+            "frontend_dir_resolved": str(_FRONTEND_DIR.resolve()),
+            "frontend_dir_exists": _FRONTEND_DIR.exists(),
+            "frontend_dir_is_dir": _FRONTEND_DIR.is_dir(),
+            "index_html_exists": frontend_index.exists(),
+            "index_html_path": str(frontend_index.resolve()),
+            "index_html_content_first_300_chars": frontend_index.read_text()[:300] if frontend_index.exists() else "FILE NOT FOUND",
+        }
+
     if _FRONTEND_DIR.is_dir():
         app.mount("/", StaticFiles(directory=str(_FRONTEND_DIR), html=True), name="frontend")
 
