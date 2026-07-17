@@ -94,45 +94,43 @@ export default function Chat() {
           </div>
         </motion.div>
       ) : (
-        <>
-          <div className="flex-1 overflow-y-auto space-y-4 mb-6">
-            {messages.map(msg => (
-              <ChatMessage key={msg.id} {...msg} />
-            ))}
-            {loading && (
-              <motion.div
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                className="flex items-center gap-2"
-              >
-                <Loader className="w-4 h-4 animate-spin text-blue-400" />
-                <span className="text-sm text-slate-400">Analyzing regulations...</span>
-              </motion.div>
-            )}
-            <div ref={messagesEndRef} />
-          </div>
-
-          {error && (
-            <Card className="bg-red-500/10 border-red-500/30 mb-4">
-              <p className="text-red-400 text-sm">{error}</p>
-            </Card>
+        <div className="flex-1 overflow-y-auto space-y-4 mb-6">
+          {messages.map(msg => (
+            <ChatMessage key={msg.id} {...msg} />
+          ))}
+          {loading && (
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              className="flex items-center gap-2"
+            >
+              <Loader className="w-4 h-4 animate-spin text-blue-400" />
+              <span className="text-sm text-slate-400">Analyzing regulations...</span>
+            </motion.div>
           )}
-
-          <form onSubmit={handleSubmit} className="flex gap-2">
-            <input
-              type="text"
-              value={input}
-              onChange={e => setInput(e.target.value)}
-              placeholder="Ask about regulations, compliance requirements..."
-              className="flex-1 px-4 py-2.5 bg-slate-800 border border-slate-700 rounded-lg text-slate-100 placeholder-slate-500 focus:outline-none focus:border-blue-500"
-              disabled={loading}
-            />
-            <Button type="submit" disabled={loading || !input.trim()}>
-              <Send className="w-4 h-4" />
-            </Button>
-          </form>
-        </>
+          <div ref={messagesEndRef} />
+        </div>
       )}
+
+      {error && (
+        <Card className="bg-red-500/10 border-red-500/30 mb-4">
+          <p className="text-red-400 text-sm">{error}</p>
+        </Card>
+      )}
+
+      <form onSubmit={handleSubmit} className="flex gap-2">
+        <input
+          type="text"
+          value={input}
+          onChange={e => setInput(e.target.value)}
+          placeholder="Ask about regulations, compliance requirements..."
+          className="flex-1 px-4 py-2.5 bg-slate-800 border border-slate-700 rounded-lg text-slate-100 placeholder-slate-500 focus:outline-none focus:border-blue-500"
+          disabled={loading}
+        />
+        <Button type="submit" disabled={loading || !input.trim()}>
+          <Send className="w-4 h-4" />
+        </Button>
+      </form>
     </div>
   )
 }
