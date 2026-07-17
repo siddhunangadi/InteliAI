@@ -1,4 +1,5 @@
 import { useState, useRef, useEffect } from 'react'
+import { isAxiosError } from 'axios'
 import { Send, Loader } from 'lucide-react'
 import { motion } from 'framer-motion'
 import { apiClient } from '@/lib/api'
@@ -65,7 +66,11 @@ export default function Chat() {
       }
       setMessages(prev => [...prev, assistantMessage])
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Unable to generate answer')
+      if (isAxiosError(err) && err.response?.status === 401) {
+        setError('Your API key is missing or invalid. Add it in Settings to use the AI Assistant.')
+      } else {
+        setError(err instanceof Error ? err.message : 'Unable to generate answer')
+      }
     } finally {
       setLoading(false)
     }
