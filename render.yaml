@@ -25,5 +25,3 @@ services:
         sync: false
       - key: RAG_API_KEYS
         sync: false
-      - key: RAG_GEMINI_API_KEY
-        sync: false

@@ -1,0 +1,1543 @@
+[1m============================= test session starts ==============================[0m
+platform darwin -- Python 3.13.14, pytest-9.1.1, pluggy-1.6.0 -- /Users/siddhunangadi/Downloads/InteliAI-main/.venv/bin/python
+cachedir: .pytest_cache
+rootdir: /Users/siddhunangadi/Downloads/InteliAI-main
+configfile: pyproject.toml
+testpaths: tests
+plugins: mock-3.15.1, anyio-4.14.1
+[1mcollecting ... [0mcollected 379 items
+
+tests/api/test_dependencies.py::test_build_container_wires_pinecone_backend [32mPASSED[0m[33m [  0%][0m
+tests/api/test_routes.py::test_health_reports_mock_and_fake_fallback [32mPASSED[0m[33m [  0%][0m
+tests/api/test_routes.py::test_liveness_reports_alive_with_no_dependencies [32mPASSED[0m[33m [  0%][0m
+tests/api/test_routes.py::test_readiness_reports_ready_when_dependencies_are_up [32mPASSED[0m[33m [  1%][0m
+tests/api/test_routes.py::test_diagnostics_reports_operational_state [32mPASSED[0m[33m [  1%][0m
+tests/api/test_routes.py::test_version_reads_installed_package_metadata [32mPASSED[0m[33m [  1%][0m
+tests/api/test_routes.py::test_index_ingests_a_markdown_document [31mFAILED[0m[31m  [  1%][0m
+tests/api/test_routes.py::test_index_reports_per_document_failure_without_500 [31mFAILED[0m[31m [  2%][0m
+tests/api/test_routes.py::test_index_filename_with_path_traversal_cannot_escape_uploads_dir [32mPASSED[0m[31m [  2%][0m
+tests/api/test_routes.py::test_upload_rejects_file_exceeding_max_size [32mPASSED[0m[31m [  2%][0m
+tests/api/test_routes.py::test_upload_rejects_content_not_matching_pdf_magic_bytes [32mPASSED[0m[31m [  2%][0m
+tests/api/test_routes.py::test_upload_filename_with_path_traversal_cannot_escape_uploads_dir [32mPASSED[0m[31m [  3%][0m
+tests/api/test_routes.py::test_index_rejects_empty_document_list [32mPASSED[0m[31m  [  3%][0m
+tests/api/test_routes.py::test_answer_degrades_gracefully_with_mock_provider [32mPASSED[0m[31m [  3%][0m
+tests/api/test_routes.py::test_answer_rejects_blank_question [32mPASSED[0m[31m      [  3%][0m
+tests/api/test_routes.py::test_answer_returns_generic_message_on_unexpected_error [32mPASSED[0m[31m [  4%][0m
+tests/api/test_routes.py::test_documents_reports_empty_corpus [32mPASSED[0m[31m     [  4%][0m
+tests/api/test_routes.py::test_documents_reports_indexed_corpus [31mFAILED[0m[31m   [  4%][0m
+tests/api/test_routes.py::test_docs_endpoint_is_available [32mPASSED[0m[31m         [  5%][0m
+tests/api/test_routes.py::test_cors_header_present_only_for_allowlisted_origin [32mPASSED[0m[31m [  5%][0m
+tests/api/test_routes.py::test_index_with_document_type_regulation_uses_clause_chunker [31mFAILED[0m[31m [  5%][0m
+tests/api/test_routes.py::test_index_without_document_type_defaults_to_general_chunker [31mFAILED[0m[31m [  5%][0m
+tests/api/test_routes.py::test_answer_show_article_returns_only_matching_article_via_structured_citations [31mFAILED[0m[31m [  6%][0m
+tests/api/test_routes.py::test_debug_retrieval_exposes_fusion_and_rerank_as_separate_stages [31mFAILED[0m[31m [  6%][0m
+tests/compliance/test_citation_mapper.py::test_build_citation_for_legal_chunk [32mPASSED[0m[31m [  6%][0m
+tests/compliance/test_citation_mapper.py::test_build_citation_for_non_legal_chunk_degrades_gracefully [32mPASSED[0m[31m [  6%][0m
+tests/compliance/test_citation_mapper.py::test_citation_ids_are_unique_across_calls [32mPASSED[0m[31m [  7%][0m
+tests/compliance/test_citation_mapper.py::test_missing_rerank_score_defaults_confidence_to_zero [32mPASSED[0m[31m [  7%][0m
+tests/compliance/test_clause_chunker.py::test_chunks_have_legal_metadata_per_clause [32mPASSED[0m[31m [  7%][0m
+tests/compliance/test_clause_chunker.py::test_chunk_ids_are_unique [32mPASSED[0m[31m [  7%][0m
+tests/compliance/test_clause_chunker.py::test_falls_back_to_single_chunk_for_unstructured_document [32mPASSED[0m[31m [  8%][0m
+tests/compliance/test_clause_chunker.py::test_empty_document_returns_no_chunks [32mPASSED[0m[31m [  8%][0m
+tests/compliance/test_clause_chunker.py::test_document_level_metadata_stamped_on_every_clause_alongside_clause_level_fields [32mPASSED[0m[31m [  8%][0m
+tests/compliance/test_clause_parser.py::test_gdpr_style_detects_articles [32mPASSED[0m[31m [  8%][0m
+tests/compliance/test_clause_parser.py::test_gdpr_style_high_confidence [32mPASSED[0m[31m [  9%][0m
+tests/compliance/test_clause_parser.py::test_hipaa_style_detects_sections [32mPASSED[0m[31m [  9%][0m
+tests/compliance/test_clause_parser.py::test_unstructured_document_low_confidence_single_clause [32mPASSED[0m[31m [  9%][0m
+tests/compliance/test_clause_parser.py::test_empty_text_returns_empty_result [32mPASSED[0m[31m [ 10%][0m
+tests/compliance/test_clause_parser.py::test_unstructured_document_sets_fallback_used [32mPASSED[0m[31m [ 10%][0m
+tests/compliance/test_clause_parser.py::test_hipaa_style_splits_lettered_subclauses [32mPASSED[0m[31m [ 10%][0m
+tests/compliance/test_clause_parser.py::test_gdpr_style_splits_lettered_subclauses_nested_under_numbered_clause [32mPASSED[0m[31m [ 10%][0m
+tests/compliance/test_clause_parser.py::test_heading_type_switch_resets_stale_state [32mPASSED[0m[31m [ 11%][0m
+tests/compliance/test_end_to_end.py::test_structured_query_returns_exact_article [31mFAILED[0m[31m [ 11%][0m
+tests/compliance/test_end_to_end.py::test_semantic_query_returns_results_via_hybrid_pipeline [31mFAILED[0m[31m [ 11%][0m
+tests/compliance/test_end_to_end.py::test_mixed_query_filters_to_matching_article [31mFAILED[0m[31m [ 11%][0m
+tests/compliance/test_end_to_end.py::test_metadata_query_returns_chunks_scoped_to_regulation [31mFAILED[0m[31m [ 12%][0m
+tests/compliance/test_end_to_end.py::test_citations_built_from_structured_query_results [31mFAILED[0m[31m [ 12%][0m
+tests/compliance/test_query_router.py::test_classifies_structured_article_reference [32mPASSED[0m[31m [ 12%][0m
+tests/compliance/test_query_router.py::test_classifies_structured_clause_reference [32mPASSED[0m[31m [ 12%][0m
+tests/compliance/test_query_router.py::test_classifies_metadata_only_scope [32mPASSED[0m[31m [ 13%][0m
+tests/compliance/test_query_router.py::test_classifies_jurisdiction_metadata_scope [32mPASSED[0m[31m [ 13%][0m
+tests/compliance/test_query_router.py::test_classifies_pure_semantic_query [32mPASSED[0m[31m [ 13%][0m
+tests/compliance/test_query_router.py::test_classifies_mixed_query_with_intent_beyond_lookup [32mPASSED[0m[31m [ 13%][0m
+tests/compliance/test_query_router_routing.py::test_structured_query_uses_metadata_filter_only_no_retriever_call [32mPASSED[0m[31m [ 14%][0m
+tests/compliance/test_query_router_routing.py::test_semantic_query_delegates_to_retriever_unchanged [32mPASSED[0m[31m [ 14%][0m
+tests/compliance/test_query_router_routing.py::test_mixed_query_filters_then_retrieves [32mPASSED[0m[31m [ 14%][0m
+tests/compliance/test_query_router_routing.py::test_metadata_query_with_no_matching_chunks_returns_empty_not_unfiltered [32mPASSED[0m[31m [ 15%][0m
+tests/compliance/test_query_router_routing.py::test_mixed_query_with_no_matching_chunks_returns_empty_not_unfiltered [32mPASSED[0m[31m [ 15%][0m
+tests/compliance/test_regulation_models.py::test_legal_metadata_all_fields_optional [32mPASSED[0m[31m [ 15%][0m
+tests/compliance/test_regulation_models.py::test_legal_metadata_typed_effective_date [32mPASSED[0m[31m [ 15%][0m
+tests/compliance/test_regulation_models.py::test_clause_parse_result_defaults_no_fallback [32mPASSED[0m[31m [ 16%][0m
+tests/compliance/test_regulation_models.py::test_citation_construction_and_display [32mPASSED[0m[31m [ 16%][0m
+tests/compliance/test_regulation_models.py::test_citation_missing_fields_are_optional [32mPASSED[0m[31m [ 16%][0m
+tests/ingestion/chunkers/test_fixed.py::test_chunk_respects_size_and_overlap [32mPASSED[0m[31m [ 16%][0m
+tests/ingestion/chunkers/test_fixed.py::test_chunk_indexes_are_sequential [32mPASSED[0m[31m [ 17%][0m
+tests/ingestion/chunkers/test_fixed.py::test_short_document_produces_one_chunk [32mPASSED[0m[31m [ 17%][0m
+tests/ingestion/chunkers/test_recursive.py::test_splits_on_markdown_headers_and_tags_heading [32mPASSED[0m[31m [ 17%][0m
+tests/ingestion/chunkers/test_recursive.py::test_splits_large_section_further_by_chunk_size [32mPASSED[0m[31m [ 17%][0m
+tests/ingestion/chunkers/test_semantic.py::test_splits_on_topic_boundary [32mPASSED[0m[31m [ 18%][0m
+tests/ingestion/chunkers/test_semantic.py::test_does_not_split_when_all_sentences_are_similar [32mPASSED[0m[31m [ 18%][0m
+tests/ingestion/chunkers/test_semantic.py::test_single_sentence_document_produces_one_chunk [32mPASSED[0m[31m [ 18%][0m
+tests/ingestion/loaders/test_csv_loader.py::test_load_renders_rows_with_headers [32mPASSED[0m[31m [ 18%][0m
+tests/ingestion/loaders/test_docx_loader.py::test_load_joins_nonempty_paragraphs [32mPASSED[0m[31m [ 19%][0m
+tests/ingestion/loaders/test_html.py::test_load_strips_tags_and_scripts [32mPASSED[0m[31m [ 19%][0m
+tests/ingestion/loaders/test_markdown.py::test_load_normalizes_content_and_computes_hash [32mPASSED[0m[31m [ 19%][0m
+tests/ingestion/loaders/test_markdown.py::test_same_content_produces_same_document_id [32mPASSED[0m[31m [ 20%][0m
+tests/ingestion/loaders/test_pdf.py::test_load_extracts_text_from_fixture_pdf [32mPASSED[0m[31m [ 20%][0m
+tests/ingestion/loaders/test_pdf.py::test_load_preserves_word_spacing_on_tight_kerning_pdf [32mPASSED[0m[31m [ 20%][0m
+tests/ingestion/loaders/test_pdf.py::test_load_preserves_word_spacing_inside_extracted_tables [32mPASSED[0m[31m [ 20%][0m
+tests/ingestion/loaders/test_text.py::test_load_plain_text [32mPASSED[0m[31m        [ 21%][0m
+tests/ingestion/loaders/test_xlsx_loader.py::test_load_renders_sheets_and_rows [32mPASSED[0m[31m [ 21%][0m
+tests/ingestion/test_dedup.py::test_true_duplicate_is_detected [32mPASSED[0m[31m    [ 21%][0m
+tests/ingestion/test_dedup.py::test_high_cosine_but_different_text_is_not_duplicate [32mPASSED[0m[31m [ 21%][0m
+tests/ingestion/test_dedup.py::test_below_cosine_threshold_short_circuits_without_duplicate [32mPASSED[0m[31m [ 22%][0m
+tests/ingestion/test_dedup.py::test_no_existing_chunks_is_never_duplicate [32mPASSED[0m[31m [ 22%][0m
+tests/ingestion/test_pipeline.py::test_ingest_produces_ready_status_and_chunks [31mERROR[0m[31m [ 22%][0m
+tests/ingestion/test_pipeline.py::test_reingesting_unchanged_document_is_noop [31mERROR[0m[31m [ 22%][0m
+tests/ingestion/test_pipeline.py::test_reingesting_edited_document_replaces_old_chunks [31mERROR[0m[31m [ 23%][0m
+tests/ingestion/test_pipeline.py::test_dedup_skips_near_duplicate_chunk_across_documents [31mERROR[0m[31m [ 23%][0m
+tests/ingestion/test_pipeline.py::test_ingesting_new_document_does_not_re_embed_existing_chunks [31mFAILED[0m[31m [ 23%][0m
+tests/providers/test_base.py::test_embedding_provider_is_abstract [32mPASSED[0m[31m [ 24%][0m
+tests/providers/test_base.py::test_generation_provider_is_abstract [32mPASSED[0m[31m [ 24%][0m
+tests/providers/test_base.py::test_rerank_provider_is_abstract [32mPASSED[0m[31m    [ 24%][0m
+tests/providers/test_gemini.py::test_generate_calls_generate_content_endpoint [32mPASSED[0m[31m [ 24%][0m
+tests/providers/test_gemini.py::test_generate_sends_prompt_as_content [32mPASSED[0m[31m [ 25%][0m
+tests/providers/test_gemini.py::test_model_name_defaults_to_gemini_2_5_flash [32mPASSED[0m[31m [ 25%][0m
+tests/providers/test_nvidia.py::test_embed_calls_expected_endpoint_and_parses_response [32mPASSED[0m[31m [ 25%][0m
+tests/providers/test_nvidia.py::test_generate_calls_chat_completions_and_returns_content [32mPASSED[0m[31m [ 25%][0m
+tests/providers/test_nvidia.py::test_generate_sets_a_generous_default_max_tokens_to_avoid_truncation [32mPASSED[0m[31m [ 26%][0m
+tests/providers/test_nvidia.py::test_generate_respects_caller_supplied_max_tokens [32mPASSED[0m[31m [ 26%][0m
+tests/providers/test_nvidia.py::test_model_name_and_dimension_reflect_configured_model [32mPASSED[0m[31m [ 26%][0m
+tests/providers/test_nvidia_rerank.py::test_rerank_calls_expected_endpoint_with_query_and_passages [32mPASSED[0m[31m [ 26%][0m
+tests/providers/test_nvidia_rerank.py::test_rerank_orders_by_returned_logit_and_truncates [32mPASSED[0m[31m [ 27%][0m
+tests/providers/test_nvidia_rerank.py::test_rerank_handles_empty_candidates [32mPASSED[0m[31m [ 27%][0m
+tests/rag_pipeline/eval/test_baseline.py::test_save_load_round_trip [32mPASSED[0m[31m [ 27%][0m
+tests/rag_pipeline/eval/test_baseline.py::test_missing_baseline_raises_with_hint [32mPASSED[0m[31m [ 27%][0m
+tests/rag_pipeline/eval/test_baseline.py::test_corrupt_json_raises [32mPASSED[0m[31m [ 28%][0m
+tests/rag_pipeline/eval/test_baseline.py::test_unknown_version_raises [32mPASSED[0m[31m [ 28%][0m
+tests/rag_pipeline/eval/test_baseline.py::test_schema_violation_raises [32mPASSED[0m[31m [ 28%][0m
+tests/rag_pipeline/eval/test_baseline.py::test_question_set_hash_is_stable_and_content_sensitive [32mPASSED[0m[31m [ 29%][0m
+tests/rag_pipeline/eval/test_baseline.py::test_baseline_path_maps_name [32mPASSED[0m[31m [ 29%][0m
+tests/rag_pipeline/eval/test_baseline.py::test_save_baseline_cleans_up_temp_file_on_write_failure [32mPASSED[0m[31m [ 29%][0m
+tests/rag_pipeline/eval/test_comparison.py::test_hash_mismatch_aborts [32mPASSED[0m[31m [ 29%][0m
+tests/rag_pipeline/eval/test_comparison.py::test_aggregate_ok_warn_fail_tiers [32mPASSED[0m[31m [ 30%][0m
+tests/rag_pipeline/eval/test_comparison.py::test_improvement_is_info_and_never_gates [32mPASSED[0m[31m [ 30%][0m
+tests/rag_pipeline/eval/test_comparison.py::test_judge_skipped_when_absent_on_either_side [32mPASSED[0m[31m [ 30%][0m
+tests/rag_pipeline/eval/test_comparison.py::test_judge_compared_when_present_both_sides [32mPASSED[0m[31m [ 30%][0m
+tests/rag_pipeline/eval/test_comparison.py::test_error_count_tiers [32mPASSED[0m[31m [ 31%][0m
+tests/rag_pipeline/eval/test_comparison.py::test_per_question_catastrophe_fails_while_aggregates_pass [32mPASSED[0m[31m [ 31%][0m
+tests/rag_pipeline/eval/test_comparison.py::test_per_question_bool_metrics_cast_and_none_skipped [32mPASSED[0m[31m [ 31%][0m
+tests/rag_pipeline/eval/test_comparison.py::test_empty_aggregates_do_not_crash [32mPASSED[0m[31m [ 31%][0m
+tests/rag_pipeline/eval/test_comparison.py::test_pipeline_config_mismatch_warns_not_aborts [32mPASSED[0m[31m [ 32%][0m
+tests/rag_pipeline/eval/test_judge.py::test_judge_answer_parses_valid_verdict [32mPASSED[0m[31m [ 32%][0m
+tests/rag_pipeline/eval/test_judge.py::test_judge_answer_accepts_all_valid_verdicts [32mPASSED[0m[31m [ 32%][0m
+tests/rag_pipeline/eval/test_judge.py::test_judge_answer_falls_back_to_incorrect_on_malformed_json [32mPASSED[0m[31m [ 32%][0m
+tests/rag_pipeline/eval/test_judge.py::test_judge_answer_falls_back_to_incorrect_on_unrecognized_verdict [32mPASSED[0m[31m [ 33%][0m
+tests/rag_pipeline/eval/test_judge.py::test_judge_answer_falls_back_to_incorrect_on_missing_verdict_key [32mPASSED[0m[31m [ 33%][0m
+tests/rag_pipeline/eval/test_judge.py::test_judge_answer_falls_back_to_incorrect_on_provider_exception [32mPASSED[0m[31m [ 33%][0m
+tests/rag_pipeline/eval/test_metrics.py::test_citation_precision_recall_f1_perfect_match [32mPASSED[0m[31m [ 34%][0m
+tests/rag_pipeline/eval/test_metrics.py::test_citation_precision_recall_f1_partial_overlap [32mPASSED[0m[31m [ 34%][0m
+tests/rag_pipeline/eval/test_metrics.py::test_citation_precision_recall_f1_no_overlap [32mPASSED[0m[31m [ 34%][0m
+tests/rag_pipeline/eval/test_metrics.py::test_citation_precision_recall_f1_empty_expected_and_predicted [32mPASSED[0m[31m [ 34%][0m
+tests/rag_pipeline/eval/test_metrics.py::test_verdict_score[CORRECT-1.0] [32mPASSED[0m[31m [ 35%][0m
+tests/rag_pipeline/eval/test_metrics.py::test_verdict_score[PARTIAL-0.5] [32mPASSED[0m[31m [ 35%][0m
+tests/rag_pipeline/eval/test_metrics.py::test_verdict_score[INCORRECT-0.0] [32mPASSED[0m[31m [ 35%][0m
+tests/rag_pipeline/eval/test_metrics.py::test_verdict_score[UNSUPPORTED-0.0] [32mPASSED[0m[31m [ 35%][0m
+tests/rag_pipeline/eval/test_metrics.py::test_build_retrieval_record_extracts_expected_fields [32mPASSED[0m[31m [ 36%][0m
+tests/rag_pipeline/eval/test_metrics.py::test_evaluate_question_assembles_full_record [32mPASSED[0m[31m [ 36%][0m
+tests/rag_pipeline/eval/test_metrics.py::test_evaluate_question_records_error_status_when_rag_answer_has_error [32mPASSED[0m[31m [ 36%][0m
+tests/rag_pipeline/eval/test_metrics.py::test_evaluate_question_verification_pass_false_when_no_claims [32mPASSED[0m[31m [ 36%][0m
+tests/rag_pipeline/eval/test_questions.py::test_load_questions_parses_dataset_and_questions [32mPASSED[0m[31m [ 37%][0m
+tests/rag_pipeline/eval/test_questions.py::test_load_questions_tolerates_reserved_unused_fields [32mPASSED[0m[31m [ 37%][0m
+tests/rag_pipeline/eval/test_questions.py::test_load_questions_rejects_unknown_category [32mPASSED[0m[31m [ 37%][0m
+tests/rag_pipeline/eval/test_questions.py::test_load_questions_rejects_missing_required_field [32mPASSED[0m[31m [ 37%][0m
+tests/rag_pipeline/eval/test_questions.py::test_load_questions_rejects_empty_yaml [32mPASSED[0m[31m [ 38%][0m
+tests/rag_pipeline/eval/test_questions.py::test_load_questions_rejects_non_dict_yaml [32mPASSED[0m[31m [ 38%][0m
+tests/rag_pipeline/eval/test_questions.py::test_load_questions_rejects_missing_dataset_key [32mPASSED[0m[31m [ 38%][0m
+tests/rag_pipeline/eval/test_questions.py::test_load_questions_rejects_missing_questions_key [32mPASSED[0m[31m [ 39%][0m
+tests/rag_pipeline/eval/test_questions.py::test_load_questions_rejects_duplicate_ids [32mPASSED[0m[31m [ 39%][0m
+tests/rag_pipeline/eval/test_renderer.py::test_render_comparison_table [32mPASSED[0m[31m [ 39%][0m
+tests/rag_pipeline/eval/test_report.py::test_build_summary_aggregates_objective_and_subjective_separately [32mPASSED[0m[31m [ 39%][0m
+tests/rag_pipeline/eval/test_report.py::test_build_summary_excludes_error_records_from_metric_aggregation [32mPASSED[0m[31m [ 40%][0m
+tests/rag_pipeline/eval/test_report.py::test_write_report_produces_json_and_html [32mPASSED[0m[31m [ 40%][0m
+tests/rag_pipeline/eval/test_report.py::test_build_summary_returns_none_for_empty_records [32mPASSED[0m[31m [ 40%][0m
+tests/rag_pipeline/eval/test_report.py::test_build_summary_returns_none_for_all_error_records [32mPASSED[0m[31m [ 40%][0m
+tests/rag_pipeline/eval/test_report.py::test_write_report_html_contains_error_count_and_total_questions [32mPASSED[0m[31m [ 41%][0m
+tests/rag_pipeline/eval/test_schema.py::test_baseline_round_trips_and_exposes_snapshot [32mPASSED[0m[31m [ 41%][0m
+tests/rag_pipeline/eval/test_schema.py::test_baseline_rejects_missing_required_fields [32mPASSED[0m[31m [ 41%][0m
+tests/rag_pipeline/eval/test_schema.py::test_metric_threshold_and_thresholds_validate [32mPASSED[0m[31m [ 41%][0m
+tests/rag_pipeline/eval/test_schema.py::test_comparison_result_overall_is_worst_finding [32mPASSED[0m[31m [ 42%][0m
+tests/rag_pipeline/eval/test_schema.py::test_question_metrics_allows_bool_and_none_values [32mPASSED[0m[31m [ 42%][0m
+tests/rag_pipeline/eval/test_schema.py::test_models_are_frozen [32mPASSED[0m[31m    [ 42%][0m
+tests/rag_pipeline/eval/test_snapshot.py::test_snapshot_built_from_phase1_report_shapes [32mPASSED[0m[31m [ 43%][0m
+tests/rag_pipeline/eval/test_snapshot.py::test_snapshot_handles_none_objective_aggregate [32mPASSED[0m[31m [ 43%][0m
+tests/rag_pipeline/eval/test_thresholds.py::test_missing_path_returns_defaults [32mPASSED[0m[31m [ 43%][0m
+tests/rag_pipeline/eval/test_thresholds.py::test_none_path_returns_defaults [32mPASSED[0m[31m [ 43%][0m
+tests/rag_pipeline/eval/test_thresholds.py::test_partial_file_merges_over_defaults [32mPASSED[0m[31m [ 44%][0m
+tests/rag_pipeline/eval/test_thresholds.py::test_malformed_yaml_raises_value_error [32mPASSED[0m[31m [ 44%][0m
+tests/rag_pipeline/eval/test_thresholds.py::test_wrong_types_raise_value_error [32mPASSED[0m[31m [ 44%][0m
+tests/rag_pipeline/test_citation_verifier.py::test_valid_citation_and_matching_quote_passes [32mPASSED[0m[31m [ 44%][0m
+tests/rag_pipeline/test_citation_verifier.py::test_hallucinated_doc_id_fails [32mPASSED[0m[31m [ 45%][0m
+tests/rag_pipeline/test_citation_verifier.py::test_missing_quote_fails_even_with_valid_doc_id [32mPASSED[0m[31m [ 45%][0m
+tests/rag_pipeline/test_citation_verifier.py::test_multiple_claims_mixed_pass_fail [32mPASSED[0m[31m [ 45%][0m
+tests/rag_pipeline/test_citation_verifier.py::test_misattributed_citation_id_is_flagged_not_silently_corrected [32mPASSED[0m[31m [ 45%][0m
+tests/rag_pipeline/test_citation_verifier.py::test_quote_matches_despite_mid_sentence_pdf_linewrap_in_chunk [32mPASSED[0m[31m [ 46%][0m
+tests/rag_pipeline/test_citation_verifier.py::test_quote_matches_when_chunk_text_contains_an_internal_blank_line [32mPASSED[0m[31m [ 46%][0m
+tests/rag_pipeline/test_citation_verifier.py::test_quote_crossing_d1_to_d2_boundary_fails_with_explicit_reason [32mPASSED[0m[31m [ 46%][0m
+tests/rag_pipeline/test_citation_verifier.py::test_hallucinated_quote_not_present_anywhere_fails_with_distinct_reason [32mPASSED[0m[31m [ 46%][0m
+tests/rag_pipeline/test_citation_verifier.py::test_wrong_citation_id_fails_with_hallucinated_reason [32mPASSED[0m[31m [ 47%][0m
+tests/rag_pipeline/test_citation_verifier.py::test_quote_containing_other_citation_marker_fails_immediately [32mPASSED[0m[31m [ 47%][0m
+tests/rag_pipeline/test_citation_verifier.py::test_zero_claims_produces_empty_report [32mPASSED[0m[31m [ 47%][0m
+tests/rag_pipeline/test_confidence_scorer.py::test_all_citations_pass_gives_high_citation_score [32mPASSED[0m[31m [ 48%][0m
+tests/rag_pipeline/test_confidence_scorer.py::test_half_citations_fail_gives_half_citation_score [32mPASSED[0m[31m [ 48%][0m
+tests/rag_pipeline/test_confidence_scorer.py::test_zero_claims_gives_full_citation_score_no_false_penalty [32mPASSED[0m[31m [ 48%][0m
+tests/rag_pipeline/test_confidence_scorer.py::test_coverage_reflects_fraction_of_chunks_cited [32mPASSED[0m[31m [ 48%][0m
+tests/rag_pipeline/test_confidence_scorer.py::test_overall_is_weighted_combination [32mPASSED[0m[31m [ 49%][0m
+tests/rag_pipeline/test_confidence_scorer.py::test_retrieval_score_falls_back_to_rank_when_no_rerank_score [32mPASSED[0m[31m [ 49%][0m
+tests/rag_pipeline/test_confidence_scorer.py::test_empty_retrieved_chunks_gives_zero_retrieval_score [32mPASSED[0m[31m [ 49%][0m
+tests/rag_pipeline/test_context_builder.py::test_empty_context [32mPASSED[0m[31m    [ 49%][0m
+tests/rag_pipeline/test_context_builder.py::test_flat_numbers_chunks_in_rank_order [32mPASSED[0m[31m [ 50%][0m
+tests/rag_pipeline/test_context_builder.py::test_deduplicates_by_chunk_id [32mPASSED[0m[31m [ 50%][0m
+tests/rag_pipeline/test_context_builder.py::test_truncates_lowest_ranked_chunks_first_without_splitting_text [32mPASSED[0m[31m [ 50%][0m
+tests/rag_pipeline/test_context_builder.py::test_grouped_sections_by_primary_subquery_in_decomposition_order [32mPASSED[0m[31m [ 50%][0m
+tests/rag_pipeline/test_context_builder.py::test_grouped_citation_numbering_is_global_and_monotonic [32mPASSED[0m[31m [ 51%][0m
+tests/rag_pipeline/test_context_builder.py::test_grouped_renders_multi_subquery_chunk_exactly_once [32mPASSED[0m[31m [ 51%][0m
+tests/rag_pipeline/test_context_builder.py::test_flat_layout_byte_identical_to_grouped_chunk_set_but_no_headers [32mPASSED[0m[31m [ 51%][0m
+tests/rag_pipeline/test_context_builder.py::test_grouped_numbering_continues_correctly_after_multi_chunk_group [32mPASSED[0m[31m [ 51%][0m
+tests/rag_pipeline/test_context_pruning.py::test_single_chunk_is_unaffected [32mPASSED[0m[31m [ 52%][0m
+tests/rag_pipeline/test_context_pruning.py::test_clear_winner_prunes_weakly_scored_chunks [32mPASSED[0m[31m [ 52%][0m
+tests/rag_pipeline/test_context_pruning.py::test_negative_scores_do_not_invert_the_threshold [32mPASSED[0m[31m [ 52%][0m
+tests/rag_pipeline/test_context_pruning.py::test_two_close_scores_kept_one_clear_outlier_dropped [32mPASSED[0m[31m [ 53%][0m
+tests/rag_pipeline/test_context_pruning.py::test_identical_scores_are_a_noop [32mPASSED[0m[31m [ 53%][0m
+tests/rag_pipeline/test_context_pruning.py::test_missing_rerank_score_is_a_noop [32mPASSED[0m[31m [ 53%][0m
+tests/rag_pipeline/test_context_pruning.py::test_margin_zero_keeps_only_exact_ties_with_top [32mPASSED[0m[31m [ 53%][0m
+tests/rag_pipeline/test_context_pruning.py::test_margin_one_keeps_everything_within_full_range [32mPASSED[0m[31m [ 54%][0m
+tests/rag_pipeline/test_context_pruning.py::test_min_keep_prevents_over_pruning_below_the_floor [32mPASSED[0m[31m [ 54%][0m
+tests/rag_pipeline/test_context_pruning.py::test_min_keep_is_noop_when_margin_already_keeps_more [32mPASSED[0m[31m [ 54%][0m
+tests/rag_pipeline/test_context_pruning.py::test_min_keep_default_preserves_existing_behavior [32mPASSED[0m[31m [ 54%][0m
+tests/rag_pipeline/test_end_to_end.py::test_end_to_end_grounded_answer_with_correct_citation [31mFAILED[0m[31m [ 55%][0m
+tests/rag_pipeline/test_generation_provider.py::test_mock_provider_returns_default_canned_json [32mPASSED[0m[31m [ 55%][0m
+tests/rag_pipeline/test_generation_provider.py::test_mock_provider_returns_custom_canned_json [32mPASSED[0m[31m [ 55%][0m
+tests/rag_pipeline/test_generation_provider.py::test_nvidia_provider_satisfies_generation_provider_protocol [32mPASSED[0m[31m [ 55%][0m
+tests/rag_pipeline/test_live_providers.py::test_rag_pipeline_answers_with_real_gemini_provider [33mSKIPPED[0m[31m [ 56%][0m
+tests/rag_pipeline/test_live_providers.py::test_rag_pipeline_answers_with_real_nvidia_provider [33mSKIPPED[0m[31m [ 56%][0m
+tests/rag_pipeline/test_models.py::test_claim_roundtrip [32mPASSED[0m[31m           [ 56%][0m
+tests/rag_pipeline/test_models.py::test_generation_metadata_roundtrip [32mPASSED[0m[31m [ 56%][0m
+tests/rag_pipeline/test_models.py::test_rag_answer_draft_roundtrip [32mPASSED[0m[31m [ 57%][0m
+tests/rag_pipeline/test_models.py::test_claim_result_and_verification_report [32mPASSED[0m[31m [ 57%][0m
+tests/rag_pipeline/test_models.py::test_confidence_scores_roundtrip [32mPASSED[0m[31m [ 57%][0m
+tests/rag_pipeline/test_models.py::test_rag_answer_roundtrip [32mPASSED[0m[31m      [ 58%][0m
+tests/rag_pipeline/test_models.py::test_prompt_context_roundtrip [32mPASSED[0m[31m  [ 58%][0m
+tests/rag_pipeline/test_models.py::test_claim_requires_citation_ids_list [32mPASSED[0m[31m [ 58%][0m
+tests/rag_pipeline/test_models.py::test_citation_status_values [32mPASSED[0m[31m    [ 58%][0m
+tests/rag_pipeline/test_models.py::test_rag_answer_defaults_to_ok_citation_status [32mPASSED[0m[31m [ 59%][0m
+tests/rag_pipeline/test_prompt_builder.py::test_prompt_contains_system_instructions [32mPASSED[0m[31m [ 59%][0m
+tests/rag_pipeline/test_prompt_builder.py::test_prompt_contains_numbered_context [32mPASSED[0m[31m [ 59%][0m
+tests/rag_pipeline/test_prompt_builder.py::test_prompt_handles_empty_context [32mPASSED[0m[31m [ 59%][0m
+tests/rag_pipeline/test_prompt_builder.py::test_prompt_snapshot_v1 [32mPASSED[0m[31m [ 60%][0m
+tests/rag_pipeline/test_prompt_builder.py::test_prompt_v2_schema_omits_supporting_quote [32mPASSED[0m[31m [ 60%][0m
+tests/rag_pipeline/test_prompt_builder.py::test_prompt_v2_instructs_one_citation_per_claim [32mPASSED[0m[31m [ 60%][0m
+tests/rag_pipeline/test_prompt_builder.py::test_prompt_v2_instructs_one_claim_per_assertion [32mPASSED[0m[31m [ 60%][0m
+tests/rag_pipeline/test_prompt_builder.py::test_unknown_prompt_version_raises [32mPASSED[0m[31m [ 61%][0m
+tests/rag_pipeline/test_query_decomposer.py::test_is_comparative_query_detects_keywords [32mPASSED[0m[31m [ 61%][0m
+tests/rag_pipeline/test_query_decomposer.py::test_is_comparative_query_detects_extended_phrasings [32mPASSED[0m[31m [ 61%][0m
+tests/rag_pipeline/test_query_decomposer.py::test_is_comparative_query_false_for_simple_factual_question [32mPASSED[0m[31m [ 62%][0m
+tests/rag_pipeline/test_query_decomposer.py::test_decompose_query_parses_llm_json_array [32mPASSED[0m[31m [ 62%][0m
+tests/rag_pipeline/test_query_decomposer.py::test_decompose_query_caps_at_max_subqueries [32mPASSED[0m[31m [ 62%][0m
+tests/rag_pipeline/test_query_decomposer.py::test_decompose_query_falls_back_to_original_question_on_malformed_json [32mPASSED[0m[31m [ 62%][0m
+tests/rag_pipeline/test_query_decomposer.py::test_decompose_query_falls_back_to_original_question_on_empty_array [32mPASSED[0m[31m [ 63%][0m
+tests/rag_pipeline/test_query_decomposer.py::test_decompose_query_falls_back_to_original_question_on_provider_exception [32mPASSED[0m[31m [ 63%][0m
+tests/rag_pipeline/test_query_decomposer.py::test_decompose_query_rejects_single_subquery_that_echoes_the_question [32mPASSED[0m[31m [ 63%][0m
+tests/rag_pipeline/test_query_decomposer.py::test_decompose_query_rejects_single_subquery_echo_case_and_whitespace_insensitive [32mPASSED[0m[31m [ 63%][0m
+tests/rag_pipeline/test_query_decomposer.py::test_decompose_query_trusts_short_but_specific_subqueries [32mPASSED[0m[31m [ 64%][0m
+tests/rag_pipeline/test_query_decomposer.py::test_decompose_query_captures_raw_llm_output_when_requested [32mPASSED[0m[31m [ 64%][0m
+tests/rag_pipeline/test_query_decomposer.py::test_decompose_query_captures_raw_output_even_on_validation_failure [32mPASSED[0m[31m [ 64%][0m
+tests/rag_pipeline/test_query_decomposer.py::test_decompose_query_captures_none_on_provider_exception [32mPASSED[0m[31m [ 64%][0m
+tests/rag_pipeline/test_quote_extractor.py::test_normal_quote_extracted_verbatim_from_single_chunk [32mPASSED[0m[31m [ 65%][0m
+tests/rag_pipeline/test_quote_extractor.py::test_paraphrased_claim_text_still_extracts_the_supporting_sentence [32mPASSED[0m[31m [ 65%][0m
+tests/rag_pipeline/test_quote_extractor.py::test_multiple_claims_each_extract_from_their_own_cited_chunk [32mPASSED[0m[31m [ 65%][0m
+tests/rag_pipeline/test_quote_extractor.py::test_claim_with_multiple_citation_ids_is_truncated_to_first [32mPASSED[0m[31m [ 65%][0m
+tests/rag_pipeline/test_quote_extractor.py::test_extracted_quote_never_contains_text_from_a_different_chunk [32mPASSED[0m[31m [ 66%][0m
+tests/rag_pipeline/test_quote_extractor.py::test_claim_with_unknown_citation_id_gets_empty_quote_not_a_crash [32mPASSED[0m[31m [ 66%][0m
+tests/rag_pipeline/test_quote_extractor.py::test_claim_with_no_citation_ids_gets_empty_quote_not_a_crash [32mPASSED[0m[31m [ 66%][0m
+tests/rag_pipeline/test_rag_pipeline.py::test_answer_end_to_end_with_mock_provider [32mPASSED[0m[31m [ 67%][0m
+tests/rag_pipeline/test_rag_pipeline.py::test_multi_citation_claim_from_model_is_narrowed_and_verified_safely [32mPASSED[0m[31m [ 67%][0m
+tests/rag_pipeline/test_rag_pipeline.py::test_answer_with_verify_false_skips_verification [32mPASSED[0m[31m [ 67%][0m
+tests/rag_pipeline/test_rag_pipeline.py::test_generation_provider_exception_is_caught_not_raised [32mPASSED[0m[31m [ 67%][0m
+tests/rag_pipeline/test_rag_pipeline.py::test_unescaped_inner_quotes_in_answer_are_repaired [32mPASSED[0m[31m [ 68%][0m
+tests/rag_pipeline/test_rag_pipeline.py::test_malformed_json_from_provider_degrades_gracefully [32mPASSED[0m[31m [ 68%][0m
+tests/rag_pipeline/test_rag_pipeline.py::test_inline_citation_drift_is_flagged_not_rewritten [32mPASSED[0m[31m [ 68%][0m
+tests/rag_pipeline/test_rag_pipeline.py::test_verification_failure_takes_precedence_over_inline_drift [32mPASSED[0m[31m [ 68%][0m
+tests/rag_pipeline/test_rag_pipeline.py::test_merge_multi_query_results_dedupes_by_chunk_id_keeping_best_score [32mPASSED[0m[31m [ 69%][0m
+tests/rag_pipeline/test_rag_pipeline.py::test_merge_multi_query_results_boosts_chunks_appearing_in_multiple_subqueries [32mPASSED[0m[31m [ 69%][0m
+tests/rag_pipeline/test_rag_pipeline.py::test_merge_multi_query_results_single_appearance_uses_raw_score [32mPASSED[0m[31m [ 69%][0m
+tests/rag_pipeline/test_rag_pipeline.py::test_merge_multi_query_results_frequency_bonus_does_not_overwhelm_a_much_higher_score [32mPASSED[0m[31m [ 69%][0m
+tests/rag_pipeline/test_rag_pipeline.py::test_merge_multi_query_results_handles_missing_rerank_score [32mPASSED[0m[31m [ 70%][0m
+tests/rag_pipeline/test_rag_pipeline.py::test_merge_returns_provenance_side_map [32mPASSED[0m[31m [ 70%][0m
+tests/rag_pipeline/test_rag_pipeline.py::test_merge_provenance_single_subquery [32mPASSED[0m[31m [ 70%][0m
+tests/rag_pipeline/test_rag_pipeline.py::test_comparative_question_retrieves_once_per_subquery [32mPASSED[0m[31m [ 70%][0m
+tests/rag_pipeline/test_rag_pipeline.py::test_non_comparative_question_retrieves_once_with_original_question [32mPASSED[0m[31m [ 71%][0m
+tests/rag_pipeline/test_rag_pipeline.py::test_one_failing_subquery_does_not_abort_the_others [32mPASSED[0m[31m [ 71%][0m
+tests/rag_pipeline/test_rag_pipeline.py::test_retrieve_subqueries_concurrently_caps_worker_count [32mPASSED[0m[31m [ 71%][0m
+tests/rag_pipeline/test_rag_pipeline.py::test_retrieve_subqueries_concurrently_isolates_one_failure [32mPASSED[0m[31m [ 72%][0m
+tests/rag_pipeline/test_rag_pipeline.py::test_comparative_question_keeps_multiple_chunks_after_pruning [32mPASSED[0m[31m [ 72%][0m
+tests/rag_pipeline/test_rag_pipeline.py::test_answer_accepts_injected_dev_trace_and_exposes_its_data [32mPASSED[0m[31m [ 72%][0m
+tests/rag_pipeline/test_rag_pipeline.py::test_context_layout_defaults_to_flat_and_is_exposed [32mPASSED[0m[31m [ 72%][0m
+tests/rag_pipeline/test_rag_pipeline.py::test_factual_question_stays_flat_even_with_grouped_configured [32mPASSED[0m[31m [ 73%][0m
+tests/rag_pipeline/test_rag_pipeline.py::test_comparative_question_groups_when_configured_grouped [32mPASSED[0m[31m [ 73%][0m
+tests/rag_pipeline/test_rag_pipeline.py::test_comparative_question_min_keep_floors_at_subquery_count [32mPASSED[0m[31m [ 73%][0m
+tests/rag_pipeline/test_rag_pipeline_structured_citations.py::test_rag_answer_structured_citations_defaults_to_empty_list [32mPASSED[0m[31m [ 73%][0m
+tests/retrieval/test_dense.py::test_search_returns_chunk_with_dense_score [31mERROR[0m[31m [ 74%][0m
+tests/retrieval/test_fusion.py::test_fuses_and_ranks_by_combined_reciprocal_rank [32mPASSED[0m[31m [ 74%][0m
+tests/retrieval/test_fusion.py::test_chunk_only_in_one_list_still_included [32mPASSED[0m[31m [ 74%][0m
+tests/retrieval/test_fusion.py::test_empty_inputs_return_empty_list [32mPASSED[0m[31m [ 74%][0m
+tests/retrieval/test_fusion.py::test_preserves_original_dense_and_bm25_scores_in_merged_result [32mPASSED[0m[31m [ 75%][0m
+tests/retrieval/test_passthrough_rerank.py::test_passthrough_reranker_orders_by_rrf_score_and_truncates [32mPASSED[0m[31m [ 75%][0m
+tests/retrieval/test_passthrough_rerank.py::test_passthrough_reranker_handles_empty_candidates [32mPASSED[0m[31m [ 75%][0m
+tests/retrieval/test_rerank.py::test_rerank_orders_by_relevance_and_sets_final_rank [32mPASSED[0m[31m [ 75%][0m
+tests/retrieval/test_rerank.py::test_rerank_respects_top_n [32mPASSED[0m[31m        [ 76%][0m
+tests/retrieval/test_rerank.py::test_rerank_empty_candidates_returns_empty [32mPASSED[0m[31m [ 76%][0m
+tests/retrieval/test_retriever.py::test_retrieve_returns_ranked_results_and_trace [31mERROR[0m[31m [ 76%][0m
+tests/retrieval/test_retriever.py::test_retrieve_records_fusion_and_rerank_latency [31mERROR[0m[31m [ 77%][0m
+tests/retrieval/test_retriever.py::test_dense_and_sparse_weights_affect_final_ranking [31mFAILED[0m[31m [ 77%][0m
+tests/retrieval/test_retriever.py::test_dense_k_sparse_k_and_rerank_top_n_are_plumbed_through [31mFAILED[0m[31m [ 77%][0m
+tests/retrieval/test_retriever.py::test_retrieve_propagates_rerank_provider_exception [31mFAILED[0m[31m [ 77%][0m
+tests/retrieval/test_retriever.py::test_rerank_fused_top_n_caps_candidates_sent_to_reranker [31mFAILED[0m[31m [ 78%][0m
+tests/retrieval/test_retriever.py::test_retrieve_records_budget_trace_fields [31mERROR[0m[31m [ 78%][0m
+tests/retrieval/test_retriever.py::test_retrieve_records_smaller_budget_than_fusion_candidates [31mFAILED[0m[31m [ 78%][0m
+tests/retrieval/test_sparse.py::test_search_finds_exact_keyword_with_bm25_score [31mERROR[0m[31m [ 78%][0m
+tests/storage/test_base.py::test_vector_store_is_abstract [32mPASSED[0m[31m         [ 79%][0m
+tests/storage/test_base.py::test_chunk_store_is_abstract [32mPASSED[0m[31m          [ 79%][0m
+tests/storage/test_base.py::test_vector_store_subclass_must_implement_all_methods [32mPASSED[0m[31m [ 79%][0m
+tests/storage/test_bm25_index.py::test_search_finds_exact_keyword_match [32mPASSED[0m[31m [ 79%][0m
+tests/storage/test_bm25_index.py::test_search_on_empty_index_returns_empty [32mPASSED[0m[31m [ 80%][0m
+tests/storage/test_bm25_index.py::test_save_and_load_roundtrip [32mPASSED[0m[31m    [ 80%][0m
+tests/storage/test_bm25_index.py::test_load_returns_false_when_no_file [32mPASSED[0m[31m [ 80%][0m
+tests/storage/test_chunk_store_contract.py::test_implements_full_chunk_store_contract[_pinecone_chunk_store] [32mPASSED[0m[31m [ 81%][0m
+tests/storage/test_chunk_store_contract.py::test_abc_requires_the_three_extra_methods [32mPASSED[0m[31m [ 81%][0m
+tests/storage/test_index_manager.py::test_index_writes_to_all_stores [31mERROR[0m[31m [ 81%][0m
+tests/storage/test_index_manager.py::test_remove_document_clears_both_indexes [31mERROR[0m[31m [ 81%][0m
+tests/storage/test_index_manager.py::test_verify_sync_reports_no_mismatches_when_healthy [31mERROR[0m[31m [ 82%][0m
+tests/storage/test_index_manager.py::test_verify_sync_detects_bm25_drift [31mERROR[0m[31m [ 82%][0m
+tests/storage/test_pinecone_chunk_store.py::test_implements_chunk_store [32mPASSED[0m[31m [ 82%][0m
+tests/storage/test_pinecone_chunk_store.py::test_put_creates_record_with_placeholder_vector [32mPASSED[0m[31m [ 82%][0m
+tests/storage/test_pinecone_chunk_store.py::test_put_many_batches_into_one_upsert_call [32mPASSED[0m[31m [ 83%][0m
+tests/storage/test_pinecone_chunk_store.py::test_put_many_splits_into_multiple_batches_over_batch_size [32mPASSED[0m[31m [ 83%][0m
+tests/storage/test_pinecone_chunk_store.py::test_get_by_chunk_id_reconstructs_chunk [32mPASSED[0m[31m [ 83%][0m
+tests/storage/test_pinecone_chunk_store.py::test_get_round_trips_legal_metadata [32mPASSED[0m[31m [ 83%][0m
+tests/storage/test_pinecone_chunk_store.py::test_put_writes_legal_effective_date [31mFAILED[0m[31m [ 84%][0m
+tests/storage/test_pinecone_chunk_store.py::test_get_missing_chunk_returns_none [32mPASSED[0m[31m [ 84%][0m
+tests/storage/test_pinecone_chunk_store.py::test_delete_by_document [32mPASSED[0m[31m [ 84%][0m
+tests/storage/test_pinecone_chunk_store.py::test_get_by_document_scans_and_filters_client_side [32mPASSED[0m[31m [ 84%][0m
+tests/storage/test_pinecone_chunk_store.py::test_all_with_embeddings_returns_chunk_and_stored_vector [32mPASSED[0m[31m [ 85%][0m
+tests/storage/test_pinecone_chunk_store.py::test_get_document_hash_scans_and_filters_client_side [32mPASSED[0m[31m [ 85%][0m
+tests/storage/test_pinecone_chunk_store.py::test_get_by_legal_metadata_scans_and_filters_client_side [32mPASSED[0m[31m [ 85%][0m
+tests/storage/test_pinecone_chunk_store.py::test_get_by_legal_metadata_rejects_unknown_filter_key [32mPASSED[0m[31m [ 86%][0m
+tests/storage/test_pinecone_live.py::test_put_upsert_query_get_delete_round_trip [33mSKIPPED[0m[31m [ 86%][0m
+tests/storage/test_pinecone_vector_store.py::test_implements_vector_store [32mPASSED[0m[31m [ 86%][0m
+tests/storage/test_pinecone_vector_store.py::test_upsert_updates_vector_values_on_existing_record [32mPASSED[0m[31m [ 86%][0m
+tests/storage/test_pinecone_vector_store.py::test_upsert_many_updates_every_vector [32mPASSED[0m[31m [ 87%][0m
+tests/storage/test_pinecone_vector_store.py::test_query_returns_chunk_id_score_pairs [32mPASSED[0m[31m [ 87%][0m
+tests/storage/test_pinecone_vector_store.py::test_delete [32mPASSED[0m[31m          [ 87%][0m
+tests/storage/test_pinecone_vector_store.py::test_shares_one_client_across_two_stores [31mFAILED[0m[31m [ 87%][0m
+tests/test_audit.py::test_record_and_query_roundtrip [32mPASSED[0m[31m              [ 88%][0m
+tests/test_audit.py::test_query_filters_by_event_type [32mPASSED[0m[31m             [ 88%][0m
+tests/test_audit.py::test_query_filters_by_document_id_and_status [32mPASSED[0m[31m [ 88%][0m
+tests/test_audit.py::test_query_time_range_filters [32mPASSED[0m[31m                [ 88%][0m
+tests/test_audit.py::test_query_sort_and_pagination [32mPASSED[0m[31m               [ 89%][0m
+tests/test_audit.py::test_events_are_appended_not_rewritten [32mPASSED[0m[31m       [ 89%][0m
+tests/test_benchmark.py::test_benchmark_retrieval_quality_meets_baseline [31mFAILED[0m[31m [ 89%][0m
+tests/test_config.py::test_defaults [32mPASSED[0m[31m                               [ 89%][0m
+tests/test_config.py::test_rerank_fused_top_n_cannot_exceed_k_sum [32mPASSED[0m[31m [ 90%][0m
+tests/test_config.py::test_rerank_top_n_cannot_exceed_fused_top_n [32mPASSED[0m[31m [ 90%][0m
+tests/test_config.py::test_weights_must_sum_to_one [32mPASSED[0m[31m                [ 90%][0m
+tests/test_config.py::test_weight_out_of_range [32mPASSED[0m[31m                    [ 91%][0m
+tests/test_config.py::test_rerank_top_n_cannot_exceed_k_sum [32mPASSED[0m[31m       [ 91%][0m
+tests/test_config.py::test_env_override [32mPASSED[0m[31m                           [ 91%][0m
+tests/test_end_to_end.py::test_keyword_query_surfaces_deployment_error_doc [31mERROR[0m[31m [ 91%][0m
+tests/test_end_to_end.py::test_conceptual_query_surfaces_onboarding_doc [31mERROR[0m[31m [ 92%][0m
+tests/test_end_to_end.py::test_all_results_have_final_rank_set [31mERROR[0m[31m     [ 92%][0m
+tests/test_models.py::test_document_roundtrip [32mPASSED[0m[31m                     [ 92%][0m
+tests/test_models.py::test_document_rejects_bad_format [32mPASSED[0m[31m            [ 92%][0m
+tests/test_models.py::test_chunk_defaults [32mPASSED[0m[31m                         [ 93%][0m
+tests/test_models.py::test_embedding_record_dimension_matches_vector [32mPASSED[0m[31m [ 93%][0m
+tests/test_models.py::test_embedding_record_rejects_dimension_mismatch [32mPASSED[0m[31m [ 93%][0m
+tests/test_models.py::test_retrieved_chunk_final_rank [32mPASSED[0m[31m             [ 93%][0m
+tests/test_models.py::test_index_status_values [32mPASSED[0m[31m                    [ 94%][0m
+tests/test_models.py::test_retrieval_trace_total_latency [32mPASSED[0m[31m          [ 94%][0m
+tests/test_models.py::test_retrieval_trace_budget_fields_default_to_zero [32mPASSED[0m[31m [ 94%][0m
+tests/test_models.py::test_retrieval_trace_budget_fields_roundtrip [32mPASSED[0m[31m [ 94%][0m
+tests/test_models.py::test_chunk_provenance_and_context_chunk [32mPASSED[0m[31m     [ 95%][0m
+tests/test_run_eval.py::test_run_eval_end_to_end_produces_report [32mPASSED[0m[31m  [ 95%][0m
+tests/test_run_eval.py::test_update_then_compare_baseline_exits_zero [32mPASSED[0m[31m [ 95%][0m
+tests/test_run_eval.py::test_compare_without_baseline_exits_2 [32mPASSED[0m[31m     [ 96%][0m
+tests/test_run_eval.py::test_compare_with_corrupt_baseline_exits_3 [32mPASSED[0m[31m [ 96%][0m
+tests/test_run_eval.py::test_update_and_compare_together_is_usage_error [32mPASSED[0m[31m [ 96%][0m
+tests/test_run_eval.py::test_compare_with_changed_questions_exits_4 [32mPASSED[0m[31m [ 96%][0m
+tests/test_run_eval.py::test_check_baseline_compares_existing_report [32mPASSED[0m[31m [ 97%][0m
+tests/test_run_eval.py::test_check_baseline_rejects_pre_phase2_report [32mPASSED[0m[31m [ 97%][0m
+tests/test_trace.py::test_log_rerank_records_budget_counts [32mPASSED[0m[31m        [ 97%][0m
+tests/test_trace.py::test_log_rerank_prints_retrieval_budget_block_when_enabled [32mPASSED[0m[31m [ 97%][0m
+tests/test_trace.py::test_log_verification_computes_ratio_and_prints_summary [32mPASSED[0m[31m [ 98%][0m
+tests/test_trace.py::test_log_verification_ratio_zero_when_no_claims [32mPASSED[0m[31m [ 98%][0m
+tests/test_trace.py::test_log_query_decomposition_records_subqueries_raw_output_and_coverage [32mPASSED[0m[31m [ 98%][0m
+tests/test_trace.py::test_log_query_decomposition_coverage_zero_when_no_subqueries [32mPASSED[0m[31m [ 98%][0m
+tests/test_trace.py::test_log_provenance_records_primary_and_all_subqueries [32mPASSED[0m[31m [ 99%][0m
+tests/test_uuid7.py::test_uuid7_format [32mPASSED[0m[31m                            [ 99%][0m
+tests/test_uuid7.py::test_uuid7_is_time_ordered [32mPASSED[0m[31m                   [ 99%][0m
+tests/test_uuid7.py::test_uuid7_unique [32mPASSED[0m[31m                            [100%][0m
+
+==================================== ERRORS ====================================
+[31m[1m________ ERROR at setup of test_ingest_produces_ready_status_and_chunks ________[0m
+
+tmp_path = PosixPath('/private/var/folders/l4/r0j8wzps4ks283cst9sxhwtm0000gn/T/pytest-of-siddhunangadi/pytest-5/test_ingest_produces_ready_sta0')
+
+    [0m[37m@pytest[39;49;00m.fixture[90m[39;49;00m
+    [94mdef[39;49;00m[90m [39;49;00m[92mpipeline[39;49;00m(tmp_path):[90m[39;49;00m
+>       chunk_store, vector_store = fake_pinecone_stores()[90m[39;49;00m
+                                    ^^^^^^^^^^^^^^^^^^^^^^[90m[39;49;00m
+
+[1m[31mtests/ingestion/test_pipeline.py[0m:28: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+embedding_dimension = 8
+
+    [0m[94mdef[39;49;00m[90m [39;49;00m[92mfake_pinecone_stores[39;49;00m(embedding_dimension: [96mint[39;49;00m = [94m8[39;49;00m) -> [96mtuple[39;49;00m[PineconeChunkStore, PineconeVectorStore]:[90m[39;49;00m
+    [90m    [39;49;00m[33m"""Wire a chunk store + vector store against one shared in-memory fake[39;49;00m
+    [33m    Pinecone index -- mirrors the real architecture, where both classes[39;49;00m
+    [33m    operate against one Pinecone index underneath (see[39;49;00m
+    [33m    ``pinecone_connection.py``), without needing a live index or API key."""[39;49;00m[90m[39;49;00m
+        connection = PineconeConnection.[92m__new__[39;49;00m(PineconeConnection)[90m[39;49;00m
+>       connection.index = FakePineconeIndex()[90m[39;49;00m
+        ^^^^^^^^^^^^^^^^[90m[39;49;00m
+[1m[31mE       AttributeError: property 'index' of 'PineconeConnection' object has no setter[0m
+
+[1m[31mtests/fakes.py[0m:143: AttributeError
+[31m[1m________ ERROR at setup of test_reingesting_unchanged_document_is_noop _________[0m
+
+tmp_path = PosixPath('/private/var/folders/l4/r0j8wzps4ks283cst9sxhwtm0000gn/T/pytest-of-siddhunangadi/pytest-5/test_reingesting_unchanged_doc0')
+
+    [0m[37m@pytest[39;49;00m.fixture[90m[39;49;00m
+    [94mdef[39;49;00m[90m [39;49;00m[92mpipeline[39;49;00m(tmp_path):[90m[39;49;00m
+>       chunk_store, vector_store = fake_pinecone_stores()[90m[39;49;00m
+                                    ^^^^^^^^^^^^^^^^^^^^^^[90m[39;49;00m
+
+[1m[31mtests/ingestion/test_pipeline.py[0m:28: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+embedding_dimension = 8
+
+    [0m[94mdef[39;49;00m[90m [39;49;00m[92mfake_pinecone_stores[39;49;00m(embedding_dimension: [96mint[39;49;00m = [94m8[39;49;00m) -> [96mtuple[39;49;00m[PineconeChunkStore, PineconeVectorStore]:[90m[39;49;00m
+    [90m    [39;49;00m[33m"""Wire a chunk store + vector store against one shared in-memory fake[39;49;00m
+    [33m    Pinecone index -- mirrors the real architecture, where both classes[39;49;00m
+    [33m    operate against one Pinecone index underneath (see[39;49;00m
+    [33m    ``pinecone_connection.py``), without needing a live index or API key."""[39;49;00m[90m[39;49;00m
+        connection = PineconeConnection.[92m__new__[39;49;00m(PineconeConnection)[90m[39;49;00m
+>       connection.index = FakePineconeIndex()[90m[39;49;00m
+        ^^^^^^^^^^^^^^^^[90m[39;49;00m
+[1m[31mE       AttributeError: property 'index' of 'PineconeConnection' object has no setter[0m
+
+[1m[31mtests/fakes.py[0m:143: AttributeError
+[31m[1m____ ERROR at setup of test_reingesting_edited_document_replaces_old_chunks ____[0m
+
+tmp_path = PosixPath('/private/var/folders/l4/r0j8wzps4ks283cst9sxhwtm0000gn/T/pytest-of-siddhunangadi/pytest-5/test_reingesting_edited_docume0')
+
+    [0m[37m@pytest[39;49;00m.fixture[90m[39;49;00m
+    [94mdef[39;49;00m[90m [39;49;00m[92mpipeline[39;49;00m(tmp_path):[90m[39;49;00m
+>       chunk_store, vector_store = fake_pinecone_stores()[90m[39;49;00m
+                                    ^^^^^^^^^^^^^^^^^^^^^^[90m[39;49;00m
+
+[1m[31mtests/ingestion/test_pipeline.py[0m:28: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+embedding_dimension = 8
+
+    [0m[94mdef[39;49;00m[90m [39;49;00m[92mfake_pinecone_stores[39;49;00m(embedding_dimension: [96mint[39;49;00m = [94m8[39;49;00m) -> [96mtuple[39;49;00m[PineconeChunkStore, PineconeVectorStore]:[90m[39;49;00m
+    [90m    [39;49;00m[33m"""Wire a chunk store + vector store against one shared in-memory fake[39;49;00m
+    [33m    Pinecone index -- mirrors the real architecture, where both classes[39;49;00m
+    [33m    operate against one Pinecone index underneath (see[39;49;00m
+    [33m    ``pinecone_connection.py``), without needing a live index or API key."""[39;49;00m[90m[39;49;00m
+        connection = PineconeConnection.[92m__new__[39;49;00m(PineconeConnection)[90m[39;49;00m
+>       connection.index = FakePineconeIndex()[90m[39;49;00m
+        ^^^^^^^^^^^^^^^^[90m[39;49;00m
+[1m[31mE       AttributeError: property 'index' of 'PineconeConnection' object has no setter[0m
+
+[1m[31mtests/fakes.py[0m:143: AttributeError
+[31m[1m___ ERROR at setup of test_dedup_skips_near_duplicate_chunk_across_documents ___[0m
+
+tmp_path = PosixPath('/private/var/folders/l4/r0j8wzps4ks283cst9sxhwtm0000gn/T/pytest-of-siddhunangadi/pytest-5/test_dedup_skips_near_duplicat0')
+
+    [0m[37m@pytest[39;49;00m.fixture[90m[39;49;00m
+    [94mdef[39;49;00m[90m [39;49;00m[92mpipeline[39;49;00m(tmp_path):[90m[39;49;00m
+>       chunk_store, vector_store = fake_pinecone_stores()[90m[39;49;00m
+                                    ^^^^^^^^^^^^^^^^^^^^^^[90m[39;49;00m
+
+[1m[31mtests/ingestion/test_pipeline.py[0m:28: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+embedding_dimension = 8
+
+    [0m[94mdef[39;49;00m[90m [39;49;00m[92mfake_pinecone_stores[39;49;00m(embedding_dimension: [96mint[39;49;00m = [94m8[39;49;00m) -> [96mtuple[39;49;00m[PineconeChunkStore, PineconeVectorStore]:[90m[39;49;00m
+    [90m    [39;49;00m[33m"""Wire a chunk store + vector store against one shared in-memory fake[39;49;00m
+    [33m    Pinecone index -- mirrors the real architecture, where both classes[39;49;00m
+    [33m    operate against one Pinecone index underneath (see[39;49;00m
+    [33m    ``pinecone_connection.py``), without needing a live index or API key."""[39;49;00m[90m[39;49;00m
+        connection = PineconeConnection.[92m__new__[39;49;00m(PineconeConnection)[90m[39;49;00m
+>       connection.index = FakePineconeIndex()[90m[39;49;00m
+        ^^^^^^^^^^^^^^^^[90m[39;49;00m
+[1m[31mE       AttributeError: property 'index' of 'PineconeConnection' object has no setter[0m
+
+[1m[31mtests/fakes.py[0m:143: AttributeError
+[31m[1m_________ ERROR at setup of test_search_returns_chunk_with_dense_score _________[0m
+
+    [0m[37m@pytest[39;49;00m.fixture[90m[39;49;00m
+    [94mdef[39;49;00m[90m [39;49;00m[92mretriever[39;49;00m():[90m[39;49;00m
+        provider = FakeEmbeddingProvider()[90m[39;49;00m
+>       chunk_store, vector_store = fake_pinecone_stores(embedding_dimension=provider.dimension)[90m[39;49;00m
+                                    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^[90m[39;49;00m
+
+[1m[31mtests/retrieval/test_dense.py[0m:26: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+embedding_dimension = 8
+
+    [0m[94mdef[39;49;00m[90m [39;49;00m[92mfake_pinecone_stores[39;49;00m(embedding_dimension: [96mint[39;49;00m = [94m8[39;49;00m) -> [96mtuple[39;49;00m[PineconeChunkStore, PineconeVectorStore]:[90m[39;49;00m
+    [90m    [39;49;00m[33m"""Wire a chunk store + vector store against one shared in-memory fake[39;49;00m
+    [33m    Pinecone index -- mirrors the real architecture, where both classes[39;49;00m
+    [33m    operate against one Pinecone index underneath (see[39;49;00m
+    [33m    ``pinecone_connection.py``), without needing a live index or API key."""[39;49;00m[90m[39;49;00m
+        connection = PineconeConnection.[92m__new__[39;49;00m(PineconeConnection)[90m[39;49;00m
+>       connection.index = FakePineconeIndex()[90m[39;49;00m
+        ^^^^^^^^^^^^^^^^[90m[39;49;00m
+[1m[31mE       AttributeError: property 'index' of 'PineconeConnection' object has no setter[0m
+
+[1m[31mtests/fakes.py[0m:143: AttributeError
+[31m[1m_______ ERROR at setup of test_retrieve_returns_ranked_results_and_trace _______[0m
+
+tmp_path = PosixPath('/private/var/folders/l4/r0j8wzps4ks283cst9sxhwtm0000gn/T/pytest-of-siddhunangadi/pytest-5/test_retrieve_returns_ranked_r0')
+
+    [0m[37m@pytest[39;49;00m.fixture[90m[39;49;00m
+    [94mdef[39;49;00m[90m [39;49;00m[92mhybrid_retriever[39;49;00m(tmp_path):[90m[39;49;00m
+        tmp_path.mkdir(parents=[94mTrue[39;49;00m, exist_ok=[94mTrue[39;49;00m)[90m[39;49;00m
+        provider = FakeEmbeddingProvider()[90m[39;49;00m
+>       chunk_store, vector_store = fake_pinecone_stores(embedding_dimension=provider.dimension)[90m[39;49;00m
+                                    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^[90m[39;49;00m
+
+[1m[31mtests/retrieval/test_retriever.py[0m:106: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+embedding_dimension = 8
+
+    [0m[94mdef[39;49;00m[90m [39;49;00m[92mfake_pinecone_stores[39;49;00m(embedding_dimension: [96mint[39;49;00m = [94m8[39;49;00m) -> [96mtuple[39;49;00m[PineconeChunkStore, PineconeVectorStore]:[90m[39;49;00m
+    [90m    [39;49;00m[33m"""Wire a chunk store + vector store against one shared in-memory fake[39;49;00m
+    [33m    Pinecone index -- mirrors the real architecture, where both classes[39;49;00m
+    [33m    operate against one Pinecone index underneath (see[39;49;00m
+    [33m    ``pinecone_connection.py``), without needing a live index or API key."""[39;49;00m[90m[39;49;00m
+        connection = PineconeConnection.[92m__new__[39;49;00m(PineconeConnection)[90m[39;49;00m
+>       connection.index = FakePineconeIndex()[90m[39;49;00m
+        ^^^^^^^^^^^^^^^^[90m[39;49;00m
+[1m[31mE       AttributeError: property 'index' of 'PineconeConnection' object has no setter[0m
+
+[1m[31mtests/fakes.py[0m:143: AttributeError
+[31m[1m______ ERROR at setup of test_retrieve_records_fusion_and_rerank_latency _______[0m
+
+tmp_path = PosixPath('/private/var/folders/l4/r0j8wzps4ks283cst9sxhwtm0000gn/T/pytest-of-siddhunangadi/pytest-5/test_retrieve_records_fusion_a0')
+
+    [0m[37m@pytest[39;49;00m.fixture[90m[39;49;00m
+    [94mdef[39;49;00m[90m [39;49;00m[92mhybrid_retriever[39;49;00m(tmp_path):[90m[39;49;00m
+        tmp_path.mkdir(parents=[94mTrue[39;49;00m, exist_ok=[94mTrue[39;49;00m)[90m[39;49;00m
+        provider = FakeEmbeddingProvider()[90m[39;49;00m
+>       chunk_store, vector_store = fake_pinecone_stores(embedding_dimension=provider.dimension)[90m[39;49;00m
+                                    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^[90m[39;49;00m
+
+[1m[31mtests/retrieval/test_retriever.py[0m:106: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+embedding_dimension = 8
+
+    [0m[94mdef[39;49;00m[90m [39;49;00m[92mfake_pinecone_stores[39;49;00m(embedding_dimension: [96mint[39;49;00m = [94m8[39;49;00m) -> [96mtuple[39;49;00m[PineconeChunkStore, PineconeVectorStore]:[90m[39;49;00m
+    [90m    [39;49;00m[33m"""Wire a chunk store + vector store against one shared in-memory fake[39;49;00m
+    [33m    Pinecone index -- mirrors the real architecture, where both classes[39;49;00m
+    [33m    operate against one Pinecone index underneath (see[39;49;00m
+    [33m    ``pinecone_connection.py``), without needing a live index or API key."""[39;49;00m[90m[39;49;00m
+        connection = PineconeConnection.[92m__new__[39;49;00m(PineconeConnection)[90m[39;49;00m
+>       connection.index = FakePineconeIndex()[90m[39;49;00m
+        ^^^^^^^^^^^^^^^^[90m[39;49;00m
+[1m[31mE       AttributeError: property 'index' of 'PineconeConnection' object has no setter[0m
+
+[1m[31mtests/fakes.py[0m:143: AttributeError
+[31m[1m_________ ERROR at setup of test_retrieve_records_budget_trace_fields __________[0m
+
+tmp_path = PosixPath('/private/var/folders/l4/r0j8wzps4ks283cst9sxhwtm0000gn/T/pytest-of-siddhunangadi/pytest-5/test_retrieve_records_budget_t0')
+
+    [0m[37m@pytest[39;49;00m.fixture[90m[39;49;00m
+    [94mdef[39;49;00m[90m [39;49;00m[92mhybrid_retriever[39;49;00m(tmp_path):[90m[39;49;00m
+        tmp_path.mkdir(parents=[94mTrue[39;49;00m, exist_ok=[94mTrue[39;49;00m)[90m[39;49;00m
+        provider = FakeEmbeddingProvider()[90m[39;49;00m
+>       chunk_store, vector_store = fake_pinecone_stores(embedding_dimension=provider.dimension)[90m[39;49;00m
+                                    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^[90m[39;49;00m
+
+[1m[31mtests/retrieval/test_retriever.py[0m:106: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+embedding_dimension = 8
+
+    [0m[94mdef[39;49;00m[90m [39;49;00m[92mfake_pinecone_stores[39;49;00m(embedding_dimension: [96mint[39;49;00m = [94m8[39;49;00m) -> [96mtuple[39;49;00m[PineconeChunkStore, PineconeVectorStore]:[90m[39;49;00m
+    [90m    [39;49;00m[33m"""Wire a chunk store + vector store against one shared in-memory fake[39;49;00m
+    [33m    Pinecone index -- mirrors the real architecture, where both classes[39;49;00m
+    [33m    operate against one Pinecone index underneath (see[39;49;00m
+    [33m    ``pinecone_connection.py``), without needing a live index or API key."""[39;49;00m[90m[39;49;00m
+        connection = PineconeConnection.[92m__new__[39;49;00m(PineconeConnection)[90m[39;49;00m
+>       connection.index = FakePineconeIndex()[90m[39;49;00m
+        ^^^^^^^^^^^^^^^^[90m[39;49;00m
+[1m[31mE       AttributeError: property 'index' of 'PineconeConnection' object has no setter[0m
+
+[1m[31mtests/fakes.py[0m:143: AttributeError
+[31m[1m______ ERROR at setup of test_search_finds_exact_keyword_with_bm25_score _______[0m
+
+tmp_path = PosixPath('/private/var/folders/l4/r0j8wzps4ks283cst9sxhwtm0000gn/T/pytest-of-siddhunangadi/pytest-5/test_search_finds_exact_keywor0')
+
+    [0m[37m@pytest[39;49;00m.fixture[90m[39;49;00m
+    [94mdef[39;49;00m[90m [39;49;00m[92mretriever[39;49;00m(tmp_path):[90m[39;49;00m
+>       chunk_store, _vector_store = fake_pinecone_stores()[90m[39;49;00m
+                                     ^^^^^^^^^^^^^^^^^^^^^^[90m[39;49;00m
+
+[1m[31mtests/retrieval/test_sparse.py[0m:24: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+embedding_dimension = 8
+
+    [0m[94mdef[39;49;00m[90m [39;49;00m[92mfake_pinecone_stores[39;49;00m(embedding_dimension: [96mint[39;49;00m = [94m8[39;49;00m) -> [96mtuple[39;49;00m[PineconeChunkStore, PineconeVectorStore]:[90m[39;49;00m
+    [90m    [39;49;00m[33m"""Wire a chunk store + vector store against one shared in-memory fake[39;49;00m
+    [33m    Pinecone index -- mirrors the real architecture, where both classes[39;49;00m
+    [33m    operate against one Pinecone index underneath (see[39;49;00m
+    [33m    ``pinecone_connection.py``), without needing a live index or API key."""[39;49;00m[90m[39;49;00m
+        connection = PineconeConnection.[92m__new__[39;49;00m(PineconeConnection)[90m[39;49;00m
+>       connection.index = FakePineconeIndex()[90m[39;49;00m
+        ^^^^^^^^^^^^^^^^[90m[39;49;00m
+[1m[31mE       AttributeError: property 'index' of 'PineconeConnection' object has no setter[0m
+
+[1m[31mtests/fakes.py[0m:143: AttributeError
+[31m[1m______________ ERROR at setup of test_index_writes_to_all_stores _______________[0m
+
+tmp_path = PosixPath('/private/var/folders/l4/r0j8wzps4ks283cst9sxhwtm0000gn/T/pytest-of-siddhunangadi/pytest-5/test_index_writes_to_all_store0')
+
+    [0m[37m@pytest[39;49;00m.fixture[90m[39;49;00m
+    [94mdef[39;49;00m[90m [39;49;00m[92mmanager[39;49;00m(tmp_path):[90m[39;49;00m
+>       chunk_store, vector_store = fake_pinecone_stores(embedding_dimension=[94m3[39;49;00m)[90m[39;49;00m
+                                    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^[90m[39;49;00m
+
+[1m[31mtests/storage/test_index_manager.py[0m:37: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+embedding_dimension = 3
+
+    [0m[94mdef[39;49;00m[90m [39;49;00m[92mfake_pinecone_stores[39;49;00m(embedding_dimension: [96mint[39;49;00m = [94m8[39;49;00m) -> [96mtuple[39;49;00m[PineconeChunkStore, PineconeVectorStore]:[90m[39;49;00m
+    [90m    [39;49;00m[33m"""Wire a chunk store + vector store against one shared in-memory fake[39;49;00m
+    [33m    Pinecone index -- mirrors the real architecture, where both classes[39;49;00m
+    [33m    operate against one Pinecone index underneath (see[39;49;00m
+    [33m    ``pinecone_connection.py``), without needing a live index or API key."""[39;49;00m[90m[39;49;00m
+        connection = PineconeConnection.[92m__new__[39;49;00m(PineconeConnection)[90m[39;49;00m
+>       connection.index = FakePineconeIndex()[90m[39;49;00m
+        ^^^^^^^^^^^^^^^^[90m[39;49;00m
+[1m[31mE       AttributeError: property 'index' of 'PineconeConnection' object has no setter[0m
+
+[1m[31mtests/fakes.py[0m:143: AttributeError
+[31m[1m__________ ERROR at setup of test_remove_document_clears_both_indexes __________[0m
+
+tmp_path = PosixPath('/private/var/folders/l4/r0j8wzps4ks283cst9sxhwtm0000gn/T/pytest-of-siddhunangadi/pytest-5/test_remove_document_clears_bo0')
+
+    [0m[37m@pytest[39;49;00m.fixture[90m[39;49;00m
+    [94mdef[39;49;00m[90m [39;49;00m[92mmanager[39;49;00m(tmp_path):[90m[39;49;00m
+>       chunk_store, vector_store = fake_pinecone_stores(embedding_dimension=[94m3[39;49;00m)[90m[39;49;00m
+                                    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^[90m[39;49;00m
+
+[1m[31mtests/storage/test_index_manager.py[0m:37: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+embedding_dimension = 3
+
+    [0m[94mdef[39;49;00m[90m [39;49;00m[92mfake_pinecone_stores[39;49;00m(embedding_dimension: [96mint[39;49;00m = [94m8[39;49;00m) -> [96mtuple[39;49;00m[PineconeChunkStore, PineconeVectorStore]:[90m[39;49;00m
+    [90m    [39;49;00m[33m"""Wire a chunk store + vector store against one shared in-memory fake[39;49;00m
+    [33m    Pinecone index -- mirrors the real architecture, where both classes[39;49;00m
+    [33m    operate against one Pinecone index underneath (see[39;49;00m
+    [33m    ``pinecone_connection.py``), without needing a live index or API key."""[39;49;00m[90m[39;49;00m
+        connection = PineconeConnection.[92m__new__[39;49;00m(PineconeConnection)[90m[39;49;00m
+>       connection.index = FakePineconeIndex()[90m[39;49;00m
+        ^^^^^^^^^^^^^^^^[90m[39;49;00m
+[1m[31mE       AttributeError: property 'index' of 'PineconeConnection' object has no setter[0m
+
+[1m[31mtests/fakes.py[0m:143: AttributeError
+[31m[1m____ ERROR at setup of test_verify_sync_reports_no_mismatches_when_healthy _____[0m
+
+tmp_path = PosixPath('/private/var/folders/l4/r0j8wzps4ks283cst9sxhwtm0000gn/T/pytest-of-siddhunangadi/pytest-5/test_verify_sync_reports_no_mi0')
+
+    [0m[37m@pytest[39;49;00m.fixture[90m[39;49;00m
+    [94mdef[39;49;00m[90m [39;49;00m[92mmanager[39;49;00m(tmp_path):[90m[39;49;00m
+>       chunk_store, vector_store = fake_pinecone_stores(embedding_dimension=[94m3[39;49;00m)[90m[39;49;00m
+                                    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^[90m[39;49;00m
+
+[1m[31mtests/storage/test_index_manager.py[0m:37: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+embedding_dimension = 3
+
+    [0m[94mdef[39;49;00m[90m [39;49;00m[92mfake_pinecone_stores[39;49;00m(embedding_dimension: [96mint[39;49;00m = [94m8[39;49;00m) -> [96mtuple[39;49;00m[PineconeChunkStore, PineconeVectorStore]:[90m[39;49;00m
+    [90m    [39;49;00m[33m"""Wire a chunk store + vector store against one shared in-memory fake[39;49;00m
+    [33m    Pinecone index -- mirrors the real architecture, where both classes[39;49;00m
+    [33m    operate against one Pinecone index underneath (see[39;49;00m
+    [33m    ``pinecone_connection.py``), without needing a live index or API key."""[39;49;00m[90m[39;49;00m
+        connection = PineconeConnection.[92m__new__[39;49;00m(PineconeConnection)[90m[39;49;00m
+>       connection.index = FakePineconeIndex()[90m[39;49;00m
+        ^^^^^^^^^^^^^^^^[90m[39;49;00m
+[1m[31mE       AttributeError: property 'index' of 'PineconeConnection' object has no setter[0m
+
+[1m[31mtests/fakes.py[0m:143: AttributeError
+[31m[1m____________ ERROR at setup of test_verify_sync_detects_bm25_drift _____________[0m
+
+tmp_path = PosixPath('/private/var/folders/l4/r0j8wzps4ks283cst9sxhwtm0000gn/T/pytest-of-siddhunangadi/pytest-5/test_verify_sync_detects_bm25_0')
+
+    [0m[37m@pytest[39;49;00m.fixture[90m[39;49;00m
+    [94mdef[39;49;00m[90m [39;49;00m[92mmanager[39;49;00m(tmp_path):[90m[39;49;00m
+>       chunk_store, vector_store = fake_pinecone_stores(embedding_dimension=[94m3[39;49;00m)[90m[39;49;00m
+                                    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^[90m[39;49;00m
+
+[1m[31mtests/storage/test_index_manager.py[0m:37: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+embedding_dimension = 3
+
+    [0m[94mdef[39;49;00m[90m [39;49;00m[92mfake_pinecone_stores[39;49;00m(embedding_dimension: [96mint[39;49;00m = [94m8[39;49;00m) -> [96mtuple[39;49;00m[PineconeChunkStore, PineconeVectorStore]:[90m[39;49;00m
+    [90m    [39;49;00m[33m"""Wire a chunk store + vector store against one shared in-memory fake[39;49;00m
+    [33m    Pinecone index -- mirrors the real architecture, where both classes[39;49;00m
+    [33m    operate against one Pinecone index underneath (see[39;49;00m
+    [33m    ``pinecone_connection.py``), without needing a live index or API key."""[39;49;00m[90m[39;49;00m
+        connection = PineconeConnection.[92m__new__[39;49;00m(PineconeConnection)[90m[39;49;00m
+>       connection.index = FakePineconeIndex()[90m[39;49;00m
+        ^^^^^^^^^^^^^^^^[90m[39;49;00m
+[1m[31mE       AttributeError: property 'index' of 'PineconeConnection' object has no setter[0m
+
+[1m[31mtests/fakes.py[0m:143: AttributeError
+[31m[1m______ ERROR at setup of test_keyword_query_surfaces_deployment_error_doc ______[0m
+
+tmp_path = PosixPath('/private/var/folders/l4/r0j8wzps4ks283cst9sxhwtm0000gn/T/pytest-of-siddhunangadi/pytest-5/test_keyword_query_surfaces_de0')
+
+    [0m[37m@pytest[39;49;00m.fixture[90m[39;49;00m
+    [94mdef[39;49;00m[90m [39;49;00m[92msystem[39;49;00m(tmp_path):[90m[39;49;00m
+        provider = FakeEmbeddingProvider()[90m[39;49;00m
+>       chunk_store, vector_store = fake_pinecone_stores(embedding_dimension=provider.dimension)[90m[39;49;00m
+                                    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^[90m[39;49;00m
+
+[1m[31mtests/test_end_to_end.py[0m:25: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+embedding_dimension = 8
+
+    [0m[94mdef[39;49;00m[90m [39;49;00m[92mfake_pinecone_stores[39;49;00m(embedding_dimension: [96mint[39;49;00m = [94m8[39;49;00m) -> [96mtuple[39;49;00m[PineconeChunkStore, PineconeVectorStore]:[90m[39;49;00m
+    [90m    [39;49;00m[33m"""Wire a chunk store + vector store against one shared in-memory fake[39;49;00m
+    [33m    Pinecone index -- mirrors the real architecture, where both classes[39;49;00m
+    [33m    operate against one Pinecone index underneath (see[39;49;00m
+    [33m    ``pinecone_connection.py``), without needing a live index or API key."""[39;49;00m[90m[39;49;00m
+        connection = PineconeConnection.[92m__new__[39;49;00m(PineconeConnection)[90m[39;49;00m
+>       connection.index = FakePineconeIndex()[90m[39;49;00m
+        ^^^^^^^^^^^^^^^^[90m[39;49;00m
+[1m[31mE       AttributeError: property 'index' of 'PineconeConnection' object has no setter[0m
+
+[1m[31mtests/fakes.py[0m:143: AttributeError
+[31m[1m_______ ERROR at setup of test_conceptual_query_surfaces_onboarding_doc ________[0m
+
+tmp_path = PosixPath('/private/var/folders/l4/r0j8wzps4ks283cst9sxhwtm0000gn/T/pytest-of-siddhunangadi/pytest-5/test_conceptual_query_surfaces0')
+
+    [0m[37m@pytest[39;49;00m.fixture[90m[39;49;00m
+    [94mdef[39;49;00m[90m [39;49;00m[92msystem[39;49;00m(tmp_path):[90m[39;49;00m
+        provider = FakeEmbeddingProvider()[90m[39;49;00m
+>       chunk_store, vector_store = fake_pinecone_stores(embedding_dimension=provider.dimension)[90m[39;49;00m
+                                    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^[90m[39;49;00m
+
+[1m[31mtests/test_end_to_end.py[0m:25: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+embedding_dimension = 8
+
+    [0m[94mdef[39;49;00m[90m [39;49;00m[92mfake_pinecone_stores[39;49;00m(embedding_dimension: [96mint[39;49;00m = [94m8[39;49;00m) -> [96mtuple[39;49;00m[PineconeChunkStore, PineconeVectorStore]:[90m[39;49;00m
+    [90m    [39;49;00m[33m"""Wire a chunk store + vector store against one shared in-memory fake[39;49;00m
+    [33m    Pinecone index -- mirrors the real architecture, where both classes[39;49;00m
+    [33m    operate against one Pinecone index underneath (see[39;49;00m
+    [33m    ``pinecone_connection.py``), without needing a live index or API key."""[39;49;00m[90m[39;49;00m
+        connection = PineconeConnection.[92m__new__[39;49;00m(PineconeConnection)[90m[39;49;00m
+>       connection.index = FakePineconeIndex()[90m[39;49;00m
+        ^^^^^^^^^^^^^^^^[90m[39;49;00m
+[1m[31mE       AttributeError: property 'index' of 'PineconeConnection' object has no setter[0m
+
+[1m[31mtests/fakes.py[0m:143: AttributeError
+[31m[1m____________ ERROR at setup of test_all_results_have_final_rank_set ____________[0m
+
+tmp_path = PosixPath('/private/var/folders/l4/r0j8wzps4ks283cst9sxhwtm0000gn/T/pytest-of-siddhunangadi/pytest-5/test_all_results_have_final_ra0')
+
+    [0m[37m@pytest[39;49;00m.fixture[90m[39;49;00m
+    [94mdef[39;49;00m[90m [39;49;00m[92msystem[39;49;00m(tmp_path):[90m[39;49;00m
+        provider = FakeEmbeddingProvider()[90m[39;49;00m
+>       chunk_store, vector_store = fake_pinecone_stores(embedding_dimension=provider.dimension)[90m[39;49;00m
+                                    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^[90m[39;49;00m
+
+[1m[31mtests/test_end_to_end.py[0m:25: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+embedding_dimension = 8
+
+    [0m[94mdef[39;49;00m[90m [39;49;00m[92mfake_pinecone_stores[39;49;00m(embedding_dimension: [96mint[39;49;00m = [94m8[39;49;00m) -> [96mtuple[39;49;00m[PineconeChunkStore, PineconeVectorStore]:[90m[39;49;00m
+    [90m    [39;49;00m[33m"""Wire a chunk store + vector store against one shared in-memory fake[39;49;00m
+    [33m    Pinecone index -- mirrors the real architecture, where both classes[39;49;00m
+    [33m    operate against one Pinecone index underneath (see[39;49;00m
+    [33m    ``pinecone_connection.py``), without needing a live index or API key."""[39;49;00m[90m[39;49;00m
+        connection = PineconeConnection.[92m__new__[39;49;00m(PineconeConnection)[90m[39;49;00m
+>       connection.index = FakePineconeIndex()[90m[39;49;00m
+        ^^^^^^^^^^^^^^^^[90m[39;49;00m
+[1m[31mE       AttributeError: property 'index' of 'PineconeConnection' object has no setter[0m
+
+[1m[31mtests/fakes.py[0m:143: AttributeError
+=================================== FAILURES ===================================
+[31m[1m____________________ test_index_ingests_a_markdown_document ____________________[0m
+
+client = <starlette.testclient.TestClient object at 0x11aaaa7b0>
+
+    [0m[94mdef[39;49;00m[90m [39;49;00m[92mtest_index_ingests_a_markdown_document[39;49;00m(client):[90m[39;49;00m
+        response = client.post([90m[39;49;00m
+            [33m"[39;49;00m[33m/index[39;49;00m[33m"[39;49;00m,[90m[39;49;00m
+            json={[90m[39;49;00m
+                [33m"[39;49;00m[33mdocuments[39;49;00m[33m"[39;49;00m: [[90m[39;49;00m
+                    {[90m[39;49;00m
+                        [33m"[39;49;00m[33mfilename[39;49;00m[33m"[39;49;00m: [33m"[39;49;00m[33mleave-policy.md[39;49;00m[33m"[39;49;00m,[90m[39;49;00m
+                        [33m"[39;49;00m[33mcontent[39;49;00m[33m"[39;49;00m: [33m"[39;49;00m[33mEmployees get 20 days of paid annual leave per year.[39;49;00m[33m"[39;49;00m,[90m[39;49;00m
+                    }[90m[39;49;00m
+                ][90m[39;49;00m
+            },[90m[39;49;00m
+        )[90m[39;49;00m
+    [90m[39;49;00m
+        [94massert[39;49;00m response.status_code == [94m200[39;49;00m[90m[39;49;00m
+        results = response.json()[[33m"[39;49;00m[33mresults[39;49;00m[33m"[39;49;00m][90m[39;49;00m
+        [94massert[39;49;00m [96mlen[39;49;00m(results) == [94m1[39;49;00m[90m[39;49;00m
+        [94massert[39;49;00m results[[94m0[39;49;00m][[33m"[39;49;00m[33mfilename[39;49;00m[33m"[39;49;00m] == [33m"[39;49;00m[33mleave-policy.md[39;49;00m[33m"[39;49;00m[90m[39;49;00m
+>       [94massert[39;49;00m results[[94m0[39;49;00m][[33m"[39;49;00m[33mstatus[39;49;00m[33m"[39;49;00m] == [33m"[39;49;00m[33mready[39;49;00m[33m"[39;49;00m, results[[94m0[39;49;00m][90m[39;49;00m
+[1m[31mE       AssertionError: {'filename': 'leave-policy.md', 'status': 'failed', 'error': "IngestionPipeline.ingest() got an unexpected keyword argument 'existing_pairs'"}[0m
+[1m[31mE       assert 'failed' == 'ready'[0m
+[1m[31mE         [0m
+[1m[31mE         [0m[91m- ready[39;49;00m[90m[39;49;00m[0m
+[1m[31mE         [92m+ failed[39;49;00m[90m[39;49;00m[0m
+
+[1m[31mtests/api/test_routes.py[0m:102: AssertionError
+[31m[1m_____________ test_index_reports_per_document_failure_without_500 ______________[0m
+
+client = <starlette.testclient.TestClient object at 0x11abd8f30>
+
+    [0m[94mdef[39;49;00m[90m [39;49;00m[92mtest_index_reports_per_document_failure_without_500[39;49;00m(client):[90m[39;49;00m
+        response = client.post([90m[39;49;00m
+            [33m"[39;49;00m[33m/index[39;49;00m[33m"[39;49;00m,[90m[39;49;00m
+            json={[90m[39;49;00m
+                [33m"[39;49;00m[33mdocuments[39;49;00m[33m"[39;49;00m: [[90m[39;49;00m
+                    {[33m"[39;49;00m[33mfilename[39;49;00m[33m"[39;49;00m: [33m"[39;49;00m[33mgood.md[39;49;00m[33m"[39;49;00m, [33m"[39;49;00m[33mcontent[39;49;00m[33m"[39;49;00m: [33m"[39;49;00m[33mValid markdown content here.[39;49;00m[33m"[39;49;00m},[90m[39;49;00m
+                    {[33m"[39;49;00m[33mfilename[39;49;00m[33m"[39;49;00m: [33m"[39;49;00m[33mbad.unsupported[39;49;00m[33m"[39;49;00m, [33m"[39;49;00m[33mcontent[39;49;00m[33m"[39;49;00m: [33m"[39;49;00m[33mno loader for this extension[39;49;00m[33m"[39;49;00m},[90m[39;49;00m
+                ][90m[39;49;00m
+            },[90m[39;49;00m
+        )[90m[39;49;00m
+    [90m[39;49;00m
+        [94massert[39;49;00m response.status_code == [94m200[39;49;00m[90m[39;49;00m
+        results = response.json()[[33m"[39;49;00m[33mresults[39;49;00m[33m"[39;49;00m][90m[39;49;00m
+        statuses = {r[[33m"[39;49;00m[33mfilename[39;49;00m[33m"[39;49;00m]: r [94mfor[39;49;00m r [95min[39;49;00m results}[90m[39;49;00m
+>       [94massert[39;49;00m statuses[[33m"[39;49;00m[33mgood.md[39;49;00m[33m"[39;49;00m][[33m"[39;49;00m[33mstatus[39;49;00m[33m"[39;49;00m] == [33m"[39;49;00m[33mready[39;49;00m[33m"[39;49;00m[90m[39;49;00m
+[1m[31mE       AssertionError: assert 'failed' == 'ready'[0m
+[1m[31mE         [0m
+[1m[31mE         [0m[91m- ready[39;49;00m[90m[39;49;00m[0m
+[1m[31mE         [92m+ failed[39;49;00m[90m[39;49;00m[0m
+
+[1m[31mtests/api/test_routes.py[0m:120: AssertionError
+[31m[1m____________________ test_documents_reports_indexed_corpus _____________________[0m
+
+client = <starlette.testclient.TestClient object at 0x11ad36030>
+
+    [0m[94mdef[39;49;00m[90m [39;49;00m[92mtest_documents_reports_indexed_corpus[39;49;00m(client):[90m[39;49;00m
+        client.post([90m[39;49;00m
+            [33m"[39;49;00m[33m/index[39;49;00m[33m"[39;49;00m,[90m[39;49;00m
+            json={[90m[39;49;00m
+                [33m"[39;49;00m[33mdocuments[39;49;00m[33m"[39;49;00m: [[90m[39;49;00m
+                    {[33m"[39;49;00m[33mfilename[39;49;00m[33m"[39;49;00m: [33m"[39;49;00m[33mleave-policy.md[39;49;00m[33m"[39;49;00m, [33m"[39;49;00m[33mcontent[39;49;00m[33m"[39;49;00m: [33m"[39;49;00m[33mEmployees get 20 days of paid annual leave per year.[39;49;00m[33m"[39;49;00m},[90m[39;49;00m
+                ][90m[39;49;00m
+            },[90m[39;49;00m
+        )[90m[39;49;00m
+    [90m[39;49;00m
+        response = client.get([33m"[39;49;00m[33m/documents[39;49;00m[33m"[39;49;00m)[90m[39;49;00m
+    [90m[39;49;00m
+        [94massert[39;49;00m response.status_code == [94m200[39;49;00m[90m[39;49;00m
+        body = response.json()[90m[39;49;00m
+>       [94massert[39;49;00m body[[33m"[39;49;00m[33mtotal_documents[39;49;00m[33m"[39;49;00m] == [94m1[39;49;00m[90m[39;49;00m
+[1m[31mE       assert 0 == 1[0m
+
+[1m[31mtests/api/test_routes.py[0m:263: AssertionError
+[31m[1m_________ test_index_with_document_type_regulation_uses_clause_chunker _________[0m
+
+client = <starlette.testclient.TestClient object at 0x11a9bf130>
+
+    [0m[94mdef[39;49;00m[90m [39;49;00m[92mtest_index_with_document_type_regulation_uses_clause_chunker[39;49;00m(client):[90m[39;49;00m
+        response = client.post([90m[39;49;00m
+            [33m"[39;49;00m[33m/index[39;49;00m[33m"[39;49;00m,[90m[39;49;00m
+            json={[90m[39;49;00m
+                [33m"[39;49;00m[33mdocuments[39;49;00m[33m"[39;49;00m: [[90m[39;49;00m
+                    {[33m"[39;49;00m[33mfilename[39;49;00m[33m"[39;49;00m: [33m"[39;49;00m[33mgdpr.txt[39;49;00m[33m"[39;49;00m, [33m"[39;49;00m[33mcontent[39;49;00m[33m"[39;49;00m: _GDPR_TEXT, [33m"[39;49;00m[33mdocument_type[39;49;00m[33m"[39;49;00m: [33m"[39;49;00m[33mregulation[39;49;00m[33m"[39;49;00m},[90m[39;49;00m
+                ][90m[39;49;00m
+            },[90m[39;49;00m
+        )[90m[39;49;00m
+    [90m[39;49;00m
+        [94massert[39;49;00m response.status_code == [94m200[39;49;00m[90m[39;49;00m
+>       [94massert[39;49;00m response.json()[[33m"[39;49;00m[33mresults[39;49;00m[33m"[39;49;00m][[94m0[39;49;00m][[33m"[39;49;00m[33mstatus[39;49;00m[33m"[39;49;00m] == [33m"[39;49;00m[33mready[39;49;00m[33m"[39;49;00m[90m[39;49;00m
+[1m[31mE       AssertionError: assert 'failed' == 'ready'[0m
+[1m[31mE         [0m
+[1m[31mE         [0m[91m- ready[39;49;00m[90m[39;49;00m[0m
+[1m[31mE         [92m+ failed[39;49;00m[90m[39;49;00m[0m
+
+[1m[31mtests/api/test_routes.py[0m:316: AssertionError
+[31m[1m_________ test_index_without_document_type_defaults_to_general_chunker _________[0m
+
+client = <starlette.testclient.TestClient object at 0x11ad207c0>
+
+    [0m[94mdef[39;49;00m[90m [39;49;00m[92mtest_index_without_document_type_defaults_to_general_chunker[39;49;00m(client):[90m[39;49;00m
+        response = client.post([90m[39;49;00m
+            [33m"[39;49;00m[33m/index[39;49;00m[33m"[39;49;00m,[90m[39;49;00m
+            json={[90m[39;49;00m
+                [33m"[39;49;00m[33mdocuments[39;49;00m[33m"[39;49;00m: [[90m[39;49;00m
+                    {[33m"[39;49;00m[33mfilename[39;49;00m[33m"[39;49;00m: [33m"[39;49;00m[33mleave-policy.md[39;49;00m[33m"[39;49;00m, [33m"[39;49;00m[33mcontent[39;49;00m[33m"[39;49;00m: [33m"[39;49;00m[33mEmployees get 20 days of paid annual leave per year.[39;49;00m[33m"[39;49;00m},[90m[39;49;00m
+                ][90m[39;49;00m
+            },[90m[39;49;00m
+        )[90m[39;49;00m
+    [90m[39;49;00m
+        [94massert[39;49;00m response.status_code == [94m200[39;49;00m[90m[39;49;00m
+>       [94massert[39;49;00m response.json()[[33m"[39;49;00m[33mresults[39;49;00m[33m"[39;49;00m][[94m0[39;49;00m][[33m"[39;49;00m[33mstatus[39;49;00m[33m"[39;49;00m] == [33m"[39;49;00m[33mready[39;49;00m[33m"[39;49;00m[90m[39;49;00m
+[1m[31mE       AssertionError: assert 'failed' == 'ready'[0m
+[1m[31mE         [0m
+[1m[31mE         [0m[91m- ready[39;49;00m[90m[39;49;00m[0m
+[1m[31mE         [92m+ failed[39;49;00m[90m[39;49;00m[0m
+
+[1m[31mtests/api/test_routes.py[0m:333: AssertionError
+[31m[1m_ test_answer_show_article_returns_only_matching_article_via_structured_citations _[0m
+
+client = <starlette.testclient.TestClient object at 0x11a9c7130>
+
+    [0m[94mdef[39;49;00m[90m [39;49;00m[92mtest_answer_show_article_returns_only_matching_article_via_structured_citations[39;49;00m(client):[90m[39;49;00m
+        client.post([90m[39;49;00m
+            [33m"[39;49;00m[33m/index[39;49;00m[33m"[39;49;00m,[90m[39;49;00m
+            json={[90m[39;49;00m
+                [33m"[39;49;00m[33mdocuments[39;49;00m[33m"[39;49;00m: [[90m[39;49;00m
+                    {[33m"[39;49;00m[33mfilename[39;49;00m[33m"[39;49;00m: [33m"[39;49;00m[33mgdpr.txt[39;49;00m[33m"[39;49;00m, [33m"[39;49;00m[33mcontent[39;49;00m[33m"[39;49;00m: _GDPR_TEXT, [33m"[39;49;00m[33mdocument_type[39;49;00m[33m"[39;49;00m: [33m"[39;49;00m[33mregulation[39;49;00m[33m"[39;49;00m},[90m[39;49;00m
+                ][90m[39;49;00m
+            },[90m[39;49;00m
+        )[90m[39;49;00m
+    [90m[39;49;00m
+        response = client.post([90m[39;49;00m
+            [33m"[39;49;00m[33m/answer[39;49;00m[33m"[39;49;00m,[90m[39;49;00m
+            json={[33m"[39;49;00m[33mquestion[39;49;00m[33m"[39;49;00m: [33m"[39;49;00m[33mShow Article 17[39;49;00m[33m"[39;49;00m, [33m"[39;49;00m[33mverify[39;49;00m[33m"[39;49;00m: [94mFalse[39;49;00m},[90m[39;49;00m
+        )[90m[39;49;00m
+    [90m[39;49;00m
+        [94massert[39;49;00m response.status_code == [94m200[39;49;00m[90m[39;49;00m
+        body = response.json()[90m[39;49;00m
+        structured_citations = body[[33m"[39;49;00m[33mstructured_citations[39;49;00m[33m"[39;49;00m][90m[39;49;00m
+>       [94massert[39;49;00m [96mlen[39;49;00m(structured_citations) >= [94m1[39;49;00m[90m[39;49;00m
+[1m[31mE       assert 0 >= 1[0m
+[1m[31mE        +  where 0 = len([])[0m
+
+[1m[31mtests/api/test_routes.py[0m:354: AssertionError
+[31m[1m______ test_debug_retrieval_exposes_fusion_and_rerank_as_separate_stages _______[0m
+
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x11aa3cb40>
+tmp_path = PosixPath('/private/var/folders/l4/r0j8wzps4ks283cst9sxhwtm0000gn/T/pytest-of-siddhunangadi/pytest-5/test_debug_retrieval_exposes_f0')
+
+    [0m[94mdef[39;49;00m[90m [39;49;00m[92mtest_debug_retrieval_exposes_fusion_and_rerank_as_separate_stages[39;49;00m(monkeypatch, tmp_path):[90m[39;49;00m
+    [90m    [39;49;00m[33m"""The debug panel must let you see fusion order and rerank order[39;49;00m
+    [33m    separately -- otherwise there's no way to prove reranking actually[39;49;00m
+    [33m    changed anything versus silently passing candidates through."""[39;49;00m[90m[39;49;00m
+        monkeypatch.delenv([33m"[39;49;00m[33mRAG_NVIDIA_API_KEY[39;49;00m[33m"[39;49;00m, raising=[94mFalse[39;49;00m)[90m[39;49;00m
+        monkeypatch.delenv([33m"[39;49;00m[33mRAG_GEMINI_API_KEY[39;49;00m[33m"[39;49;00m, raising=[94mFalse[39;49;00m)[90m[39;49;00m
+        monkeypatch.setenv([33m"[39;49;00m[33mRAG_DEBUG_TOKEN[39;49;00m[33m"[39;49;00m, [33m"[39;49;00m[33mtest-token[39;49;00m[33m"[39;49;00m)[90m[39;49;00m
+        monkeypatch.setenv([33m"[39;49;00m[33mRAG_DATA_DIR[39;49;00m[33m"[39;49;00m, [96mstr[39;49;00m(tmp_path / [33m"[39;49;00m[33mdata[39;49;00m[33m"[39;49;00m))[90m[39;49;00m
+        monkeypatch.setenv([33m"[39;49;00m[33mRAG_PINECONE_API_KEY[39;49;00m[33m"[39;49;00m, [33m"[39;49;00m[33mfake-key[39;49;00m[33m"[39;49;00m)[90m[39;49;00m
+        monkeypatch.setenv([33m"[39;49;00m[33mRAG_PINECONE_INDEX_NAME[39;49;00m[33m"[39;49;00m, [33m"[39;49;00m[33mfake-index[39;49;00m[33m"[39;49;00m)[90m[39;49;00m
+        [94mfrom[39;49;00m[90m [39;49;00m[04m[96mapi[39;49;00m[04m[96m.[39;49;00m[04m[96mmain[39;49;00m[90m [39;49;00m[94mimport[39;49;00m create_app[90m[39;49;00m
+    [90m[39;49;00m
+        [94mwith[39;49;00m patch([33m"[39;49;00m[33mrag_hybrid_search.storage.pinecone_connection.Pinecone[39;49;00m[33m"[39;49;00m) [94mas[39;49;00m mock_pc_cls:[90m[39;49;00m
+            mock_pc_cls.return_value.Index = MagicMock(return_value=FakePineconeIndex())[90m[39;49;00m
+            app = create_app()[90m[39;49;00m
+            [94mwith[39;49;00m TestClient(app) [94mas[39;49;00m debug_client:[90m[39;49;00m
+                debug_client.post([90m[39;49;00m
+                    [33m"[39;49;00m[33m/index[39;49;00m[33m"[39;49;00m,[90m[39;49;00m
+                    json={[33m"[39;49;00m[33mdocuments[39;49;00m[33m"[39;49;00m: [{[33m"[39;49;00m[33mfilename[39;49;00m[33m"[39;49;00m: [33m"[39;49;00m[33mleave.txt[39;49;00m[33m"[39;49;00m, [33m"[39;49;00m[33mcontent[39;49;00m[33m"[39;49;00m: [33m"[39;49;00m[33mEmployees get 20 days of paid annual leave per year.[39;49;00m[33m"[39;49;00m}]},[90m[39;49;00m
+                )[90m[39;49;00m
+    [90m[39;49;00m
+                response = debug_client.get([90m[39;49;00m
+                    [33m"[39;49;00m[33m/debug/retrieval[39;49;00m[33m"[39;49;00m,[90m[39;49;00m
+                    params={[33m"[39;49;00m[33mquery[39;49;00m[33m"[39;49;00m: [33m"[39;49;00m[33mHow many days of leave?[39;49;00m[33m"[39;49;00m},[90m[39;49;00m
+                    headers={[33m"[39;49;00m[33mX-Debug-Token[39;49;00m[33m"[39;49;00m: [33m"[39;49;00m[33mtest-token[39;49;00m[33m"[39;49;00m},[90m[39;49;00m
+                )[90m[39;49;00m
+    [90m[39;49;00m
+                [94massert[39;49;00m response.status_code == [94m200[39;49;00m[90m[39;49;00m
+                body = response.json()[90m[39;49;00m
+                [94massert[39;49;00m [33m"[39;49;00m[33mrrf_results[39;49;00m[33m"[39;49;00m [95min[39;49;00m body[90m[39;49;00m
+                [94massert[39;49;00m [33m"[39;49;00m[33mrerank_results[39;49;00m[33m"[39;49;00m [95min[39;49;00m body[90m[39;49;00m
+>               [94massert[39;49;00m [96mlen[39;49;00m(body[[33m"[39;49;00m[33mrrf_results[39;49;00m[33m"[39;49;00m]) > [94m0[39;49;00m[90m[39;49;00m
+[1m[31mE               assert 0 > 0[0m
+[1m[31mE                +  where 0 = len([])[0m
+
+[1m[31mtests/api/test_routes.py[0m:389: AssertionError
+[31m[1m_________________ test_structured_query_returns_exact_article __________________[0m
+
+    [0m[94mdef[39;49;00m[90m [39;49;00m[92mtest_structured_query_returns_exact_article[39;49;00m():[90m[39;49;00m
+        [94mwith[39;49;00m tempfile.TemporaryDirectory() [94mas[39;49;00m tmp:[90m[39;49;00m
+>           chunk_store, retriever = _build_pipeline_components(tmp)[90m[39;49;00m
+                                     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^[90m[39;49;00m
+
+[1m[31mtests/compliance/test_end_to_end.py[0m:71: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+[1m[31mtests/compliance/test_end_to_end.py[0m:33: in _build_pipeline_components
+    [0mchunk_store, vector_store = fake_pinecone_stores()[90m[39;49;00m
+                                ^^^^^^^^^^^^^^^^^^^^^^[90m[39;49;00m
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+embedding_dimension = 8
+
+    [0m[94mdef[39;49;00m[90m [39;49;00m[92mfake_pinecone_stores[39;49;00m(embedding_dimension: [96mint[39;49;00m = [94m8[39;49;00m) -> [96mtuple[39;49;00m[PineconeChunkStore, PineconeVectorStore]:[90m[39;49;00m
+    [90m    [39;49;00m[33m"""Wire a chunk store + vector store against one shared in-memory fake[39;49;00m
+    [33m    Pinecone index -- mirrors the real architecture, where both classes[39;49;00m
+    [33m    operate against one Pinecone index underneath (see[39;49;00m
+    [33m    ``pinecone_connection.py``), without needing a live index or API key."""[39;49;00m[90m[39;49;00m
+        connection = PineconeConnection.[92m__new__[39;49;00m(PineconeConnection)[90m[39;49;00m
+>       connection.index = FakePineconeIndex()[90m[39;49;00m
+        ^^^^^^^^^^^^^^^^[90m[39;49;00m
+[1m[31mE       AttributeError: property 'index' of 'PineconeConnection' object has no setter[0m
+
+[1m[31mtests/fakes.py[0m:143: AttributeError
+[31m[1m___________ test_semantic_query_returns_results_via_hybrid_pipeline ____________[0m
+
+    [0m[94mdef[39;49;00m[90m [39;49;00m[92mtest_semantic_query_returns_results_via_hybrid_pipeline[39;49;00m():[90m[39;49;00m
+        [94mwith[39;49;00m tempfile.TemporaryDirectory() [94mas[39;49;00m tmp:[90m[39;49;00m
+>           chunk_store, retriever = _build_pipeline_components(tmp)[90m[39;49;00m
+                                     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^[90m[39;49;00m
+
+[1m[31mtests/compliance/test_end_to_end.py[0m:79: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+[1m[31mtests/compliance/test_end_to_end.py[0m:33: in _build_pipeline_components
+    [0mchunk_store, vector_store = fake_pinecone_stores()[90m[39;49;00m
+                                ^^^^^^^^^^^^^^^^^^^^^^[90m[39;49;00m
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+embedding_dimension = 8
+
+    [0m[94mdef[39;49;00m[90m [39;49;00m[92mfake_pinecone_stores[39;49;00m(embedding_dimension: [96mint[39;49;00m = [94m8[39;49;00m) -> [96mtuple[39;49;00m[PineconeChunkStore, PineconeVectorStore]:[90m[39;49;00m
+    [90m    [39;49;00m[33m"""Wire a chunk store + vector store against one shared in-memory fake[39;49;00m
+    [33m    Pinecone index -- mirrors the real architecture, where both classes[39;49;00m
+    [33m    operate against one Pinecone index underneath (see[39;49;00m
+    [33m    ``pinecone_connection.py``), without needing a live index or API key."""[39;49;00m[90m[39;49;00m
+        connection = PineconeConnection.[92m__new__[39;49;00m(PineconeConnection)[90m[39;49;00m
+>       connection.index = FakePineconeIndex()[90m[39;49;00m
+        ^^^^^^^^^^^^^^^^[90m[39;49;00m
+[1m[31mE       AttributeError: property 'index' of 'PineconeConnection' object has no setter[0m
+
+[1m[31mtests/fakes.py[0m:143: AttributeError
+[31m[1m_________________ test_mixed_query_filters_to_matching_article _________________[0m
+
+    [0m[94mdef[39;49;00m[90m [39;49;00m[92mtest_mixed_query_filters_to_matching_article[39;49;00m():[90m[39;49;00m
+        [94mwith[39;49;00m tempfile.TemporaryDirectory() [94mas[39;49;00m tmp:[90m[39;49;00m
+>           chunk_store, retriever = _build_pipeline_components(tmp)[90m[39;49;00m
+                                     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^[90m[39;49;00m
+
+[1m[31mtests/compliance/test_end_to_end.py[0m:86: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+[1m[31mtests/compliance/test_end_to_end.py[0m:33: in _build_pipeline_components
+    [0mchunk_store, vector_store = fake_pinecone_stores()[90m[39;49;00m
+                                ^^^^^^^^^^^^^^^^^^^^^^[90m[39;49;00m
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+embedding_dimension = 8
+
+    [0m[94mdef[39;49;00m[90m [39;49;00m[92mfake_pinecone_stores[39;49;00m(embedding_dimension: [96mint[39;49;00m = [94m8[39;49;00m) -> [96mtuple[39;49;00m[PineconeChunkStore, PineconeVectorStore]:[90m[39;49;00m
+    [90m    [39;49;00m[33m"""Wire a chunk store + vector store against one shared in-memory fake[39;49;00m
+    [33m    Pinecone index -- mirrors the real architecture, where both classes[39;49;00m
+    [33m    operate against one Pinecone index underneath (see[39;49;00m
+    [33m    ``pinecone_connection.py``), without needing a live index or API key."""[39;49;00m[90m[39;49;00m
+        connection = PineconeConnection.[92m__new__[39;49;00m(PineconeConnection)[90m[39;49;00m
+>       connection.index = FakePineconeIndex()[90m[39;49;00m
+        ^^^^^^^^^^^^^^^^[90m[39;49;00m
+[1m[31mE       AttributeError: property 'index' of 'PineconeConnection' object has no setter[0m
+
+[1m[31mtests/fakes.py[0m:143: AttributeError
+[31m[1m___________ test_metadata_query_returns_chunks_scoped_to_regulation ____________[0m
+
+    [0m[94mdef[39;49;00m[90m [39;49;00m[92mtest_metadata_query_returns_chunks_scoped_to_regulation[39;49;00m():[90m[39;49;00m
+        [94mwith[39;49;00m tempfile.TemporaryDirectory() [94mas[39;49;00m tmp:[90m[39;49;00m
+>           chunk_store, retriever = _build_pipeline_components(tmp, regulation=[33m"[39;49;00m[33mGDPR[39;49;00m[33m"[39;49;00m, jurisdiction=[33m"[39;49;00m[33mEU[39;49;00m[33m"[39;49;00m)[90m[39;49;00m
+                                     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^[90m[39;49;00m
+
+[1m[31mtests/compliance/test_end_to_end.py[0m:94: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+[1m[31mtests/compliance/test_end_to_end.py[0m:33: in _build_pipeline_components
+    [0mchunk_store, vector_store = fake_pinecone_stores()[90m[39;49;00m
+                                ^^^^^^^^^^^^^^^^^^^^^^[90m[39;49;00m
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+embedding_dimension = 8
+
+    [0m[94mdef[39;49;00m[90m [39;49;00m[92mfake_pinecone_stores[39;49;00m(embedding_dimension: [96mint[39;49;00m = [94m8[39;49;00m) -> [96mtuple[39;49;00m[PineconeChunkStore, PineconeVectorStore]:[90m[39;49;00m
+    [90m    [39;49;00m[33m"""Wire a chunk store + vector store against one shared in-memory fake[39;49;00m
+    [33m    Pinecone index -- mirrors the real architecture, where both classes[39;49;00m
+    [33m    operate against one Pinecone index underneath (see[39;49;00m
+    [33m    ``pinecone_connection.py``), without needing a live index or API key."""[39;49;00m[90m[39;49;00m
+        connection = PineconeConnection.[92m__new__[39;49;00m(PineconeConnection)[90m[39;49;00m
+>       connection.index = FakePineconeIndex()[90m[39;49;00m
+        ^^^^^^^^^^^^^^^^[90m[39;49;00m
+[1m[31mE       AttributeError: property 'index' of 'PineconeConnection' object has no setter[0m
+
+[1m[31mtests/fakes.py[0m:143: AttributeError
+[31m[1m______________ test_citations_built_from_structured_query_results ______________[0m
+
+    [0m[94mdef[39;49;00m[90m [39;49;00m[92mtest_citations_built_from_structured_query_results[39;49;00m():[90m[39;49;00m
+        [94mwith[39;49;00m tempfile.TemporaryDirectory() [94mas[39;49;00m tmp:[90m[39;49;00m
+>           chunk_store, retriever = _build_pipeline_components(tmp)[90m[39;49;00m
+                                     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^[90m[39;49;00m
+
+[1m[31mtests/compliance/test_end_to_end.py[0m:102: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+[1m[31mtests/compliance/test_end_to_end.py[0m:33: in _build_pipeline_components
+    [0mchunk_store, vector_store = fake_pinecone_stores()[90m[39;49;00m
+                                ^^^^^^^^^^^^^^^^^^^^^^[90m[39;49;00m
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+embedding_dimension = 8
+
+    [0m[94mdef[39;49;00m[90m [39;49;00m[92mfake_pinecone_stores[39;49;00m(embedding_dimension: [96mint[39;49;00m = [94m8[39;49;00m) -> [96mtuple[39;49;00m[PineconeChunkStore, PineconeVectorStore]:[90m[39;49;00m
+    [90m    [39;49;00m[33m"""Wire a chunk store + vector store against one shared in-memory fake[39;49;00m
+    [33m    Pinecone index -- mirrors the real architecture, where both classes[39;49;00m
+    [33m    operate against one Pinecone index underneath (see[39;49;00m
+    [33m    ``pinecone_connection.py``), without needing a live index or API key."""[39;49;00m[90m[39;49;00m
+        connection = PineconeConnection.[92m__new__[39;49;00m(PineconeConnection)[90m[39;49;00m
+>       connection.index = FakePineconeIndex()[90m[39;49;00m
+        ^^^^^^^^^^^^^^^^[90m[39;49;00m
+[1m[31mE       AttributeError: property 'index' of 'PineconeConnection' object has no setter[0m
+
+[1m[31mtests/fakes.py[0m:143: AttributeError
+[31m[1m________ test_ingesting_new_document_does_not_re_embed_existing_chunks _________[0m
+
+tmp_path = PosixPath('/private/var/folders/l4/r0j8wzps4ks283cst9sxhwtm0000gn/T/pytest-of-siddhunangadi/pytest-5/test_ingesting_new_document_do0')
+
+    [0m[94mdef[39;49;00m[90m [39;49;00m[92mtest_ingesting_new_document_does_not_re_embed_existing_chunks[39;49;00m(tmp_path):[90m[39;49;00m
+    [90m    [39;49;00m[33m"""Regression test for the dedup re-embedding fix: ingesting a second,[39;49;00m
+    [33m    unrelated document must embed only the NEW document's texts, not every[39;49;00m
+    [33m    previously-ingested chunk's text again."""[39;49;00m[90m[39;49;00m
+>       chunk_store, vector_store = fake_pinecone_stores()[90m[39;49;00m
+                                    ^^^^^^^^^^^^^^^^^^^^^^[90m[39;49;00m
+
+[1m[31mtests/ingestion/test_pipeline.py[0m:99: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+embedding_dimension = 8
+
+    [0m[94mdef[39;49;00m[90m [39;49;00m[92mfake_pinecone_stores[39;49;00m(embedding_dimension: [96mint[39;49;00m = [94m8[39;49;00m) -> [96mtuple[39;49;00m[PineconeChunkStore, PineconeVectorStore]:[90m[39;49;00m
+    [90m    [39;49;00m[33m"""Wire a chunk store + vector store against one shared in-memory fake[39;49;00m
+    [33m    Pinecone index -- mirrors the real architecture, where both classes[39;49;00m
+    [33m    operate against one Pinecone index underneath (see[39;49;00m
+    [33m    ``pinecone_connection.py``), without needing a live index or API key."""[39;49;00m[90m[39;49;00m
+        connection = PineconeConnection.[92m__new__[39;49;00m(PineconeConnection)[90m[39;49;00m
+>       connection.index = FakePineconeIndex()[90m[39;49;00m
+        ^^^^^^^^^^^^^^^^[90m[39;49;00m
+[1m[31mE       AttributeError: property 'index' of 'PineconeConnection' object has no setter[0m
+
+[1m[31mtests/fakes.py[0m:143: AttributeError
+[31m[1m____________ test_end_to_end_grounded_answer_with_correct_citation _____________[0m
+
+tmp_path = PosixPath('/private/var/folders/l4/r0j8wzps4ks283cst9sxhwtm0000gn/T/pytest-of-siddhunangadi/pytest-5/test_end_to_end_grounded_answe0')
+
+    [0m[94mdef[39;49;00m[90m [39;49;00m[92mtest_end_to_end_grounded_answer_with_correct_citation[39;49;00m(tmp_path):[90m[39;49;00m
+        fixtures_dir = tmp_path / [33m"[39;49;00m[33mdocs[39;49;00m[33m"[39;49;00m[90m[39;49;00m
+        fixtures_dir.mkdir()[90m[39;49;00m
+        doc_path = fixtures_dir / [33m"[39;49;00m[33mleave-policy.md[39;49;00m[33m"[39;49;00m[90m[39;49;00m
+        doc_path.write_text([33m"[39;49;00m[33mEmployees get 20 days of paid annual leave per year.[39;49;00m[33m"[39;49;00m)[90m[39;49;00m
+    [90m[39;49;00m
+>       ingestion, retriever = build_pipeline_and_retriever(tmp_path)[90m[39;49;00m
+                               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^[90m[39;49;00m
+
+[1m[31mtests/rag_pipeline/test_end_to_end.py[0m:62: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+[1m[31mtests/rag_pipeline/test_end_to_end.py[0m:18: in build_pipeline_and_retriever
+    [0mchunk_store, vector_store = fake_pinecone_stores()[90m[39;49;00m
+                                ^^^^^^^^^^^^^^^^^^^^^^[90m[39;49;00m
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+embedding_dimension = 8
+
+    [0m[94mdef[39;49;00m[90m [39;49;00m[92mfake_pinecone_stores[39;49;00m(embedding_dimension: [96mint[39;49;00m = [94m8[39;49;00m) -> [96mtuple[39;49;00m[PineconeChunkStore, PineconeVectorStore]:[90m[39;49;00m
+    [90m    [39;49;00m[33m"""Wire a chunk store + vector store against one shared in-memory fake[39;49;00m
+    [33m    Pinecone index -- mirrors the real architecture, where both classes[39;49;00m
+    [33m    operate against one Pinecone index underneath (see[39;49;00m
+    [33m    ``pinecone_connection.py``), without needing a live index or API key."""[39;49;00m[90m[39;49;00m
+        connection = PineconeConnection.[92m__new__[39;49;00m(PineconeConnection)[90m[39;49;00m
+>       connection.index = FakePineconeIndex()[90m[39;49;00m
+        ^^^^^^^^^^^^^^^^[90m[39;49;00m
+[1m[31mE       AttributeError: property 'index' of 'PineconeConnection' object has no setter[0m
+
+[1m[31mtests/fakes.py[0m:143: AttributeError
+[31m[1m______________ test_dense_and_sparse_weights_affect_final_ranking ______________[0m
+
+tmp_path = PosixPath('/private/var/folders/l4/r0j8wzps4ks283cst9sxhwtm0000gn/T/pytest-of-siddhunangadi/pytest-5/test_dense_and_sparse_weights_0')
+
+    [0m[94mdef[39;49;00m[90m [39;49;00m[92mtest_dense_and_sparse_weights_affect_final_ranking[39;49;00m(tmp_path):[90m[39;49;00m
+    [90m    [39;49;00m[33m"""dense_weight/sparse_weight must actually be wired through fusion.[39;49;00m
+    [33m[39;49;00m
+    [33m    Fixture built so dense and sparse retrievers disagree on the top[39;49;00m
+    [33m    result for the query "quick fox":[39;49;00m
+    [33m      - c0 "quikk quikk quikk foxx foxx foxx" has no exact word overlap[39;49;00m
+    [33m        with the query (BM25 score 0) but shares many character trigrams[39;49;00m
+    [33m        with "quick"/"fox", so it wins on dense cosine similarity.[39;49;00m
+    [33m      - c1 "quick fox jumps over lazy river bank today morning" has an[39;49;00m
+    [33m        exact word match for both query terms, so it wins on BM25.[39;49;00m
+    [33m[39;49;00m
+    [33m    A RecordingRerankProvider is used instead of CrossEncoderReranker so[39;49;00m
+    [33m    that the real semantic reranker's own scoring (which is orthogonal to[39;49;00m
+    [33m    fusion weights and would otherwise decide the final top-1 regardless[39;49;00m
+    [33m    of how dense_weight/sparse_weight are set) doesn't mask the fusion[39;49;00m
+    [33m    behavior under test.[39;49;00m
+    [33m    """[39;49;00m[90m[39;49;00m
+        docs = [[90m[39;49;00m
+            make_chunk([33m"[39;49;00m[33mc0[39;49;00m[33m"[39;49;00m, [33m"[39;49;00m[33mquikk quikk quikk foxx foxx foxx[39;49;00m[33m"[39;49;00m),[90m[39;49;00m
+            make_chunk([33m"[39;49;00m[33mc1[39;49;00m[33m"[39;49;00m, [33m"[39;49;00m[33mquick fox jumps over lazy river bank today morning[39;49;00m[33m"[39;49;00m),[90m[39;49;00m
+            make_chunk([33m"[39;49;00m[33mc2[39;49;00m[33m"[39;49;00m, [33m"[39;49;00m[33mzzz zzz zzz zzz zzz[39;49;00m[33m"[39;49;00m),[90m[39;49;00m
+        ][90m[39;49;00m
+    [90m[39;49;00m
+>       dense_heavy = build_retriever([90m[39;49;00m
+            tmp_path / [33m"[39;49;00m[33mdense_heavy[39;49;00m[33m"[39;49;00m,[90m[39;49;00m
+            docs,[90m[39;49;00m
+            RecordingRerankProvider(),[90m[39;49;00m
+            dense_weight=[94m0.95[39;49;00m,[90m[39;49;00m
+            sparse_weight=[94m0.05[39;49;00m,[90m[39;49;00m
+        )[90m[39;49;00m
+
+[1m[31mtests/retrieval/test_retriever.py[0m:202: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+[1m[31mtests/retrieval/test_retriever.py[0m:62: in build_retriever
+    [0mchunk_store, vector_store = fake_pinecone_stores(embedding_dimension=provider.dimension)[90m[39;49;00m
+                                ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^[90m[39;49;00m
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+embedding_dimension = 8
+
+    [0m[94mdef[39;49;00m[90m [39;49;00m[92mfake_pinecone_stores[39;49;00m(embedding_dimension: [96mint[39;49;00m = [94m8[39;49;00m) -> [96mtuple[39;49;00m[PineconeChunkStore, PineconeVectorStore]:[90m[39;49;00m
+    [90m    [39;49;00m[33m"""Wire a chunk store + vector store against one shared in-memory fake[39;49;00m
+    [33m    Pinecone index -- mirrors the real architecture, where both classes[39;49;00m
+    [33m    operate against one Pinecone index underneath (see[39;49;00m
+    [33m    ``pinecone_connection.py``), without needing a live index or API key."""[39;49;00m[90m[39;49;00m
+        connection = PineconeConnection.[92m__new__[39;49;00m(PineconeConnection)[90m[39;49;00m
+>       connection.index = FakePineconeIndex()[90m[39;49;00m
+        ^^^^^^^^^^^^^^^^[90m[39;49;00m
+[1m[31mE       AttributeError: property 'index' of 'PineconeConnection' object has no setter[0m
+
+[1m[31mtests/fakes.py[0m:143: AttributeError
+[31m[1m__________ test_dense_k_sparse_k_and_rerank_top_n_are_plumbed_through __________[0m
+
+tmp_path = PosixPath('/private/var/folders/l4/r0j8wzps4ks283cst9sxhwtm0000gn/T/pytest-of-siddhunangadi/pytest-5/test_dense_k_sparse_k_and_rera0')
+
+    [0m[94mdef[39;49;00m[90m [39;49;00m[92mtest_dense_k_sparse_k_and_rerank_top_n_are_plumbed_through[39;49;00m(tmp_path):[90m[39;49;00m
+    [90m    [39;49;00m[33m"""dense_k/sparse_k/rerank_top_n must reach the right components.[39;49;00m
+    [33m[39;49;00m
+    [33m    Uses a RecordingRerankProvider to inspect exactly what candidate list[39;49;00m
+    [33m    the reranker receives (proving dense_k/sparse_k reached the retrievers[39;49;00m
+    [33m    and their fused output reached rerank()), and asserts the returned[39;49;00m
+    [33m    result list is capped at rerank_top_n even though fusion produced more[39;49;00m
+    [33m    candidates than that.[39;49;00m
+    [33m    """[39;49;00m[90m[39;49;00m
+        docs = [[90m[39;49;00m
+            make_chunk([33m"[39;49;00m[33mc0[39;49;00m[33m"[39;49;00m, [33m"[39;49;00m[33malpha document about search[39;49;00m[33m"[39;49;00m),[90m[39;49;00m
+            make_chunk([33m"[39;49;00m[33mc1[39;49;00m[33m"[39;49;00m, [33m"[39;49;00m[33mbeta document about search[39;49;00m[33m"[39;49;00m),[90m[39;49;00m
+            make_chunk([33m"[39;49;00m[33mc2[39;49;00m[33m"[39;49;00m, [33m"[39;49;00m[33mgamma document about search[39;49;00m[33m"[39;49;00m),[90m[39;49;00m
+            make_chunk([33m"[39;49;00m[33mc3[39;49;00m[33m"[39;49;00m, [33m"[39;49;00m[33mdelta document about search[39;49;00m[33m"[39;49;00m),[90m[39;49;00m
+        ][90m[39;49;00m
+        reranker = RecordingRerankProvider()[90m[39;49;00m
+>       retriever = build_retriever([90m[39;49;00m
+            tmp_path,[90m[39;49;00m
+            docs,[90m[39;49;00m
+            reranker,[90m[39;49;00m
+            dense_weight=[94m0.5[39;49;00m,[90m[39;49;00m
+            sparse_weight=[94m0.5[39;49;00m,[90m[39;49;00m
+            dense_k=[94m2[39;49;00m,[90m[39;49;00m
+            sparse_k=[94m2[39;49;00m,[90m[39;49;00m
+            rerank_top_n=[94m1[39;49;00m,[90m[39;49;00m
+        )[90m[39;49;00m
+
+[1m[31mtests/retrieval/test_retriever.py[0m:241: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+[1m[31mtests/retrieval/test_retriever.py[0m:62: in build_retriever
+    [0mchunk_store, vector_store = fake_pinecone_stores(embedding_dimension=provider.dimension)[90m[39;49;00m
+                                ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^[90m[39;49;00m
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+embedding_dimension = 8
+
+    [0m[94mdef[39;49;00m[90m [39;49;00m[92mfake_pinecone_stores[39;49;00m(embedding_dimension: [96mint[39;49;00m = [94m8[39;49;00m) -> [96mtuple[39;49;00m[PineconeChunkStore, PineconeVectorStore]:[90m[39;49;00m
+    [90m    [39;49;00m[33m"""Wire a chunk store + vector store against one shared in-memory fake[39;49;00m
+    [33m    Pinecone index -- mirrors the real architecture, where both classes[39;49;00m
+    [33m    operate against one Pinecone index underneath (see[39;49;00m
+    [33m    ``pinecone_connection.py``), without needing a live index or API key."""[39;49;00m[90m[39;49;00m
+        connection = PineconeConnection.[92m__new__[39;49;00m(PineconeConnection)[90m[39;49;00m
+>       connection.index = FakePineconeIndex()[90m[39;49;00m
+        ^^^^^^^^^^^^^^^^[90m[39;49;00m
+[1m[31mE       AttributeError: property 'index' of 'PineconeConnection' object has no setter[0m
+
+[1m[31mtests/fakes.py[0m:143: AttributeError
+[31m[1m______________ test_retrieve_propagates_rerank_provider_exception ______________[0m
+
+tmp_path = PosixPath('/private/var/folders/l4/r0j8wzps4ks283cst9sxhwtm0000gn/T/pytest-of-siddhunangadi/pytest-5/test_retrieve_propagates_reran0')
+
+    [0m[94mdef[39;49;00m[90m [39;49;00m[92mtest_retrieve_propagates_rerank_provider_exception[39;49;00m(tmp_path):[90m[39;49;00m
+    [90m    [39;49;00m[33m"""A rerank() failure must propagate, not be swallowed into a partial result."""[39;49;00m[90m[39;49;00m
+        docs = [[90m[39;49;00m
+            make_chunk([33m"[39;49;00m[33mc0[39;49;00m[33m"[39;49;00m, [33m"[39;49;00m[33malpha document about search[39;49;00m[33m"[39;49;00m),[90m[39;49;00m
+            make_chunk([33m"[39;49;00m[33mc1[39;49;00m[33m"[39;49;00m, [33m"[39;49;00m[33mbeta document about search[39;49;00m[33m"[39;49;00m),[90m[39;49;00m
+        ][90m[39;49;00m
+        reranker = RecordingRerankProvider(exception=[96mRuntimeError[39;49;00m([33m"[39;49;00m[33mrerank boom[39;49;00m[33m"[39;49;00m))[90m[39;49;00m
+>       retriever = build_retriever(tmp_path, docs, reranker)[90m[39;49;00m
+                    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^[90m[39;49;00m
+
+[1m[31mtests/retrieval/test_retriever.py[0m:272: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+[1m[31mtests/retrieval/test_retriever.py[0m:62: in build_retriever
+    [0mchunk_store, vector_store = fake_pinecone_stores(embedding_dimension=provider.dimension)[90m[39;49;00m
+                                ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^[90m[39;49;00m
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+embedding_dimension = 8
+
+    [0m[94mdef[39;49;00m[90m [39;49;00m[92mfake_pinecone_stores[39;49;00m(embedding_dimension: [96mint[39;49;00m = [94m8[39;49;00m) -> [96mtuple[39;49;00m[PineconeChunkStore, PineconeVectorStore]:[90m[39;49;00m
+    [90m    [39;49;00m[33m"""Wire a chunk store + vector store against one shared in-memory fake[39;49;00m
+    [33m    Pinecone index -- mirrors the real architecture, where both classes[39;49;00m
+    [33m    operate against one Pinecone index underneath (see[39;49;00m
+    [33m    ``pinecone_connection.py``), without needing a live index or API key."""[39;49;00m[90m[39;49;00m
+        connection = PineconeConnection.[92m__new__[39;49;00m(PineconeConnection)[90m[39;49;00m
+>       connection.index = FakePineconeIndex()[90m[39;49;00m
+        ^^^^^^^^^^^^^^^^[90m[39;49;00m
+[1m[31mE       AttributeError: property 'index' of 'PineconeConnection' object has no setter[0m
+
+[1m[31mtests/fakes.py[0m:143: AttributeError
+[31m[1m___________ test_rerank_fused_top_n_caps_candidates_sent_to_reranker ___________[0m
+
+tmp_path = PosixPath('/private/var/folders/l4/r0j8wzps4ks283cst9sxhwtm0000gn/T/pytest-of-siddhunangadi/pytest-5/test_rerank_fused_top_n_caps_c0')
+
+    [0m[94mdef[39;49;00m[90m [39;49;00m[92mtest_rerank_fused_top_n_caps_candidates_sent_to_reranker[39;49;00m(tmp_path):[90m[39;49;00m
+    [90m    [39;49;00m[33m"""rerank_fused_top_n must truncate the fused candidate list before it[39;49;00m
+    [33m    reaches the reranker, independent of rerank_top_n (which caps the[39;49;00m
+    [33m    reranker's own *output*, not its input)."""[39;49;00m[90m[39;49;00m
+        docs = [make_chunk([33mf[39;49;00m[33m"[39;49;00m[33mc[39;49;00m[33m{[39;49;00mi[33m}[39;49;00m[33m"[39;49;00m, [33mf[39;49;00m[33m"[39;49;00m[33mdocument number [39;49;00m[33m{[39;49;00mi[33m}[39;49;00m[33m about search[39;49;00m[33m"[39;49;00m) [94mfor[39;49;00m i [95min[39;49;00m [96mrange[39;49;00m([94m6[39;49;00m)][90m[39;49;00m
+        reranker = RecordingRerankProvider()[90m[39;49;00m
+>       retriever = build_retriever([90m[39;49;00m
+            tmp_path, docs, reranker,[90m[39;49;00m
+            dense_weight=[94m0.5[39;49;00m, sparse_weight=[94m0.5[39;49;00m,[90m[39;49;00m
+            dense_k=[94m6[39;49;00m, sparse_k=[94m6[39;49;00m, rerank_top_n=[94m1[39;49;00m, rerank_fused_top_n=[94m3[39;49;00m,[90m[39;49;00m
+        )[90m[39;49;00m
+
+[1m[31mtests/retrieval/test_retriever.py[0m:284: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+[1m[31mtests/retrieval/test_retriever.py[0m:62: in build_retriever
+    [0mchunk_store, vector_store = fake_pinecone_stores(embedding_dimension=provider.dimension)[90m[39;49;00m
+                                ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^[90m[39;49;00m
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+embedding_dimension = 8
+
+    [0m[94mdef[39;49;00m[90m [39;49;00m[92mfake_pinecone_stores[39;49;00m(embedding_dimension: [96mint[39;49;00m = [94m8[39;49;00m) -> [96mtuple[39;49;00m[PineconeChunkStore, PineconeVectorStore]:[90m[39;49;00m
+    [90m    [39;49;00m[33m"""Wire a chunk store + vector store against one shared in-memory fake[39;49;00m
+    [33m    Pinecone index -- mirrors the real architecture, where both classes[39;49;00m
+    [33m    operate against one Pinecone index underneath (see[39;49;00m
+    [33m    ``pinecone_connection.py``), without needing a live index or API key."""[39;49;00m[90m[39;49;00m
+        connection = PineconeConnection.[92m__new__[39;49;00m(PineconeConnection)[90m[39;49;00m
+>       connection.index = FakePineconeIndex()[90m[39;49;00m
+        ^^^^^^^^^^^^^^^^[90m[39;49;00m
+[1m[31mE       AttributeError: property 'index' of 'PineconeConnection' object has no setter[0m
+
+[1m[31mtests/fakes.py[0m:143: AttributeError
+[31m[1m_________ test_retrieve_records_smaller_budget_than_fusion_candidates __________[0m
+
+tmp_path = PosixPath('/private/var/folders/l4/r0j8wzps4ks283cst9sxhwtm0000gn/T/pytest-of-siddhunangadi/pytest-5/test_retrieve_records_smaller_0')
+
+    [0m[94mdef[39;49;00m[90m [39;49;00m[92mtest_retrieve_records_smaller_budget_than_fusion_candidates[39;49;00m(tmp_path):[90m[39;49;00m
+        docs = [make_chunk([33mf[39;49;00m[33m"[39;49;00m[33mc[39;49;00m[33m{[39;49;00mi[33m}[39;49;00m[33m"[39;49;00m, [33mf[39;49;00m[33m"[39;49;00m[33mdocument number [39;49;00m[33m{[39;49;00mi[33m}[39;49;00m[33m about search[39;49;00m[33m"[39;49;00m) [94mfor[39;49;00m i [95min[39;49;00m [96mrange[39;49;00m([94m6[39;49;00m)][90m[39;49;00m
+        reranker = RecordingRerankProvider()[90m[39;49;00m
+>       retriever = build_retriever([90m[39;49;00m
+            tmp_path, docs, reranker,[90m[39;49;00m
+            dense_weight=[94m0.5[39;49;00m, sparse_weight=[94m0.5[39;49;00m,[90m[39;49;00m
+            dense_k=[94m6[39;49;00m, sparse_k=[94m6[39;49;00m, rerank_top_n=[94m1[39;49;00m, rerank_fused_top_n=[94m3[39;49;00m,[90m[39;49;00m
+        )[90m[39;49;00m
+
+[1m[31mtests/retrieval/test_retriever.py[0m:309: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+[1m[31mtests/retrieval/test_retriever.py[0m:62: in build_retriever
+    [0mchunk_store, vector_store = fake_pinecone_stores(embedding_dimension=provider.dimension)[90m[39;49;00m
+                                ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^[90m[39;49;00m
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+embedding_dimension = 8
+
+    [0m[94mdef[39;49;00m[90m [39;49;00m[92mfake_pinecone_stores[39;49;00m(embedding_dimension: [96mint[39;49;00m = [94m8[39;49;00m) -> [96mtuple[39;49;00m[PineconeChunkStore, PineconeVectorStore]:[90m[39;49;00m
+    [90m    [39;49;00m[33m"""Wire a chunk store + vector store against one shared in-memory fake[39;49;00m
+    [33m    Pinecone index -- mirrors the real architecture, where both classes[39;49;00m
+    [33m    operate against one Pinecone index underneath (see[39;49;00m
+    [33m    ``pinecone_connection.py``), without needing a live index or API key."""[39;49;00m[90m[39;49;00m
+        connection = PineconeConnection.[92m__new__[39;49;00m(PineconeConnection)[90m[39;49;00m
+>       connection.index = FakePineconeIndex()[90m[39;49;00m
+        ^^^^^^^^^^^^^^^^[90m[39;49;00m
+[1m[31mE       AttributeError: property 'index' of 'PineconeConnection' object has no setter[0m
+
+[1m[31mtests/fakes.py[0m:143: AttributeError
+[31m[1m_____________________ test_put_writes_legal_effective_date _____________________[0m
+
+mock_client = (<rag_hybrid_search.storage.pinecone_connection.PineconeConnection object at 0x11bea9490>, <MagicMock name='Pinecone().Index()' id='4757417872'>)
+
+    [0m[94mdef[39;49;00m[90m [39;49;00m[92mtest_put_writes_legal_effective_date[39;49;00m(mock_client):[90m[39;49;00m
+        [94mfrom[39;49;00m[90m [39;49;00m[04m[96mdatetime[39;49;00m[90m [39;49;00m[94mimport[39;49;00m date[90m[39;49;00m
+        [94mfrom[39;49;00m[90m [39;49;00m[04m[96mrag_hybrid_search[39;49;00m[04m[96m.[39;49;00m[04m[96mcompliance[39;49;00m[04m[96m.[39;49;00m[04m[96mregulation_models[39;49;00m[90m [39;49;00m[94mimport[39;49;00m LegalMetadata[90m[39;49;00m
+    [90m[39;49;00m
+        client, mock_index = mock_client[90m[39;49;00m
+        chunk = _chunk().model_copy(update={[90m[39;49;00m
+            [33m"[39;49;00m[33mlegal_metadata[39;49;00m[33m"[39;49;00m: LegalMetadata([90m[39;49;00m
+                document_id=[33m"[39;49;00m[33md1[39;49;00m[33m"[39;49;00m, document_title=[33m"[39;49;00m[33md1[39;49;00m[33m"[39;49;00m, effective_date=date([94m2024[39;49;00m, [94m1[39;49;00m, [94m1[39;49;00m),[90m[39;49;00m
+            )[90m[39;49;00m
+        })[90m[39;49;00m
+        store = PineconeChunkStore(client, embedding_dimension=[94m3[39;49;00m)[90m[39;49;00m
+>       store.put(chunk, source_path=[33m"[39;49;00m[33mdoc.md[39;49;00m[33m"[39;49;00m)[90m[39;49;00m
+
+[1m[31mtests/storage/test_pinecone_chunk_store.py[0m:149: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+[1m[31mrag_hybrid_search/storage/pinecone_chunk_store.py[0m:162: in put
+    [0mmetadata = _chunk_to_metadata(chunk, source_path)[90m[39;49;00m
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^[90m[39;49;00m
+[1m[31mrag_hybrid_search/storage/pinecone_chunk_store.py[0m:74: in _chunk_to_metadata
+    [0m[33m"[39;49;00m[33mlegal_authority[39;49;00m[33m"[39;49;00m: lm.authority [95mor[39;49;00m [33m"[39;49;00m[33m"[39;49;00m,[90m[39;49;00m
+                       ^^^^^^^^^^^^[90m[39;49;00m
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+self = LegalMetadata(document_id='d1', document_title='d1', regulation=None, version=None, jurisdiction=None, article=None, section=None, clause=None, effective_date=datetime.date(2024, 1, 1), document_type=None, page=None)
+item = 'authority'
+
+    [0m[94mdef[39;49;00m[90m [39;49;00m[92m__getattr__[39;49;00m([96mself[39;49;00m, item: [96mstr[39;49;00m) -> Any:[90m[39;49;00m
+        private_attributes = [96mobject[39;49;00m.[92m__getattribute__[39;49;00m([96mself[39;49;00m, [33m'[39;49;00m[33m__private_attributes__[39;49;00m[33m'[39;49;00m)[90m[39;49;00m
+        [94mif[39;49;00m item [95min[39;49;00m private_attributes:[90m[39;49;00m
+            attribute = private_attributes[item][90m[39;49;00m
+            [94mif[39;49;00m [96mhasattr[39;49;00m(attribute, [33m'[39;49;00m[33m__get__[39;49;00m[33m'[39;49;00m):[90m[39;49;00m
+                [94mreturn[39;49;00m attribute.[92m__get__[39;49;00m([96mself[39;49;00m, [96mtype[39;49;00m([96mself[39;49;00m))  [90m# type: ignore[39;49;00m[90m[39;49;00m
+    [90m[39;49;00m
+            [94mtry[39;49;00m:[90m[39;49;00m
+                [90m# Note: self.__pydantic_private__ cannot be None if self.__private_attributes__ has items[39;49;00m[90m[39;49;00m
+                [94mreturn[39;49;00m [96mself[39;49;00m.__pydantic_private__[item]  [90m# type: ignore[39;49;00m[90m[39;49;00m
+            [94mexcept[39;49;00m [96mKeyError[39;49;00m [94mas[39;49;00m exc:[90m[39;49;00m
+                [94mraise[39;49;00m [96mAttributeError[39;49;00m([33mf[39;49;00m[33m'[39;49;00m[33m{[39;49;00m[96mtype[39;49;00m([96mself[39;49;00m).[91m__name__[39;49;00m[33m!r}[39;49;00m[33m object has no attribute [39;49;00m[33m{[39;49;00mitem[33m!r}[39;49;00m[33m'[39;49;00m) [94mfrom[39;49;00m[90m [39;49;00m[04m[96mexc[39;49;00m[90m[39;49;00m
+        [94melse[39;49;00m:[90m[39;49;00m
+            [90m# `__pydantic_extra__` can fail to be set if the model is not yet fully initialized.[39;49;00m[90m[39;49;00m
+            [90m# See `BaseModel.__repr_args__` for more details[39;49;00m[90m[39;49;00m
+            [94mtry[39;49;00m:[90m[39;49;00m
+                pydantic_extra = [96mobject[39;49;00m.[92m__getattribute__[39;49;00m([96mself[39;49;00m, [33m'[39;49;00m[33m__pydantic_extra__[39;49;00m[33m'[39;49;00m)[90m[39;49;00m
+            [94mexcept[39;49;00m [96mAttributeError[39;49;00m:[90m[39;49;00m
+                pydantic_extra = [94mNone[39;49;00m[90m[39;49;00m
+    [90m[39;49;00m
+            [94mif[39;49;00m pydantic_extra [95mand[39;49;00m item [95min[39;49;00m pydantic_extra:[90m[39;49;00m
+                [94mreturn[39;49;00m pydantic_extra[item][90m[39;49;00m
+            [94melse[39;49;00m:[90m[39;49;00m
+                [94mif[39;49;00m [96mhasattr[39;49;00m([96mself[39;49;00m.[91m__class__[39;49;00m, item):[90m[39;49;00m
+                    [94mreturn[39;49;00m [96msuper[39;49;00m().[92m__getattribute__[39;49;00m(item)  [90m# Raises AttributeError if appropriate[39;49;00m[90m[39;49;00m
+                [94melse[39;49;00m:[90m[39;49;00m
+                    [90m# this is the current error[39;49;00m[90m[39;49;00m
+>                   [94mraise[39;49;00m [96mAttributeError[39;49;00m([33mf[39;49;00m[33m'[39;49;00m[33m{[39;49;00m[96mtype[39;49;00m([96mself[39;49;00m).[91m__name__[39;49;00m[33m!r}[39;49;00m[33m object has no attribute [39;49;00m[33m{[39;49;00mitem[33m!r}[39;49;00m[33m'[39;49;00m)[90m[39;49;00m
+[1m[31mE                   AttributeError: 'LegalMetadata' object has no attribute 'authority'[0m
+
+[1m[31m.venv/lib/python3.13/site-packages/pydantic/main.py[0m:1042: AttributeError
+[31m[1m___________________ test_shares_one_client_across_two_stores ___________________[0m
+
+mock_client = (<rag_hybrid_search.storage.pinecone_connection.PineconeConnection object at 0x11be5f170>, <MagicMock name='Pinecone().Index()' id='4757413168'>)
+
+    [0m[94mdef[39;49;00m[90m [39;49;00m[92mtest_shares_one_client_across_two_stores[39;49;00m(mock_client):[90m[39;49;00m
+    [90m    [39;49;00m[33m"""Both PineconeVectorStore and PineconeChunkStore, constructed from the[39;49;00m
+    [33m    same PineconeConnection, must issue calls against the same underlying index[39;49;00m
+    [33m    object -- not open a second connection."""[39;49;00m[90m[39;49;00m
+        client, mock_index = mock_client[90m[39;49;00m
+        [94mfrom[39;49;00m[90m [39;49;00m[04m[96mrag_hybrid_search[39;49;00m[04m[96m.[39;49;00m[04m[96mstorage[39;49;00m[04m[96m.[39;49;00m[04m[96mpinecone_chunk_store[39;49;00m[90m [39;49;00m[94mimport[39;49;00m PineconeChunkStore[90m[39;49;00m
+        vector_store = PineconeVectorStore(client)[90m[39;49;00m
+        chunk_store = PineconeChunkStore(client, embedding_dimension=[94m3[39;49;00m)[90m[39;49;00m
+>       [94massert[39;49;00m vector_store._index [95mis[39;49;00m chunk_store._index [95mis[39;49;00m mock_index[90m[39;49;00m
+               ^^^^^^^^^^^^^^^^^^^[90m[39;49;00m
+[1m[31mE       AttributeError: 'PineconeVectorStore' object has no attribute '_index'[0m
+
+[1m[31mtests/storage/test_pinecone_vector_store.py[0m:88: AttributeError
+[31m[1m_______________ test_benchmark_retrieval_quality_meets_baseline ________________[0m
+
+tmp_path = PosixPath('/private/var/folders/l4/r0j8wzps4ks283cst9sxhwtm0000gn/T/pytest-of-siddhunangadi/pytest-5/test_benchmark_retrieval_quali0')
+
+    [0m[94mdef[39;49;00m[90m [39;49;00m[92mtest_benchmark_retrieval_quality_meets_baseline[39;49;00m(tmp_path):[90m[39;49;00m
+>       corpus = build_benchmark_corpus(tmp_path)[90m[39;49;00m
+                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^[90m[39;49;00m
+
+[1m[31mtests/test_benchmark.py[0m:5: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+[1m[31mscripts/benchmark.py[0m:39: in build_benchmark_corpus
+    [0mchunk_store, vector_store = fake_pinecone_stores()[90m[39;49;00m
+                                ^^^^^^^^^^^^^^^^^^^^^^[90m[39;49;00m
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+embedding_dimension = 8
+
+    [0m[94mdef[39;49;00m[90m [39;49;00m[92mfake_pinecone_stores[39;49;00m(embedding_dimension: [96mint[39;49;00m = [94m8[39;49;00m) -> [96mtuple[39;49;00m[PineconeChunkStore, PineconeVectorStore]:[90m[39;49;00m
+    [90m    [39;49;00m[33m"""Wire a chunk store + vector store against one shared in-memory fake[39;49;00m
+    [33m    Pinecone index -- mirrors the real architecture, where both classes[39;49;00m
+    [33m    operate against one Pinecone index underneath (see[39;49;00m
+    [33m    ``pinecone_connection.py``), without needing a live index or API key."""[39;49;00m[90m[39;49;00m
+        connection = PineconeConnection.[92m__new__[39;49;00m(PineconeConnection)[90m[39;49;00m
+>       connection.index = FakePineconeIndex()[90m[39;49;00m
+        ^^^^^^^^^^^^^^^^[90m[39;49;00m
+[1m[31mE       AttributeError: property 'index' of 'PineconeConnection' object has no setter[0m
+
+[1m[31mtests/fakes.py[0m:143: AttributeError
+[33m=============================== warnings summary ===============================[0m
+.venv/lib/python3.13/site-packages/fastapi/testclient.py:1
+  /Users/siddhunangadi/Downloads/InteliAI-main/.venv/lib/python3.13/site-packages/fastapi/testclient.py:1: StarletteDeprecationWarning: Using `httpx` with `starlette.testclient` is deprecated; install `httpx2` instead.
+    from starlette.testclient import TestClient as TestClient  # noqa
+
+-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html
+[36m[1m=========================== short test summary info ============================[0m
+[31mFAILED[0m tests/api/test_routes.py::[1mtest_index_ingests_a_markdown_document[0m - AssertionError: {'filename': 'leave-policy.md', 'status': 'failed', 'error'...
+[31mFAILED[0m tests/api/test_routes.py::[1mtest_index_reports_per_document_failure_without_500[0m - AssertionError: assert 'failed' == 'ready'
+[31mFAILED[0m tests/api/test_routes.py::[1mtest_documents_reports_indexed_corpus[0m - assert 0 == 1
+[31mFAILED[0m tests/api/test_routes.py::[1mtest_index_with_document_type_regulation_uses_clause_chunker[0m - AssertionError: assert 'failed' == 'ready'
+[31mFAILED[0m tests/api/test_routes.py::[1mtest_index_without_document_type_defaults_to_general_chunker[0m - AssertionError: assert 'failed' == 'ready'
+[31mFAILED[0m tests/api/test_routes.py::[1mtest_answer_show_article_returns_only_matching_article_via_structured_citations[0m - assert 0 >= 1
+[31mFAILED[0m tests/api/test_routes.py::[1mtest_debug_retrieval_exposes_fusion_and_rerank_as_separate_stages[0m - assert 0 > 0
+[31mFAILED[0m tests/compliance/test_end_to_end.py::[1mtest_structured_query_returns_exact_article[0m - AttributeError: property 'index' of 'PineconeConnection' object has no setter
+[31mFAILED[0m tests/compliance/test_end_to_end.py::[1mtest_semantic_query_returns_results_via_hybrid_pipeline[0m - AttributeError: property 'index' of 'PineconeConnection' object has no setter
+[31mFAILED[0m tests/compliance/test_end_to_end.py::[1mtest_mixed_query_filters_to_matching_article[0m - AttributeError: property 'index' of 'PineconeConnection' object has no setter
+[31mFAILED[0m tests/compliance/test_end_to_end.py::[1mtest_metadata_query_returns_chunks_scoped_to_regulation[0m - AttributeError: property 'index' of 'PineconeConnection' object has no setter
+[31mFAILED[0m tests/compliance/test_end_to_end.py::[1mtest_citations_built_from_structured_query_results[0m - AttributeError: property 'index' of 'PineconeConnection' object has no setter
+[31mFAILED[0m tests/ingestion/test_pipeline.py::[1mtest_ingesting_new_document_does_not_re_embed_existing_chunks[0m - AttributeError: property 'index' of 'PineconeConnection' object has no setter
+[31mFAILED[0m tests/rag_pipeline/test_end_to_end.py::[1mtest_end_to_end_grounded_answer_with_correct_citation[0m - AttributeError: property 'index' of 'PineconeConnection' object has no setter
+[31mFAILED[0m tests/retrieval/test_retriever.py::[1mtest_dense_and_sparse_weights_affect_final_ranking[0m - AttributeError: property 'index' of 'PineconeConnection' object has no setter
+[31mFAILED[0m tests/retrieval/test_retriever.py::[1mtest_dense_k_sparse_k_and_rerank_top_n_are_plumbed_through[0m - AttributeError: property 'index' of 'PineconeConnection' object has no setter
+[31mFAILED[0m tests/retrieval/test_retriever.py::[1mtest_retrieve_propagates_rerank_provider_exception[0m - AttributeError: property 'index' of 'PineconeConnection' object has no setter
+[31mFAILED[0m tests/retrieval/test_retriever.py::[1mtest_rerank_fused_top_n_caps_candidates_sent_to_reranker[0m - AttributeError: property 'index' of 'PineconeConnection' object has no setter
+[31mFAILED[0m tests/retrieval/test_retriever.py::[1mtest_retrieve_records_smaller_budget_than_fusion_candidates[0m - AttributeError: property 'index' of 'PineconeConnection' object has no setter
+[31mFAILED[0m tests/storage/test_pinecone_chunk_store.py::[1mtest_put_writes_legal_effective_date[0m - AttributeError: 'LegalMetadata' object has no attribute 'authority'
+[31mFAILED[0m tests/storage/test_pinecone_vector_store.py::[1mtest_shares_one_client_across_two_stores[0m - AttributeError: 'PineconeVectorStore' object has no attribute '_index'
+[31mFAILED[0m tests/test_benchmark.py::[1mtest_benchmark_retrieval_quality_meets_baseline[0m - AttributeError: property 'index' of 'PineconeConnection' object has no setter
+[31mERROR[0m tests/ingestion/test_pipeline.py::[1mtest_ingest_produces_ready_status_and_chunks[0m - AttributeError: property 'index' of 'PineconeConnection' object has no setter
+[31mERROR[0m tests/ingestion/test_pipeline.py::[1mtest_reingesting_unchanged_document_is_noop[0m - AttributeError: property 'index' of 'PineconeConnection' object has no setter
+[31mERROR[0m tests/ingestion/test_pipeline.py::[1mtest_reingesting_edited_document_replaces_old_chunks[0m - AttributeError: property 'index' of 'PineconeConnection' object has no setter
+[31mERROR[0m tests/ingestion/test_pipeline.py::[1mtest_dedup_skips_near_duplicate_chunk_across_documents[0m - AttributeError: property 'index' of 'PineconeConnection' object has no setter
+[31mERROR[0m tests/retrieval/test_dense.py::[1mtest_search_returns_chunk_with_dense_score[0m - AttributeError: property 'index' of 'PineconeConnection' object has no setter
+[31mERROR[0m tests/retrieval/test_retriever.py::[1mtest_retrieve_returns_ranked_results_and_trace[0m - AttributeError: property 'index' of 'PineconeConnection' object has no setter
+[31mERROR[0m tests/retrieval/test_retriever.py::[1mtest_retrieve_records_fusion_and_rerank_latency[0m - AttributeError: property 'index' of 'PineconeConnection' object has no setter
+[31mERROR[0m tests/retrieval/test_retriever.py::[1mtest_retrieve_records_budget_trace_fields[0m - AttributeError: property 'index' of 'PineconeConnection' object has no setter
+[31mERROR[0m tests/retrieval/test_sparse.py::[1mtest_search_finds_exact_keyword_with_bm25_score[0m - AttributeError: property 'index' of 'PineconeConnection' object has no setter
+[31mERROR[0m tests/storage/test_index_manager.py::[1mtest_index_writes_to_all_stores[0m - AttributeError: property 'index' of 'PineconeConnection' object has no setter
+[31mERROR[0m tests/storage/test_index_manager.py::[1mtest_remove_document_clears_both_indexes[0m - AttributeError: property 'index' of 'PineconeConnection' object has no setter
+[31mERROR[0m tests/storage/test_index_manager.py::[1mtest_verify_sync_reports_no_mismatches_when_healthy[0m - AttributeError: property 'index' of 'PineconeConnection' object has no setter
+[31mERROR[0m tests/storage/test_index_manager.py::[1mtest_verify_sync_detects_bm25_drift[0m - AttributeError: property 'index' of 'PineconeConnection' object has no setter
+[31mERROR[0m tests/test_end_to_end.py::[1mtest_keyword_query_surfaces_deployment_error_doc[0m - AttributeError: property 'index' of 'PineconeConnection' object has no setter
+[31mERROR[0m tests/test_end_to_end.py::[1mtest_conceptual_query_surfaces_onboarding_doc[0m - AttributeError: property 'index' of 'PineconeConnection' object has no setter
+[31mERROR[0m tests/test_end_to_end.py::[1mtest_all_results_have_final_rank_set[0m - AttributeError: property 'index' of 'PineconeConnection' object has no setter
+[31m== [31m[1m22 failed[0m, [32m338 passed[0m, [33m3 skipped[0m, [33m1 warning[0m, [31m[1m16 errors[0m[31m in 74.22s (0:01:14)[0m[31m ==[0m

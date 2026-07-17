@@ -1,0 +1,13 @@
+__pycache__/
+*.pyc
+.venv/
+data/
+*.egg-info/
+.pytest_cache/
+.worktrees/
+.gstack/
+.claude/
+.DS_Store
+.env
+traces/
+eval/reports/

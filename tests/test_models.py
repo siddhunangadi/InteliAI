@@ -1,0 +1,144 @@
+from datetime import datetime, timezone
+
+import pytest
+from pydantic import ValidationError
+
+from rag_hybrid_search.models import (
+    Chunk,
+    ChunkProvenance,
+    ContextChunk,
+    Document,
+    EmbeddingRecord,
+    IndexStatus,
+    RetrievalTrace,
+    RetrievedChunk,
+)
+
+
+def test_document_roundtrip():
+    doc = Document(
+        document_id="a" * 64,
+        source_path="/docs/readme.md",
+        content="hello world",
+        format="markdown",
+    )
+    assert doc.format == "markdown"
+
+
+def test_document_rejects_bad_format():
+    with pytest.raises(ValidationError):
+        Document(
+            document_id="a" * 64,
+            source_path="/docs/readme.rtf",
+            content="hi",
+            format="rtf",
+        )
+
+
+def test_chunk_defaults():
+    chunk = Chunk(
+        chunk_id="018f7b1a-0000-7000-8000-000000000000",
+        document_id="a" * 64,
+        chunk_index=0,
+        text="some chunk text",
+        strategy_version="recursive-v1",
+        heading=None,
+        page=None,
+        char_count=15,
+    )
+    assert chunk.chunk_index == 0
+    assert chunk.heading is None
+
+
+def test_embedding_record_dimension_matches_vector():
+    record = EmbeddingRecord(
+        chunk_id="018f7b1a-0000-7000-8000-000000000000",
+        embedding=[0.1, 0.2, 0.3],
+        embedding_model="nvidia/nv-embedqa-e5-v5",
+        embedding_dimension=3,
+        provider="nvidia",
+        created_at=datetime.now(timezone.utc),
+    )
+    assert len(record.embedding) == record.embedding_dimension
+
+
+def test_embedding_record_rejects_dimension_mismatch():
+    with pytest.raises(ValidationError):
+        EmbeddingRecord(
+            chunk_id="018f7b1a-0000-7000-8000-000000000000",
+            embedding=[0.1, 0.2, 0.3],
+            embedding_model="nvidia/nv-embedqa-e5-v5",
+            embedding_dimension=4,
+            provider="nvidia",
+            created_at=datetime.now(timezone.utc),
+        )
+
+
+def test_retrieved_chunk_final_rank():
+    chunk = Chunk(
+        chunk_id="018f7b1a-0000-7000-8000-000000000000",
+        document_id="a" * 64,
+        chunk_index=0,
+        text="text",
+        strategy_version="fixed-v1",
+        heading=None,
+        page=None,
+        char_count=4,
+    )
+    retrieved = RetrievedChunk(
+        chunk=chunk,
+        dense_score=0.9,
+        bm25_score=None,
+        rrf_score=0.5,
+        rerank_score=0.8,
+        final_rank=1,
+    )
+    assert retrieved.final_rank == 1
+
+
+def test_index_status_values():
+    assert IndexStatus.PENDING == "pending"
+    assert IndexStatus.READY == "ready"
+
+
+def test_retrieval_trace_total_latency():
+    trace = RetrievalTrace(
+        dense_latency_ms=1.0,
+        bm25_latency_ms=2.0,
+        fusion_latency_ms=0.5,
+        rerank_latency_ms=3.5,
+    )
+    assert trace.total_latency_ms == 7.0
+
+
+def test_retrieval_trace_budget_fields_default_to_zero():
+    trace = RetrievalTrace()
+    assert trace.fusion_candidates == 0
+    assert trace.budget_applied == 0
+    assert trace.sent_to_reranker == 0
+    assert trace.returned == 0
+
+
+def test_retrieval_trace_budget_fields_roundtrip():
+    trace = RetrievalTrace(fusion_candidates=17, budget_applied=8, sent_to_reranker=8, returned=5)
+    assert trace.fusion_candidates == 17
+    assert trace.budget_applied == 8
+    assert trace.sent_to_reranker == 8
+    assert trace.returned == 5
+
+
+def test_chunk_provenance_and_context_chunk():
+    chunk = Chunk(
+        chunk_id="c1", document_id="d1", chunk_index=0, text="hello",
+        strategy_version="fixed-v1", heading=None, page=None, char_count=5,
+    )
+    retrieved = RetrievedChunk(
+        chunk=chunk, dense_score=0.9, bm25_score=0.9, rrf_score=0.5,
+        rerank_score=0.8, final_rank=1,
+    )
+    provenance = ChunkProvenance(primary_subquery=0, all_subqueries=[0, 2])
+    context_chunk = ContextChunk(chunk=retrieved, provenance=provenance)
+
+    assert context_chunk.chunk is retrieved
+    assert context_chunk.provenance.primary_subquery == 0
+    assert context_chunk.provenance.all_subqueries == [0, 2]
