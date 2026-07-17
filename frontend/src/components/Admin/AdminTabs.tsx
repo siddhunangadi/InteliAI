@@ -10,10 +10,14 @@ interface Tab {
 
 interface AdminTabsProps {
   tabs: Tab[]
+  activeTab?: string
+  onTabChange?: (name: string) => void
 }
 
-export default function AdminTabs({ tabs }: AdminTabsProps) {
-  const [activeTab, setActiveTab] = useState(tabs[0]?.name || '')
+export default function AdminTabs({ tabs, activeTab: controlledTab, onTabChange }: AdminTabsProps) {
+  const [internalTab, setInternalTab] = useState(tabs[0]?.name || '')
+  const activeTab = controlledTab ?? internalTab
+  const setActiveTab = onTabChange ?? setInternalTab
 
   return (
     <div>

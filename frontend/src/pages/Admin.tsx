@@ -9,6 +9,7 @@ import DiagnosticsPanel from '@/components/Admin/DiagnosticsPanel'
 export default function Admin() {
   const [diagnostics, setDiagnostics] = useState<DiagnosticsResponse | null>(null)
   const [loading, setLoading] = useState(true)
+  const [activeTab, setActiveTab] = useState('overview')
 
   useEffect(() => {
     apiClient.getDiagnostics()
@@ -33,9 +34,9 @@ export default function Admin() {
           <Card>
             <h3 className="font-semibold mb-3">Quick Actions</h3>
             <div className="flex gap-2 flex-wrap">
-              <Button variant="secondary">Manage API Keys</Button>
-              <Button variant="secondary">Configuration</Button>
-              <Button variant="secondary">User Management</Button>
+              <Button variant="secondary" disabled title="Coming soon">Manage API Keys</Button>
+              <Button variant="secondary" onClick={() => setActiveTab('configuration')}>Configuration</Button>
+              <Button variant="secondary" disabled title="Coming soon">User Management</Button>
             </div>
           </Card>
         </div>
@@ -75,7 +76,7 @@ export default function Admin() {
         <p className="text-slate-400 mt-1">System configuration and monitoring</p>
       </div>
 
-      <AdminTabs tabs={adminTabs} />
+      <AdminTabs tabs={adminTabs} activeTab={activeTab} onTabChange={setActiveTab} />
     </motion.div>
   )
 }
