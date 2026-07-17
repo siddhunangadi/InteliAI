@@ -19,7 +19,7 @@ export default function Layout({ children }: LayoutProps) {
     { href: '/chat', icon: MessageCircle, label: 'AI Assistant' },
     { href: '/regulations', icon: BookOpen, label: 'Regulations' },
     { href: '/audit', icon: History, label: 'Audit' },
-    { href: '/health', icon: Activity, label: 'Health' },
+    { href: '/status', icon: Activity, label: 'Health' },
     { href: '/admin', icon: Settings, label: 'Admin' },
   ]
 

@@ -19,7 +19,7 @@ export default function App() {
           <Route path="/chat" element={<Chat />} />
           <Route path="/regulations" element={<Regulations />} />
           <Route path="/audit" element={<Audit />} />
-          <Route path="/health" element={<Health />} />
+          <Route path="/status" element={<Health />} />
           <Route path="/admin" element={<Admin />} />
           <Route path="/settings" element={<UserProfile />} />
         </Routes>
