@@ -9,12 +9,17 @@ can be watched live in the server log -- then the same data is written to
 """
 
 import json
+import logging
 import os
 import platform
 import time
 from datetime import datetime, timezone
 from pathlib import Path
 from uuid import uuid4
+
+from langsmith import Client as _LangSmithClient
+
+logger = logging.getLogger(__name__)
 
 _BAR = "=" * 70
 
@@ -56,6 +61,20 @@ BM25 Search -------+
 
 def trace_enabled() -> bool:
     return os.environ.get("TRACE_RAG", "").strip().lower() in ("1", "true", "yes")
+
+
+def langsmith_enabled() -> bool:
+    return bool(os.environ.get("LANGSMITH_API_KEY", "").strip())
+
+
+_langsmith_client: _LangSmithClient | None = None
+
+
+def _get_langsmith_client() -> _LangSmithClient:
+    global _langsmith_client
+    if _langsmith_client is None:
+        _langsmith_client = _LangSmithClient()
+    return _langsmith_client
 
 
 def _section(title: str) -> None:
@@ -392,7 +411,29 @@ class RequestTrace:
             _section("REQUEST END")
         if self.enabled:
             self._save()
+        if langsmith_enabled():
+            self._send_to_langsmith()
         return self._data
+
+    def _send_to_langsmith(self) -> None:
+        """Best-effort export of the full request trace as one LangSmith run.
+
+        Reuses the data already collected by the log_* calls instead of
+        instrumenting every retrieval/generation call site separately.
+        Never raises -- observability must not be able to break a request.
+        """
+        try:
+            _get_langsmith_client().create_run(
+                name="rag_answer",
+                run_type="chain",
+                inputs={"question": self.question},
+                outputs=self._data,
+                start_time=self.started_at,
+                end_time=datetime.now(timezone.utc),
+                extra={"request_id": self.request_id},
+            )
+        except Exception:
+            logger.warning("LangSmith export failed", exc_info=True)
 
     def _save(self) -> None:
         self._traces_dir.mkdir(parents=True, exist_ok=True)
