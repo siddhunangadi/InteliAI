@@ -32,13 +32,49 @@ def is_comparative_query(question: str) -> bool:
     return bool(_COMPARATIVE_RE.search(question))
 
 
-_DECOMPOSITION_PROMPT_TEMPLATE = """The following question asks for a comparison across multiple concepts, sections, or sources. List the distinct concepts that need to be retrieved separately to answer it well, as a JSON array of short search-query strings (no more than {max_subqueries} items), ordered from most important to least important. Respond with ONLY the JSON array, no prose.
+# Catches broad/enumerative questions that need evidence gathered from many
+# sections even though they don't use comparison language (e.g. "summarize
+# every employee obligation", "compliance checklist for a new company").
+# Same false-negative tradeoff as _COMPARATIVE_RE: missing one just falls
+# back to single-query retrieval, never a hard failure.
+_BROAD_RE = re.compile(
+    r"\b("
+    r"every|all applicable|all relevant|"
+    r"checklist|comprehensive|"
+    r"summarize|summarise|"
+    r"generate a (compliance )?(checklist|plan|list)|"
+    r"newly (incorporated|registered|formed|established)"
+    r")\b",
+    re.IGNORECASE,
+)
+
+
+def is_broad_query(question: str) -> bool:
+    """Cheap keyword check for questions that need evidence gathered from
+    many distinct sections rather than one best-matching chunk (e.g.
+    "summarize every X obligation", "generate a compliance checklist for
+    a newly incorporated company"). Complements ``is_comparative_query``:
+    together they decide whether a question needs multi-concept retrieval.
+    """
+    return bool(_BROAD_RE.search(question))
+
+
+_DECOMPOSITION_PROMPT_TEMPLATE = """The following question requires evidence from multiple distinct concepts, sections, or sources to answer well -- either because it asks for a comparison, or because it asks broadly for "every"/"all"/a comprehensive checklist of applicable items. List the distinct concepts that need to be retrieved separately, as a JSON array of short search-query strings (no more than {max_subqueries} items), ordered from most important to least important. Respond with ONLY the JSON array, no prose.
 
 Question: {question}
 
 Example:
 Question: How do function-level and class-level detection patterns differ across RQ1 and RQ2?
 ["function-level detection patterns", "class-level detection patterns", "RQ1 findings", "RQ2 findings"]
+
+Example:
+Question: Summarize every employee-related compliance obligation.
+["PAYE", "UIF", "SDL", "COIDA", "Employment Equity", "OHSA", "Labour Relations Act", "MIBCO"]
+"""
+
+_EXPANSION_PROMPT_TEMPLATE = """The following question found no good match in a document search. Generate {max_variants} alternate phrasings of the same question -- using synonyms or different terminology an official document might use instead -- that could match the source wording better. Respond with ONLY a JSON array of strings, no prose.
+
+Question: {question}
 """
 
 
@@ -91,3 +127,41 @@ def decompose_query(
         return [question]
 
     return subqueries[:max_subqueries]
+
+
+def expand_query(
+    question: str, generation_provider, max_variants: int = 3, capture: dict | None = None,
+) -> list[str]:
+    """Generate alternate phrasings of a single-concept question that found
+    no good match, so a wording mismatch (synonym, terminology, phrasing)
+    between the question and the source text gets a second retrieval pass
+    instead of being reported as uncovered.
+
+    Same fallback contract as ``decompose_query``: any failure -- provider
+    exception, malformed JSON, empty result -- returns ``[question]``
+    unchanged. Unlike ``decompose_query``, the original question is always
+    kept as the first element of a successful expansion (callers merge all
+    variants' results, so the original attempt's signal is never discarded
+    in favor of the rewrites).
+    """
+    prompt = _EXPANSION_PROMPT_TEMPLATE.format(question=question, max_variants=max_variants)
+    raw = None
+    try:
+        raw = generation_provider.generate(prompt)
+        parsed = json.loads(raw)
+    except Exception:
+        if capture is not None:
+            capture["raw"] = raw
+        return [question]
+
+    if capture is not None:
+        capture["raw"] = raw
+
+    if not isinstance(parsed, list) or not parsed:
+        return [question]
+
+    variants = [str(item) for item in parsed if str(item).strip() and _normalize(str(item)) != _normalize(question)]
+    if not variants:
+        return [question]
+
+    return [question] + variants[:max_variants]

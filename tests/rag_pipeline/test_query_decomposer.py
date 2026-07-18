@@ -1,7 +1,7 @@
 import json
 
 from rag_pipeline.generation_provider import MockProvider
-from rag_pipeline.query_decomposer import decompose_query, is_comparative_query
+from rag_pipeline.query_decomposer import decompose_query, expand_query, is_broad_query, is_comparative_query
 
 
 def test_is_comparative_query_detects_keywords():
@@ -26,6 +26,19 @@ def test_is_comparative_query_detects_extended_phrasings():
 def test_is_comparative_query_false_for_simple_factual_question():
     assert is_comparative_query("What does the paper say about chunk overlap?") is False
     assert is_comparative_query("How many days of paid leave do employees get?") is False
+
+
+def test_is_broad_query_detects_enumerative_and_checklist_phrasing():
+    assert is_broad_query("Summarize every employee-related compliance obligation.") is True
+    assert is_broad_query("Generate a compliance checklist for a newly incorporated motor company.") is True
+    assert is_broad_query("A newly incorporated company with 70 employees needs to know its obligations.") is True
+    assert is_broad_query("List all applicable regulations for this business.") is True
+
+
+def test_is_broad_query_false_for_simple_factual_question():
+    assert is_broad_query("What is MIBCO?") is False
+    assert is_broad_query("How many days of paid leave do employees get?") is False
+    assert is_broad_query("Which organization registers authorised gas practitioners?") is False
 
 
 def test_decompose_query_parses_llm_json_array():
@@ -150,3 +163,63 @@ def test_decompose_query_captures_none_on_provider_exception():
     decompose_query("compare X and Y", RaisingProvider(), capture=capture)
 
     assert capture["raw"] is None
+
+
+def test_expand_query_keeps_original_question_first_then_variants():
+    canned = json.dumps(["Who accredits licensed gas installers?", "Which body certifies gas fitters?"])
+    provider = MockProvider(canned_json=canned)
+
+    variants = expand_query("Which organization registers authorised gas practitioners?", provider)
+
+    assert variants == [
+        "Which organization registers authorised gas practitioners?",
+        "Who accredits licensed gas installers?",
+        "Which body certifies gas fitters?",
+    ]
+
+
+def test_expand_query_caps_at_max_variants():
+    canned = json.dumps(["a", "b", "c", "d"])
+    provider = MockProvider(canned_json=canned)
+
+    variants = expand_query("question", provider, max_variants=2)
+
+    assert variants == ["question", "a", "b"]
+
+
+def test_expand_query_drops_a_variant_that_echoes_the_original_question():
+    question = "Which organization registers authorised gas practitioners?"
+    canned = json.dumps([question, "Who accredits licensed gas installers?"])
+    provider = MockProvider(canned_json=canned)
+
+    variants = expand_query(question, provider)
+
+    assert variants == [question, "Who accredits licensed gas installers?"]
+
+
+def test_expand_query_falls_back_to_original_question_on_malformed_json():
+    provider = MockProvider(canned_json="not json at all")
+
+    variants = expand_query("some question", provider)
+
+    assert variants == ["some question"]
+
+
+def test_expand_query_falls_back_to_original_question_on_provider_exception():
+    class RaisingProvider:
+        def generate(self, prompt, **kwargs):
+            raise RuntimeError("provider down")
+
+    variants = expand_query("some question", RaisingProvider())
+
+    assert variants == ["some question"]
+
+
+def test_expand_query_falls_back_when_all_variants_echo_the_question():
+    question = "some question"
+    canned = json.dumps([question, f"  {question.upper()}  "])
+    provider = MockProvider(canned_json=canned)
+
+    variants = expand_query(question, provider)
+
+    assert variants == [question]
