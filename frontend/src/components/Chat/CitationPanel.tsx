@@ -1,23 +1,23 @@
-import { useState } from 'react'
 import { FileText, ChevronDown } from 'lucide-react'
 import { Card } from '@/components/ui'
 import { StructuredCitation } from '@/lib/types'
 
 interface CitationPanelProps {
   citations: StructuredCitation[]
+  activeId: string | null
+  onToggle: (citationId: string) => void
 }
 
 // DESIGN.md "Citation Preview" -- the signature/trust component. Expands
 // inline from the chip (not a modal) with a single height transition,
 // metadata as Label-weight text along the top edge, chunk text in a
-// Signal-Cyan wash.
+// Signal-Cyan wash. Numbered to match the inline [n] markers ChatMessage
+// renders next to each generated claim.
 // ponytail: the backend doesn't return matched-span offsets for the citation
 // (StructuredCitation has no span/highlight field), so the whole chunk body
 // gets the clay wash rather than just the matched substring. Add span
 // highlighting when the API returns match offsets.
-export default function CitationPanel({ citations }: CitationPanelProps) {
-  const [openId, setOpenId] = useState<string | null>(null)
-
+export default function CitationPanel({ citations, activeId, onToggle }: CitationPanelProps) {
   if (!citations || citations.length === 0) {
     return null
   }
@@ -26,18 +26,23 @@ export default function CitationPanel({ citations }: CitationPanelProps) {
     <Card>
       <p className="text-label text-ink-muted mb-3">Source Documents</p>
       <div className="space-y-2">
-        {citations.map((citation) => {
-          const isOpen = openId === citation.citation_id
+        {citations.map((citation, i) => {
+          const isOpen = activeId === citation.citation_id
           const meta = [citation.regulation, citation.jurisdiction, citation.section, citation.clause, citation.page ? `p. ${citation.page}` : null]
             .filter(Boolean)
             .join(' · ')
           return (
-            <div key={citation.citation_id} className="bg-paper-raised border border-rule rounded-sm text-xs overflow-hidden">
+            <div
+              key={citation.citation_id}
+              id={`citation-${citation.citation_id}`}
+              className="bg-paper-raised border border-rule rounded-sm text-xs overflow-hidden"
+            >
               <button
                 type="button"
-                onClick={() => setOpenId(isOpen ? null : citation.citation_id)}
+                onClick={() => onToggle(citation.citation_id)}
                 className="w-full flex gap-2 p-2.5 text-left hover:bg-paper transition-colors"
               >
+                <span className="text-label text-clay flex-shrink-0 w-4 text-center mt-0.5">{i + 1}</span>
                 <FileText className="w-3.5 h-3.5 text-clay flex-shrink-0 mt-0.5" />
                 <div className="flex-1 min-w-0">
                   <p className="text-ink line-clamp-1">{citation.document_title}</p>

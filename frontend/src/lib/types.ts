@@ -108,10 +108,25 @@ export interface ConfidenceMetrics {
   overall: number
 }
 
-export interface VerificationStats {
+export interface Claim {
+  text: string
+  citation_ids: string[]
+  supporting_quote: string | null
+}
+
+export interface ClaimResult {
+  claim: Claim
+  doc_ids_valid: boolean
+  quote_match_score: number
+  passed: boolean
+  failure_reason: string | null
+}
+
+export interface VerificationReport {
   total_claims: number
   verified_claims: number
   failed_claims: number
+  claim_results: ClaimResult[]
 }
 
 export interface RagAnswer {
@@ -119,7 +134,7 @@ export interface RagAnswer {
   citations: StructuredCitation[]
   structured_citations: StructuredCitation[]
   confidence: ConfidenceMetrics
-  verification: VerificationStats
+  verification: VerificationReport
 }
 
 export interface AuditEvent {

@@ -2,7 +2,7 @@ import { useState, useRef, useEffect } from 'react'
 import { isAxiosError } from 'axios'
 import { Send } from 'lucide-react'
 import { apiClient } from '@/lib/api'
-import { StructuredCitation, RagAnswer } from '@/lib/types'
+import { StructuredCitation, RagAnswer, ConfidenceMetrics, ClaimResult } from '@/lib/types'
 import { Card } from '@/components/ui'
 import ChatMessage from '@/components/Chat/ChatMessage'
 import SuggestedQuestions from '@/components/Chat/SuggestedQuestions'
@@ -12,7 +12,8 @@ interface Message {
   role: 'user' | 'assistant'
   content: string
   citations?: StructuredCitation[]
-  confidenceScore?: number
+  confidence?: ConfidenceMetrics
+  claimResults?: ClaimResult[]
   streaming?: boolean
   timestamp: Date
 }
@@ -94,7 +95,8 @@ export default function Chat() {
                       ...m,
                       content: final.answer,
                       citations: final.structured_citations,
-                      confidenceScore: final.confidence.overall,
+                      confidence: final.confidence,
+                      claimResults: final.verification.claim_results,
                       streaming: false,
                     }
                   : m
