@@ -77,20 +77,9 @@ class Settings(BaseSettings):
         return [o.strip() for o in self.cors_allow_origins.split(",") if o.strip()]
 
     @property
-    def api_keys_by_key(self) -> dict[str, str]:
-        """Parse ``api_keys`` into ``{key: role}``, validating roles eagerly."""
-        parsed: dict[str, str] = {}
-        for entry in self.api_keys.split(","):
-            entry = entry.strip()
-            if not entry:
-                continue
-            key, _, role = entry.partition(":")
-            if role not in ("admin", "reader"):
-                raise ValueError(
-                    f"invalid role {role!r} in RAG_API_KEYS entry {entry!r}; must be 'admin' or 'reader'"
-                )
-            parsed[key] = role
-        return parsed
+    def api_keys_set(self) -> set[str]:
+        """Parse ``api_keys`` into a set of valid keys (no roles -- any valid key is fully authorized)."""
+        return {entry.strip() for entry in self.api_keys.split(",") if entry.strip()}
 
     @model_validator(mode="after")
     def _validate_production_requirements(self) -> "Settings":
@@ -104,7 +93,7 @@ class Settings(BaseSettings):
             if not self.pinecone_index_name:
                 missing.append("RAG_PINECONE_INDEX_NAME")
             if not self.api_keys:
-                missing.append("RAG_API_KEYS (at least one admin/reader key)")
+                missing.append("RAG_API_KEYS (at least one key)")
             if missing:
                 raise ValueError(
                     "RAG_ENVIRONMENT=production requires: " + "; ".join(missing)

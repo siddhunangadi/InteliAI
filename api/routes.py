@@ -16,7 +16,7 @@ from pathlib import Path
 from fastapi import APIRouter, Depends, File, Form, Header, HTTPException, Query, Request, UploadFile
 from fastapi.responses import StreamingResponse
 
-from api.auth import Identity, require_role
+from api.auth import Identity, get_identity
 from api.dependencies import Container, check_readiness, get_container
 from api.schemas import (
     AnswerRequest,
@@ -115,7 +115,6 @@ def _record_audit(
                 timestamp=now_utc(),
                 request_id=getattr(request.state, "request_id", "unknown"),
                 key_id=identity.key_id,
-                role=identity.role,
                 endpoint=request.url.path,
                 action=action,
                 status=status,
@@ -283,7 +282,7 @@ async def answer(
     http_request: Request,
     request: AnswerRequest,
     container: Container = Depends(get_container),
-    identity: Identity = Depends(require_role("admin", "reader")),
+    identity: Identity = Depends(get_identity),
 ) -> RagAnswer:
     """Answer a question using the grounded RAG pipeline.
 
@@ -337,7 +336,7 @@ async def answer_stream(
     http_request: Request,
     request: AnswerRequest,
     container: Container = Depends(get_container),
-    identity: Identity = Depends(require_role("admin", "reader")),
+    identity: Identity = Depends(get_identity),
 ) -> StreamingResponse:
     """Stream an answer as Server-Sent Events instead of blocking until generation finishes.
 
@@ -392,7 +391,7 @@ async def debug_retrieval(
     query: str,
     container: Container = Depends(get_container),
     x_debug_token: str = Header(default=None),
-    _identity=Depends(require_role("admin", "reader")),
+    _identity=Depends(get_identity),
 ) -> DebugRetrievalResponse:
     """Trace every retrieval stage for a query against already-indexed data.
 
@@ -461,7 +460,7 @@ async def index_documents(
     http_request: Request,
     request: IndexRequest,
     container: Container = Depends(get_container),
-    identity: Identity = Depends(require_role("admin")),
+    identity: Identity = Depends(get_identity),
 ) -> IndexResponse:
     """Ingest one or more documents. Per-document failures are reported, not raised.
 
@@ -507,7 +506,7 @@ async def upload_documents(
     effective_date: date | None = Form(default=None),
     risk_category: RiskCategoryParam | None = Form(default=None),
     container: Container = Depends(get_container),
-    identity: Identity = Depends(require_role("admin")),
+    identity: Identity = Depends(get_identity),
 ) -> IndexResponse:
     """Ingest one or more uploaded files as raw bytes (binary-safe, for pdf/xlsx/docx/etc).
 
@@ -564,7 +563,7 @@ async def upload_documents_async(
     effective_date: date | None = Form(default=None),
     risk_category: RiskCategoryParam | None = Form(default=None),
     container: Container = Depends(get_container),
-    identity: Identity = Depends(require_role("admin")),
+    identity: Identity = Depends(get_identity),
 ) -> UploadAcceptedResponse:
     """Accept file uploads without blocking on ingestion; poll GET /jobs/{job_id} for the result.
 
@@ -628,7 +627,7 @@ async def upload_documents_async(
 async def get_job(
     job_id: str,
     container: Container = Depends(get_container),
-    _identity=Depends(require_role("admin", "reader")),
+    _identity=Depends(get_identity),
 ) -> JobStatusResponse:
     """Poll the status of a background ingestion job started via POST /upload/async."""
     job = container.job_store.get(job_id)
@@ -676,7 +675,7 @@ async def readiness(container: Container = Depends(get_container)) -> ReadinessR
 @router.get("/documents", response_model=DocumentsResponse)
 async def list_documents(
     container: Container = Depends(get_container),
-    _identity=Depends(require_role("admin", "reader")),
+    _identity=Depends(get_identity),
 ) -> DocumentsResponse:
     """Report how many documents/chunks are currently indexed."""
     summaries = container.chunk_store.get_document_summaries()
@@ -700,7 +699,7 @@ async def delete_document(
     http_request: Request,
     document_id: str,
     container: Container = Depends(get_container),
-    identity: Identity = Depends(require_role("admin")),
+    identity: Identity = Depends(get_identity),
 ) -> DeleteDocumentResponse:
     """Purge a document from the chunk store, vector store, and BM25 index together.
 
@@ -722,7 +721,7 @@ async def delete_document(
 @router.get("/audit/events", response_model=AuditEventsResponse)
 async def list_audit_events(
     container: Container = Depends(get_container),
-    _identity: Identity = Depends(require_role("admin")),
+    _identity: Identity = Depends(get_identity),
     event_type: EventType | None = Query(default=None),
     key_id: str | None = Query(default=None),
     role: str | None = Query(default=None),
@@ -745,7 +744,7 @@ async def list_audit_events(
 @router.get("/diagnostics", response_model=DiagnosticsResponse)
 async def diagnostics(
     container: Container = Depends(get_container),
-    _identity: Identity = Depends(require_role("admin")),
+    _identity: Identity = Depends(get_identity),
 ) -> DiagnosticsResponse:
     """Aggregate operational state for on-call debugging. Admin-only: this
     exposes internal provider/config details that shouldn't be public, even
