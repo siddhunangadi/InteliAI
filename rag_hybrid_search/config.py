@@ -92,8 +92,6 @@ class Settings(BaseSettings):
                 missing.append("RAG_PINECONE_API_KEY")
             if not self.pinecone_index_name:
                 missing.append("RAG_PINECONE_INDEX_NAME")
-            if not self.api_keys:
-                missing.append("RAG_API_KEYS (at least one key)")
             if missing:
                 raise ValueError(
                     "RAG_ENVIRONMENT=production requires: " + "; ".join(missing)
