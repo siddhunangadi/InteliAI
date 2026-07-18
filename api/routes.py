@@ -4,6 +4,7 @@ Handlers only translate HTTP <-> pipeline calls; business logic lives in
 ``rag_pipeline`` and ``rag_hybrid_search``.
 """
 
+import asyncio
 import json
 import logging
 import mimetypes
@@ -297,10 +298,12 @@ async def answer(
     Falls back to ``MockProvider``/``FakeEmbeddingProvider`` output when no
     real API keys are configured (see api/dependencies.py docstring).
 
-    Defined ``async`` (and not offloaded to a worker thread) so it runs on
-    the same event-loop thread as app startup: the underlying sqlite-backed
-    chunk store is a single connection created at startup and sqlite3
-    connections cannot be used across threads.
+    ``rag_pipeline.answer`` is a blocking call (synchronous httpx to the
+    NVIDIA embedding/generation APIs) -- run via ``asyncio.to_thread`` so a
+    slow request doesn't stall the whole event loop and every other
+    in-flight request on this instance. (chunk_store here is
+    PineconeChunkStore, an HTTP client with no thread affinity requirement;
+    unlike a sqlite connection, it's safe to call from a worker thread.)
     """
     if not request.question.strip():
         raise HTTPException(status_code=400, detail="question must not be blank")
@@ -308,8 +311,9 @@ async def answer(
     container.metrics.increment("retrievals")
     container.metrics.increment("generations")
     try:
-        result = container.rag_pipeline.answer(
-            request.question, max_chunks=request.max_chunks, verify=request.verify
+        result = await asyncio.to_thread(
+            container.rag_pipeline.answer,
+            request.question, max_chunks=request.max_chunks, verify=request.verify,
         )
     except Exception:  # noqa: BLE001 - convert unexpected errors to a clean 500 body
         # Full exception (which may embed provider response bodies, internal
