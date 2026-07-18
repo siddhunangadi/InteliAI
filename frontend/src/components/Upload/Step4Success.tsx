@@ -1,27 +1,43 @@
-import { CheckCircle } from 'lucide-react'
+import { CheckCircle, XCircle } from 'lucide-react'
 import { Card, Button } from '@/components/ui'
 import { useNavigate } from 'react-router-dom'
 
-export default function Step4Success() {
+interface Step4SuccessProps {
+  results: { filename: string; status: string; error: string | null }[]
+}
+
+export default function Step4Success({ results }: Step4SuccessProps) {
   const navigate = useNavigate()
+  const failed = results.filter(r => r.status !== 'ready')
+  const allOk = failed.length === 0
 
   return (
     <div className="space-y-6 text-center">
       <div>
-        <CheckCircle className="w-16 h-16 text-emerald-400 mx-auto mb-4" />
-        <h2 className="text-2xl font-bold">Documents Indexed Successfully</h2>
-        <p className="text-slate-400 mt-2">Your documents are now available for search and compliance analysis</p>
+        {allOk ? (
+          <CheckCircle className="w-16 h-16 text-emerald-400 mx-auto mb-4" />
+        ) : (
+          <XCircle className="w-16 h-16 text-orange-400 mx-auto mb-4" />
+        )}
+        <h2 className="text-2xl font-bold">
+          {allOk ? 'Documents Indexed Successfully' : `${failed.length} of ${results.length} Failed`}
+        </h2>
+        <p className="text-slate-400 mt-2">
+          {allOk
+            ? 'Your documents are now available for search and compliance analysis'
+            : 'Some documents could not be indexed'}
+        </p>
       </div>
 
-      <Card className="space-y-3">
-        <div className="text-left">
-          <p className="text-sm font-medium text-slate-400">What's next?</p>
-          <ul className="text-sm text-slate-300 mt-2 space-y-1 list-disc list-inside">
-            <li>Browse regulations in the Regulations section</li>
-            <li>Ask compliance questions in AI Assistant</li>
-            <li>View indexed documents in the audit trail</li>
-          </ul>
-        </div>
+      <Card className="text-left space-y-2">
+        {results.map(r => (
+          <div key={r.filename} className="flex justify-between text-sm p-2 bg-slate-800/50 rounded">
+            <span>{r.filename}</span>
+            <span className={r.status === 'ready' ? 'text-emerald-400' : 'text-red-400'}>
+              {r.status === 'ready' ? 'Indexed' : r.error || 'Failed'}
+            </span>
+          </div>
+        ))}
       </Card>
 
       <div className="flex gap-3">

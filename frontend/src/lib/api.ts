@@ -67,11 +67,11 @@ class ApiClient {
     return data
   }
 
-  async uploadDocumentsAsync(files: File[], metadata: Record<string, unknown>): Promise<Types.JobStatusResponse> {
+  async uploadDocumentsAsync(files: File[], metadata: Record<string, unknown>): Promise<Types.UploadAcceptedResponse> {
     const formData = new FormData()
     files.forEach((file) => formData.append('files', file))
     Object.entries(metadata).forEach(([key, value]) => {
-      formData.append(key, String(value))
+      if (value) formData.append(key, String(value))
     })
 
     const { data } = await this.client.post('/upload/async', formData, {

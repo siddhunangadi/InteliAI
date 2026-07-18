@@ -7,36 +7,41 @@ import Step3Review from './Step3Review'
 import Step4Success from './Step4Success'
 
 type Step = 1 | 2 | 3 | 4
+type Result = { filename: string; status: string; error: string | null }
 
 interface UploadData {
   files: File[]
   metadata: Record<string, unknown>
-  jobId?: string
+  results: Result[]
 }
 
 const STEPS = [
   { number: 1, name: 'Upload', description: 'Select documents' },
-  { number: 2, name: 'Extract', description: 'AI processes metadata' },
+  { number: 2, name: 'Details', description: 'Add metadata' },
   { number: 3, name: 'Review', description: 'Verify information' },
   { number: 4, name: 'Complete', description: 'Documents indexed' },
 ]
 
 export default function UploadWorkflow() {
   const [currentStep, setCurrentStep] = useState<Step>(1)
-  const [data, setData] = useState<UploadData>({ files: [], metadata: {} })
+  const [data, setData] = useState<UploadData>({ files: [], metadata: {}, results: [] })
 
   const handleStep1Complete = (files: File[]) => {
     setData(prev => ({ ...prev, files }))
     setCurrentStep(2)
   }
 
-  const handleStep2Complete = (metadata: Record<string, unknown>) => {
-    setData(prev => ({ ...prev, metadata }))
+  const handleStep2Complete = () => {
     setCurrentStep(3)
   }
 
-  const handleStep3Complete = () => {
+  const handleStep3Complete = (results: Result[]) => {
+    setData(prev => ({ ...prev, results }))
     setCurrentStep(4)
+  }
+
+  const setMetadata = (metadata: Record<string, unknown>) => {
+    setData(prev => ({ ...prev, metadata }))
   }
 
   return (
@@ -75,9 +80,23 @@ export default function UploadWorkflow() {
         exit={{ opacity: 0, y: -10 }}
       >
         {currentStep === 1 && <Step1Upload onComplete={handleStep1Complete} />}
-        {currentStep === 2 && <Step2Extract files={data.files} onComplete={handleStep2Complete} />}
-        {currentStep === 3 && <Step3Review metadata={data.metadata} onComplete={handleStep3Complete} />}
-        {currentStep === 4 && <Step4Success />}
+        {currentStep === 2 && (
+          <Step2Extract
+            files={data.files}
+            metadata={data.metadata}
+            onChange={setMetadata}
+            onComplete={handleStep2Complete}
+          />
+        )}
+        {currentStep === 3 && (
+          <Step3Review
+            files={data.files}
+            metadata={data.metadata}
+            onChange={setMetadata}
+            onComplete={handleStep3Complete}
+          />
+        )}
+        {currentStep === 4 && <Step4Success results={data.results} />}
       </motion.div>
     </div>
   )

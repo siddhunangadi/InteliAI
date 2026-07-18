@@ -127,10 +127,14 @@ export interface AuditEventsResponse {
 
 export interface JobStatusResponse {
   job_id: string
-  status: 'pending' | 'processing' | 'completed' | 'failed'
-  progress: number
-  result?: Record<string, unknown>
-  error?: string
+  status: 'processing' | 'ready' | 'failed'
+  result?: { results: { filename: string; status: string; error: string | null }[] }
+  error?: string | null
+}
+
+export interface UploadAcceptedResponse {
+  job_id: string
+  status: 'processing'
 }
 
 export interface LivenessResponse {
