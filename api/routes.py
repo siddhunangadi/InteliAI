@@ -691,6 +691,7 @@ async def list_documents(
             document_id=s["document_id"],
             filename=Path(s["source_path"]).name if s["source_path"] else s["document_id"],
             chunk_count=s["chunk_count"],
+            indexed_at=s.get("indexed_at") or None,
         )
         for s in summaries
     ]

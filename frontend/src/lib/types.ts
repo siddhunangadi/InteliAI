@@ -50,6 +50,7 @@ export interface DocumentSummary {
   document_id: string
   filename: string
   chunk_count: number
+  indexed_at: string | null
 }
 
 export interface DocumentsResponse {

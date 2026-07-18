@@ -100,6 +100,7 @@ class DocumentSummary(BaseModel):
     document_id: str
     filename: str
     chunk_count: int
+    indexed_at: str | None = None
 
 
 class DocumentsResponse(BaseModel):

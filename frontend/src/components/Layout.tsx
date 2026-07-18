@@ -1,5 +1,5 @@
 import { Link, useLocation } from 'react-router-dom'
-import { BarChart3, Upload, MessageCircle, BookOpen, History, Activity, Settings, ChevronRight, Menu, X } from 'lucide-react'
+import { BarChart3, Upload, MessageCircle, BookOpen, History, Activity, Settings, ChevronRight, Menu, X, ShieldCheck } from 'lucide-react'
 import { ReactNode, useState } from 'react'
 import { motion } from 'framer-motion'
 import clsx from 'clsx'
@@ -41,9 +41,11 @@ export default function Layout({ children }: LayoutProps) {
       >
         <motion.div initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }} className="p-6 border-b border-slate-800/50 flex items-center justify-between">
           <div className="flex items-center gap-3">
-            <div className="w-8 h-8 bg-gradient-to-br from-blue-500 to-blue-600 rounded-lg shadow-lg" />
+            <div className="w-9 h-9 flex items-center justify-center bg-blue-600 rounded-lg ring-1 ring-inset ring-white/10 shadow-lg shadow-blue-950/50">
+              <ShieldCheck className="w-5 h-5 text-white" strokeWidth={2.25} />
+            </div>
             <div>
-              <h1 className="font-bold text-white">Compliance AI</h1>
+              <h1 className="font-semibold tracking-tight text-white">Compliance AI</h1>
               <p className="text-xs text-slate-400">Enterprise Edition</p>
             </div>
           </div>
