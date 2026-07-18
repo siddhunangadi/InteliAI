@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { isAxiosError } from 'axios'
 import { Card, Button, Input } from '@/components/ui'
-import { apiClient } from '@/lib/api'
+import { useUploadJob } from '@/lib/uploadJob'
 
 const selectClass =
   'w-full px-4 py-2 bg-slate-800 border border-slate-700 rounded-lg text-slate-50 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all'
@@ -13,10 +13,11 @@ interface Step3ReviewProps {
   files: File[]
   metadata: Record<string, unknown>
   onChange: (metadata: Record<string, unknown>) => void
-  onComplete: (results: { filename: string; status: string; error: string | null }[]) => void
+  onComplete: () => void
 }
 
 export default function Step3Review({ files, metadata, onChange, onComplete }: Step3ReviewProps) {
+  const { startUpload } = useUploadJob()
   const [submitting, setSubmitting] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
@@ -26,27 +27,17 @@ export default function Step3Review({ files, metadata, onChange, onComplete }: S
     setSubmitting(true)
     setError(null)
     try {
-      const { job_id } = await apiClient.uploadDocumentsAsync(files, metadata)
-      // Poll until the background ingestion worker finishes (see api/jobs.py).
-      for (;;) {
-        const job = await apiClient.getJobStatus(job_id)
-        if (job.status === 'processing') {
-          await new Promise(r => setTimeout(r, 1000))
-          continue
-        }
-        if (job.status === 'failed') {
-          throw new Error(job.error || 'Ingestion failed')
-        }
-        onComplete(job.result?.results || [])
-        return
-      }
+      // Hands off to the app-wide upload job (see lib/uploadJob.tsx) --
+      // ingestion keeps running and a toast fires on completion even if
+      // the user navigates away from this page right after this resolves.
+      await startUpload(files, metadata)
+      onComplete()
     } catch (err) {
       if (isAxiosError(err) && err.response?.status === 401) {
         setError('Your API key is missing or invalid. Add it in Settings to upload documents.')
       } else {
         setError(err instanceof Error ? err.message : 'Upload failed')
       }
-    } finally {
       setSubmitting(false)
     }
   }
@@ -115,7 +106,7 @@ export default function Step3Review({ files, metadata, onChange, onComplete }: S
 
       <div className="flex gap-3">
         <Button onClick={submit} disabled={submitting} className="flex-1">
-          {submitting ? 'Uploading...' : 'Upload & Index'}
+          {submitting ? 'Starting upload...' : 'Upload & Index'}
         </Button>
       </div>
     </div>

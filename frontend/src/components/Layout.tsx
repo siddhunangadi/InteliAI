@@ -1,8 +1,9 @@
 import { Link, useLocation } from 'react-router-dom'
-import { BarChart3, Upload, MessageCircle, BookOpen, History, Activity, Settings, ChevronRight, Menu, X, ShieldCheck } from 'lucide-react'
+import { BarChart3, Upload, MessageCircle, BookOpen, History, Activity, Settings, ChevronRight, Menu, X, ShieldCheck, Loader2 } from 'lucide-react'
 import { ReactNode, useState } from 'react'
 import { motion } from 'framer-motion'
 import clsx from 'clsx'
+import { useUploadJob } from '@/lib/uploadJob'
 
 interface LayoutProps {
   children: ReactNode
@@ -12,6 +13,7 @@ export default function Layout({ children }: LayoutProps) {
   const location = useLocation()
   const isActive = (path: string) => location.pathname === path
   const [mobileNavOpen, setMobileNavOpen] = useState(false)
+  const { job } = useUploadJob()
 
   const navItems = [
     { href: '/', icon: BarChart3, label: 'Dashboard' },
@@ -85,6 +87,22 @@ export default function Layout({ children }: LayoutProps) {
             </motion.div>
           ))}
         </nav>
+
+        {job?.status === 'processing' && (
+          <motion.div
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="mx-3 mb-3 p-3 bg-blue-500/10 border border-blue-500/30 rounded-lg flex items-start gap-2"
+          >
+            <Loader2 className="w-4 h-4 text-blue-400 animate-spin flex-shrink-0 mt-0.5" />
+            <div className="min-w-0">
+              <p className="text-xs font-medium text-blue-300">Indexing in background</p>
+              <p className="text-xs text-slate-400 truncate">
+                {job.filenames.length} document{job.filenames.length !== 1 ? 's' : ''}
+              </p>
+            </div>
+          </motion.div>
+        )}
 
         <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.3 }} className="p-4 border-t border-slate-800/50 space-y-2 bg-slate-900/50">
           <p className="text-xs text-slate-400">Build: 1.0.0</p>

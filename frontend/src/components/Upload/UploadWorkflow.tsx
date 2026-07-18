@@ -6,12 +6,10 @@ import Step3Review from './Step3Review'
 import Step4Success from './Step4Success'
 
 type Step = 1 | 2 | 3
-type Result = { filename: string; status: string; error: string | null }
 
 interface UploadData {
   files: File[]
   metadata: Record<string, unknown>
-  results: Result[]
 }
 
 const STEPS = [
@@ -22,15 +20,14 @@ const STEPS = [
 
 export default function UploadWorkflow() {
   const [currentStep, setCurrentStep] = useState<Step>(1)
-  const [data, setData] = useState<UploadData>({ files: [], metadata: {}, results: [] })
+  const [data, setData] = useState<UploadData>({ files: [], metadata: {} })
 
   const handleStep1Complete = (files: File[]) => {
     setData(prev => ({ ...prev, files }))
     setCurrentStep(2)
   }
 
-  const handleStep2Complete = (results: Result[]) => {
-    setData(prev => ({ ...prev, results }))
+  const handleStep2Complete = () => {
     setCurrentStep(3)
   }
 
@@ -82,7 +79,7 @@ export default function UploadWorkflow() {
             onComplete={handleStep2Complete}
           />
         )}
-        {currentStep === 3 && <Step4Success results={data.results} />}
+        {currentStep === 3 && <Step4Success />}
       </motion.div>
     </div>
   )
