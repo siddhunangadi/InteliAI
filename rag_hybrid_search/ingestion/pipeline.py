@@ -32,7 +32,23 @@ class IngestionPipeline:
         self._dedup_cosine_threshold = dedup_cosine_threshold
         self._dedup_text_threshold = dedup_text_threshold
 
-    def ingest(self, path: str) -> IndexStatus:
+    def ingest(
+        self,
+        path: str,
+        existing_pairs: list[tuple[Chunk, list[float]]] | None = None,
+        rebuild_bm25: bool = True,
+    ) -> IndexStatus:
+        """Ingest one document.
+
+        ``existing_pairs``, if given, is the caller's shared dedup cache: it's
+        used instead of re-fetching the whole corpus from ``chunk_store``, and
+        mutated in place (new chunks appended) so the next call in the same
+        batch sees this file's chunks too. Batch callers (see
+        api/routes.py upload_documents_async) build this list once and pass
+        ``rebuild_bm25=False`` for every file but the last, since re-scanning
+        the full corpus and rebuilding BM25 per file is the dominant cost at
+        the 1000-file scale this exists for.
+        """
         logger.info("ingest: start path=%s rss_mb=%.1f", path, rss_mb())
         document = self.loader.load(path)
         logger.info(
@@ -46,7 +62,7 @@ class IngestionPipeline:
             return IndexStatus.READY
         if existing_hash is not None:
             logger.info("ingest: content changed, removing old document_id=%s", existing_hash)
-            self.index_manager.remove_document(existing_hash)
+            self.index_manager.remove_document(existing_hash, rebuild_bm25=rebuild_bm25)
 
         new_chunks = self.chunker.chunk(document)
         logger.info(
@@ -67,7 +83,8 @@ class IngestionPipeline:
             len(embeddings), type(self.embedding_provider).__name__,
             self.embedding_provider.model_name, self.embedding_provider.dimension, rss_mb(),
         )
-        existing_pairs = self._existing_chunk_embeddings()
+        if existing_pairs is None:
+            existing_pairs = self._existing_chunk_embeddings()
         logger.debug("ingest: comparing against %d existing chunks for dedup", len(existing_pairs))
 
         surviving_chunks: list[Chunk] = []
@@ -107,7 +124,7 @@ class IngestionPipeline:
             len(surviving_chunks), rss_mb(),
         )
 
-        status = self.index_manager.index(surviving_chunks, surviving_records)
+        status = self.index_manager.index(surviving_chunks, surviving_records, rebuild_bm25=rebuild_bm25)
         logger.info("ingest: index_manager.index() returned rss_mb=%.1f", rss_mb())
         logger.info("ingest: indexed %d chunks, status=%s path=%s", len(surviving_chunks), status, path)
         return status
