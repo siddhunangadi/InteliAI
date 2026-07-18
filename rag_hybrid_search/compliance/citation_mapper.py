@@ -56,6 +56,7 @@ def build_citations(
                 chunk_id=retrieved.chunk.chunk_id,
                 confidence=retrieved.rerank_score or 0.0,
                 display=_render_display(retrieved, title),
+                chunk_text=retrieved.chunk.text,
                 regulation=lm.regulation if lm else None,
                 version=lm.version if lm else None,
                 jurisdiction=lm.jurisdiction if lm else None,

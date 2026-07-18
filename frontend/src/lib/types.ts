@@ -72,6 +72,7 @@ export interface StructuredCitation {
   chunk_id: string
   confidence: number
   display: string
+  chunk_text: string
   regulation: string | null
   version: string | null
   jurisdiction: string | null

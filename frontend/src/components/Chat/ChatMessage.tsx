@@ -1,6 +1,4 @@
-import { Copy, Download } from 'lucide-react'
 import { motion } from 'framer-motion'
-import { Button } from '@/components/ui'
 import { StructuredCitation } from '@/lib/types'
 import ConfidenceIndicator from './ConfidenceIndicator'
 import CitationPanel from './CitationPanel'
@@ -19,10 +17,6 @@ export default function ChatMessage({
   citations,
   confidenceScore,
 }: ChatMessageProps) {
-  const handleCopy = () => {
-    navigator.clipboard.writeText(content)
-  }
-
   return (
     <motion.div
       initial={{ opacity: 0, y: 10 }}
@@ -51,22 +45,6 @@ export default function ChatMessage({
             {citations && citations.length > 0 && (
               <CitationPanel citations={citations} />
             )}
-
-            <div className="flex gap-2">
-              <Button
-                variant="secondary"
-                size="sm"
-                onClick={handleCopy}
-                className="flex items-center gap-2"
-              >
-                <Copy className="w-3 h-3" />
-                Copy
-              </Button>
-              <Button variant="secondary" size="sm" className="flex items-center gap-2">
-                <Download className="w-3 h-3" />
-                Export
-              </Button>
-            </div>
           </>
         )}
       </div>

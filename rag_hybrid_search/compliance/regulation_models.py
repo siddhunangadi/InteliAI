@@ -60,6 +60,7 @@ class Citation(BaseModel):
     chunk_id: str
     confidence: float
     display: str
+    chunk_text: str = ""
     regulation: Optional[str] = None
     authority: Optional[str] = None
     version: Optional[str] = None
