@@ -34,11 +34,11 @@ export default function Layout({ children }: LayoutProps) {
   }, [])
 
   return (
-    <div className="flex h-screen bg-void">
-      <aside className="w-60 border-r border-seam bg-void flex-col fixed inset-y-0 left-0 z-40 hidden md:flex">
-        <div className="p-5 border-b border-seam flex items-center gap-3">
-          <div className="w-8 h-8 flex items-center justify-center bg-signal rounded-sm">
-            <ShieldCheck className="w-4.5 h-4.5 text-void" strokeWidth={2.25} />
+    <div className="flex h-screen bg-sand">
+      <aside className="w-60 border-r border-rule bg-sand flex-col fixed inset-y-0 left-0 z-40 hidden md:flex">
+        <div className="p-5 border-b border-rule flex items-center gap-3">
+          <div className="w-8 h-8 flex items-center justify-center bg-clay rounded-sm">
+            <ShieldCheck className="w-4.5 h-4.5 text-paper" strokeWidth={2.25} />
           </div>
           <div>
             <h1 className="text-title text-ink">InteliAI</h1>
@@ -53,11 +53,11 @@ export default function Layout({ children }: LayoutProps) {
               to={item.href}
               className={clsx(
                 'relative flex items-center gap-3 px-4 py-2.5 rounded-sm text-label transition-colors',
-                isActive(item.href) ? 'text-ink bg-panel' : 'text-ink-muted hover:text-ink hover:bg-panel'
+                isActive(item.href) ? 'text-ink bg-paper' : 'text-ink-muted hover:text-ink hover:bg-paper'
               )}
             >
               {isActive(item.href) && (
-                <span className="absolute left-0 top-1/2 -translate-y-1/2 h-4 w-0.5 bg-signal rounded-full" />
+                <span className="absolute left-0 top-1/2 -translate-y-1/2 h-4 w-0.5 bg-clay rounded-full" />
               )}
               <item.icon className="w-4 h-4" />
               <span>{item.label}</span>
@@ -66,8 +66,8 @@ export default function Layout({ children }: LayoutProps) {
         </nav>
 
         {job?.status === 'processing' && (
-          <div className="mx-3 mb-3 p-3 bg-panel border border-seam rounded-sm flex items-start gap-2">
-            <Loader2 className="w-4 h-4 text-signal animate-spin flex-shrink-0 mt-0.5" />
+          <div className="mx-3 mb-3 p-3 bg-paper border border-rule rounded-sm flex items-start gap-2">
+            <Loader2 className="w-4 h-4 text-clay animate-spin flex-shrink-0 mt-0.5" />
             <div className="min-w-0">
               <p className="text-label text-ink">Indexing in background</p>
               <p className="text-label text-ink-muted truncate">
@@ -77,23 +77,23 @@ export default function Layout({ children }: LayoutProps) {
           </div>
         )}
 
-        <div className="p-4 border-t border-seam">
+        <div className="p-4 border-t border-rule">
           <p className="text-label text-ink-muted">{version ? `Version ${version}` : ' '}</p>
         </div>
       </aside>
 
-      <main className="flex-1 overflow-auto bg-void md:ml-60 pb-16 md:pb-0">
+      <main className="flex-1 overflow-auto bg-sand md:ml-60 pb-16 md:pb-0">
         <div className="max-w-7xl mx-auto px-4 md:px-8 py-4 md:py-8">{children}</div>
       </main>
 
-      <nav className="md:hidden fixed bottom-0 inset-x-0 z-40 bg-void border-t border-seam flex items-stretch h-16">
+      <nav className="md:hidden fixed bottom-0 inset-x-0 z-40 bg-sand border-t border-rule flex items-stretch h-16">
         {mobileNavItems.map((item) => (
           <Link
             key={item.href}
             to={item.href}
             className={clsx(
               'flex-1 flex flex-col items-center justify-center gap-1 text-label',
-              isActive(item.href) ? 'text-signal' : 'text-ink-muted'
+              isActive(item.href) ? 'text-clay' : 'text-ink-muted'
             )}
           >
             <item.icon className="w-5 h-5" />

@@ -14,17 +14,17 @@ interface ChatMessageProps {
 export default function ChatMessage({ role, content, citations, confidenceScore, streaming }: ChatMessageProps) {
   return (
     <div className={`flex ${role === 'user' ? 'justify-end' : 'justify-start'}`}>
-      <div className={`max-w-2xl ${role === 'user' ? 'bg-panel border border-seam rounded-md p-4 text-ink' : 'space-y-3 w-full'}`}>
+      <div className={`max-w-2xl ${role === 'user' ? 'bg-paper border border-rule rounded-md p-4 text-ink' : 'space-y-3 w-full'}`}>
         {role === 'user' ? (
           <p className="text-sm">{content}</p>
         ) : (
           <>
-            <div className="bg-panel border border-seam rounded-md p-4 text-ink">
+            <div className="bg-paper border border-rule rounded-md p-4 text-ink">
               <p className="text-sm leading-relaxed max-w-[70ch] whitespace-pre-wrap">
                 {content}
                 {/* Motion reports real state: token stream in progress, cyan is
                     reserved for AI activity (DESIGN.md One Accent Rule). */}
-                {streaming && <span className="inline-block w-1.5 h-3.5 ml-0.5 bg-signal align-middle animate-pulse" />}
+                {streaming && <span className="inline-block w-1.5 h-3.5 ml-0.5 bg-clay align-middle animate-pulse" />}
               </p>
             </div>
 

@@ -42,13 +42,13 @@ export default function UploadWorkflow() {
           <div key={step.number} className="flex items-center flex-1">
             <div
               className={`w-9 h-9 rounded-sm flex items-center justify-center text-sm font-semibold transition-colors ${
-                currentStep >= step.number ? 'bg-signal text-void' : 'bg-panel text-ink-muted'
+                currentStep >= step.number ? 'bg-clay text-paper' : 'bg-paper text-ink-muted'
               }`}
             >
               {currentStep > step.number ? <Check className="w-4 h-4" /> : step.number}
             </div>
             {idx < STEPS.length - 1 && (
-              <div className={`flex-1 h-px mx-2 transition-colors ${currentStep > step.number ? 'bg-signal' : 'bg-seam'}`} />
+              <div className={`flex-1 h-px mx-2 transition-colors ${currentStep > step.number ? 'bg-clay' : 'bg-rule'}`} />
             )}
           </div>
         ))}

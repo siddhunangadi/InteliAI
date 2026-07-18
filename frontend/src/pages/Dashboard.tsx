@@ -49,7 +49,7 @@ export default function Dashboard() {
           <div
             className={`flex items-center gap-2 px-3 py-1.5 rounded-sm border text-label ${
               readiness.length === 0
-                ? 'border-seam text-ink-muted bg-panel'
+                ? 'border-rule text-ink-muted bg-paper'
                 : allReady
                 ? 'border-status-verified/30 text-status-verified bg-status-verified/10'
                 : 'border-status-critical/30 text-status-critical bg-status-critical/10'
@@ -63,10 +63,10 @@ export default function Dashboard() {
         {/* Ask -- the primary action on this screen */}
         <button
           onClick={() => navigate('/chat')}
-          className="w-full text-left card p-6 hover:bg-panel-raised transition-colors group"
+          className="w-full text-left card p-6 hover:bg-paper-raised transition-colors group"
         >
           <div className="flex items-center gap-3">
-            <MessageCircle className="w-5 h-5 text-signal flex-shrink-0" />
+            <MessageCircle className="w-5 h-5 text-clay flex-shrink-0" />
             <span className="text-title text-ink-muted group-hover:text-ink transition-colors">
               Ask a question about your regulations, policies, or filings...
             </span>
@@ -92,7 +92,7 @@ export default function Dashboard() {
         {/* Inline stat strip -- not cards */}
         <div className="flex items-center gap-8 flex-wrap">
           {stats.map((s, i) => (
-            <div key={s.label} className={`flex items-baseline gap-2 ${i > 0 ? 'pl-8 border-l border-seam' : ''}`}>
+            <div key={s.label} className={`flex items-baseline gap-2 ${i > 0 ? 'pl-8 border-l border-rule' : ''}`}>
               <span className="text-2xl font-semibold tracking-tighter tabular-nums text-ink">{loading ? '—' : s.value}</span>
               <span className="text-label text-ink-muted">{s.label}</span>
             </div>
@@ -118,14 +118,14 @@ export default function Dashboard() {
           </div>
         ) : docs?.documents?.length ? (
           <Card className="p-0 overflow-hidden">
-            <div className="divide-y divide-seam">
+            <div className="divide-y divide-rule">
               {docs.documents.slice(0, 6).map((doc) => (
                 <button
                   key={doc.document_id}
                   onClick={() => navigate('/regulations')}
-                  className="w-full flex items-center gap-4 p-4 hover:bg-panel-raised transition-colors text-left group"
+                  className="w-full flex items-center gap-4 p-4 hover:bg-paper-raised transition-colors text-left group"
                 >
-                  <div className="w-9 h-9 rounded-sm bg-panel-raised border border-seam flex items-center justify-center flex-shrink-0">
+                  <div className="w-9 h-9 rounded-sm bg-paper-raised border border-rule flex items-center justify-center flex-shrink-0">
                     <FileText className="w-4 h-4 text-ink-muted" />
                   </div>
                   <div className="flex-1 min-w-0">

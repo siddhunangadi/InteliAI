@@ -50,6 +50,11 @@ class ApiClient {
     return data
   }
 
+  async getDocument(documentId: string): Promise<Types.DocumentDetail> {
+    const { data } = await this.client.get(`/documents/${documentId}`)
+    return data
+  }
+
   async deleteDocument(documentId: string): Promise<void> {
     await this.client.delete(`/documents/${documentId}`)
   }

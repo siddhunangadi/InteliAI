@@ -15,7 +15,7 @@ export default function Step4Success() {
   return (
     <div className="space-y-6 text-center">
       <div>
-        {status === 'processing' && <Loader2 className="w-16 h-16 text-signal mx-auto mb-4 animate-spin" />}
+        {status === 'processing' && <Loader2 className="w-16 h-16 text-clay mx-auto mb-4 animate-spin" />}
         {status === 'ready' && <CheckCircle2 className="w-16 h-16 text-status-verified mx-auto mb-4" />}
         {status === 'failed' && <XCircle className="w-16 h-16 text-status-critical mx-auto mb-4" />}
         <h2 className="text-title text-ink">

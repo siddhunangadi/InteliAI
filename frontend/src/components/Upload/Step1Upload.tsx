@@ -45,7 +45,7 @@ export default function Step1Upload({ onComplete }: Step1UploadProps) {
         onDragOver={handleDrag}
         onDrop={handleDrop}
         className={`border-2 border-dashed rounded-md p-12 text-center transition-colors ${
-          dragActive ? 'border-signal bg-signal/[0.06]' : 'border-seam hover:border-ink-muted'
+          dragActive ? 'border-clay bg-clay/[0.06]' : 'border-rule hover:border-ink-muted'
         }`}
       >
         <UploadIcon className="w-12 h-12 mx-auto mb-4 text-ink-muted" />
@@ -67,7 +67,7 @@ export default function Step1Upload({ onComplete }: Step1UploadProps) {
           <h3 className="text-title text-ink mb-3">Selected Files ({files.length})</h3>
           <div className="space-y-2">
             {files.map((f, i) => (
-              <div key={i} className="flex justify-between text-sm p-2 bg-panel-raised rounded-sm">
+              <div key={i} className="flex justify-between text-sm p-2 bg-paper-raised rounded-sm">
                 <span className="text-ink">{f.name}</span>
                 <span className="text-ink-muted">{(f.size / 1024 / 1024).toFixed(1)} MB</span>
               </div>

@@ -8,14 +8,14 @@ interface CardProps {
   interactive?: boolean
 }
 
-// DESIGN.md Cards: Panel bg, 1px Seam border all sides, 10px radius, no
+// DESIGN.md Cards: Paper bg, 1px Rule border all sides, 10px radius, no
 // shadow at rest (Flat-at-Rest Rule) -- separation comes from the border only.
 export function Card({ children, className, interactive }: CardProps) {
   return (
     <div
       className={clsx(
         'card',
-        interactive && 'hover:bg-panel-raised transition-colors duration-150 cursor-pointer',
+        interactive && 'hover:bg-paper-raised transition-colors duration-150 cursor-pointer',
         className
       )}
     >

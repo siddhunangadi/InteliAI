@@ -27,6 +27,7 @@ from api.schemas import (
     DebugRetrievedChunk,
     DeleteDocumentResponse,
     DiagnosticsResponse,
+    DocumentDetailResponse,
     DocumentSummary,
     DocumentsResponse,
     DocumentTypeParam,
@@ -699,6 +700,41 @@ async def list_documents(
         total_documents=len(documents),
         total_chunks=sum(d.chunk_count for d in documents),
         documents=documents,
+    )
+
+
+@router.get("/documents/{document_id}", response_model=DocumentDetailResponse)
+async def get_document(
+    document_id: str,
+    container: Container = Depends(get_container),
+    _identity=Depends(get_identity),
+) -> DocumentDetailResponse:
+    """Detail view for the Regulations page: content preview + legal
+    metadata, both read straight off the document's first chunk."""
+    chunks = container.chunk_store.get_by_document(document_id)
+    if not chunks:
+        raise HTTPException(status_code=404, detail=f"document not found: {document_id}")
+    first = chunks[0]
+    meta = first.legal_metadata
+    summary = next(
+        (s for s in container.chunk_store.get_document_summaries() if s["document_id"] == document_id), None
+    )
+    filename = Path(summary["source_path"]).name if summary and summary.get("source_path") else document_id
+    return DocumentDetailResponse(
+        document_id=document_id,
+        filename=filename,
+        chunk_count=len(chunks),
+        content_preview=first.text[:1000],
+        regulation=meta.regulation if meta else None,
+        authority=meta.authority if meta else None,
+        jurisdiction=meta.jurisdiction if meta else None,
+        article=meta.article if meta else None,
+        section=meta.section if meta else None,
+        clause=meta.clause if meta else None,
+        effective_date=meta.effective_date if meta else None,
+        document_type=meta.document_type if meta else None,
+        page=first.page,
+        risk_category=meta.risk_category if meta else None,
     )
 
 

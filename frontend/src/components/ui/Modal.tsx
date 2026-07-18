@@ -23,25 +23,19 @@ export function Modal({ isOpen, onClose, title, children, footer, size = 'md' }:
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center">
-      <div className="absolute inset-0 bg-black/50" onClick={onClose} />
-      <div className={clsx('relative bg-slate-900 border border-slate-800 rounded-lg shadow-xl w-full mx-4', sizeClasses[size])}>
-        <div className="flex items-center justify-between p-6 border-b border-slate-800">
-          <h2 className="text-lg font-semibold">{title}</h2>
-          <button
-            onClick={onClose}
-            className="text-slate-400 hover:text-slate-200 transition-colors"
-          >
+      <div className="absolute inset-0 bg-ink/40" onClick={onClose} />
+      {/* Modals are the one portal/floating case DESIGN.md allows shadow-float on. */}
+      <div className={clsx('relative bg-paper-raised border border-rule rounded-md shadow-float w-full mx-4', sizeClasses[size])}>
+        <div className="flex items-center justify-between p-6 border-b border-rule">
+          <h2 className="text-title text-ink">{title}</h2>
+          <button onClick={onClose} className="text-ink-muted hover:text-ink transition-colors">
             <X className="w-5 h-5" />
           </button>
         </div>
 
         <div className="p-6">{children}</div>
 
-        {footer && (
-          <div className="flex gap-3 p-6 border-t border-slate-800 justify-end">
-            {footer}
-          </div>
-        )}
+        {footer && <div className="flex gap-3 p-6 border-t border-rule justify-end">{footer}</div>}
       </div>
     </div>
   )

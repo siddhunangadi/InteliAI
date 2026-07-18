@@ -15,7 +15,7 @@ interface ButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
 const variantClasses = {
   primary: 'btn-primary',
   secondary: 'btn-secondary',
-  danger: 'bg-status-critical hover:bg-status-critical/85 text-void',
+  danger: 'bg-status-critical hover:bg-status-critical/85 text-paper',
 }
 
 const sizeClasses = {
