@@ -638,3 +638,135 @@ def test_comparative_question_min_keep_floors_at_subquery_count():
 
     assert result.error is None
     assert {c for c in result.citations} == {"d1", "d2", "d3", "d4"}
+
+
+def test_broad_enumeration_question_decomposes_without_comparative_wording():
+    """Regression test: 'Summarize every X obligation' does not contain any
+    comparative keyword (compare/versus/differ/...), so before is_broad_query
+    it fell through to a single non-decomposed retrieve and starved every
+    concept but one. is_broad_query must trigger the same multi-query path
+    as a comparative question for enumerative/checklist phrasing."""
+    chunks_by_query = {
+        "PAYE": [make_retrieved_chunk("paye", "PAYE withholding rules.", rerank_score=2.0)],
+        "UIF": [make_retrieved_chunk("uif", "UIF contribution rules.", rerank_score=1.8, final_rank=2)],
+        "SDL": [make_retrieved_chunk("sdl", "SDL levy rules.", rerank_score=1.6, final_rank=3)],
+    }
+    retriever = MultiQueryFakeRetriever(chunks_by_query)
+    decompose_canned = json.dumps(["PAYE", "UIF", "SDL"])
+    answer_canned = json.dumps({
+        "answer": "PAYE [d1], UIF [d2], SDL [d3].",
+        "claims": [
+            {"text": "PAYE withholding rules.", "citation_ids": ["d1"]},
+            {"text": "UIF contribution rules.", "citation_ids": ["d2"]},
+            {"text": "SDL levy rules.", "citation_ids": ["d3"]},
+        ],
+    })
+    provider = MockProvider(canned_json=answer_canned)
+    calls = {"n": 0}
+    original_generate = provider.generate
+
+    def generate(prompt, **kwargs):
+        calls["n"] += 1
+        return decompose_canned if calls["n"] == 1 else original_generate(prompt, **kwargs)
+
+    provider.generate = generate
+
+    pipeline = RagPipeline(retriever, provider)
+    result = pipeline.answer("Summarize every employee-related compliance obligation.")
+
+    assert set(retriever.queries_seen) == {"PAYE", "UIF", "SDL"}
+    assert result.error is None
+    assert {c for c in result.citations} == {"d1", "d2", "d3"}
+
+
+def test_multi_concept_merge_is_not_truncated_to_default_max_chunks_before_pruning():
+    """Regression test for the production bug behind 'Compare PAYE, UIF and
+    SDL' silently dropping PAYE: 6 decomposed sub-queries each contributing
+    one unique chunk used to get merged then immediately sliced to
+    max_chunks=5 *before* prune_by_score_margin's min_keep=6 ever got a
+    chance to run, permanently losing one concept. The merged pool must be
+    sliced to at least len(subqueries) chunks, not the answer.max_chunks
+    default."""
+    chunks_by_query = {
+        f"concept{i}": [make_retrieved_chunk(f"c{i}", f"Concept {i} text.", rerank_score=float(i))]
+        for i in range(6)
+    }
+    retriever = MultiQueryFakeRetriever(chunks_by_query)
+    decompose_canned = json.dumps(list(chunks_by_query.keys()))
+    answer_canned = json.dumps({
+        "answer": "All six concepts summarized.",
+        "claims": [{"text": f"Concept {i} text.", "citation_ids": [f"d{i + 1}"]} for i in range(6)],
+    })
+    provider = MockProvider(canned_json=answer_canned)
+    calls = {"n": 0}
+    original_generate = provider.generate
+
+    def generate(prompt, **kwargs):
+        calls["n"] += 1
+        return decompose_canned if calls["n"] == 1 else original_generate(prompt, **kwargs)
+
+    provider.generate = generate
+
+    pipeline = RagPipeline(retriever, provider)
+    # max_chunks left at its default (5) -- fewer than the 6 distinct
+    # concepts decomposed, exercising the effective_max_chunks widening.
+    result = pipeline.answer("Generate a compliance checklist for every one of these six concepts.")
+
+    assert set(retriever.queries_seen) == set(chunks_by_query.keys())
+    assert {c for c in result.citations} == {f"d{i + 1}" for i in range(6)}
+
+
+def test_single_concept_question_with_no_real_match_retries_with_expanded_phrasings():
+    """A single-fact question whose only retrieval pass comes back with a
+    rerank_score <= 0 (the same floor score_confidence clamps to 0.0
+    confidence) is retried with alternate phrasings instead of being
+    reported as uncovered -- catching a wording mismatch against the
+    source text rather than a genuinely missing topic."""
+    weak_chunk = make_retrieved_chunk("weak", "Unrelated filler text.", rerank_score=-0.5)
+    good_chunk = make_retrieved_chunk("saqcc", "SAQCC Gas registers authorised gas practitioners.", rerank_score=1.5)
+    retriever = MultiQueryFakeRetriever({
+        "Which organization registers authorised gas practitioners?": [weak_chunk],
+        "Who accredits licensed gas installers?": [good_chunk],
+    })
+    expand_canned = json.dumps(["Who accredits licensed gas installers?"])
+    answer_canned = json.dumps({
+        "answer": "SAQCC Gas registers authorised gas practitioners [d1].",
+        "claims": [{"text": "SAQCC Gas registers authorised gas practitioners.", "citation_ids": ["d1"]}],
+    })
+    provider = MockProvider(canned_json=answer_canned)
+    calls = {"n": 0}
+    original_generate = provider.generate
+
+    def generate(prompt, **kwargs):
+        calls["n"] += 1
+        return expand_canned if calls["n"] == 1 else original_generate(prompt, **kwargs)
+
+    provider.generate = generate
+
+    pipeline = RagPipeline(retriever, provider)
+    result = pipeline.answer("Which organization registers authorised gas practitioners?")
+
+    assert set(retriever.queries_seen) == {
+        "Which organization registers authorised gas practitioners?",
+        "Who accredits licensed gas installers?",
+    }
+    assert result.error is None
+    assert {c for c in result.citations} == {"d1"}
+
+
+def test_single_concept_question_with_a_real_match_does_not_trigger_expansion():
+    """A single-fact question that already retrieves a positively-scored
+    match must not pay the extra expansion round-trip -- expansion is a
+    fallback for misses, not a default second pass on every query."""
+    chunk = make_retrieved_chunk("c1", "Employees get 20 days of paid leave.", rerank_score=0.9)
+    retriever = MultiQueryFakeRetriever({"How many days of paid leave?": [chunk]})
+    canned = json.dumps({
+        "answer": "Employees get 20 days of paid leave [d1].",
+        "claims": [{"text": "Employees get 20 days of paid leave.", "citation_ids": ["d1"]}],
+    })
+    pipeline = RagPipeline(retriever, MockProvider(canned_json=canned))
+
+    result = pipeline.answer("How many days of paid leave?")
+
+    assert retriever.queries_seen == ["How many days of paid leave?"]
+    assert result.error is None

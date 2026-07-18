@@ -30,7 +30,12 @@ from rag_pipeline.models import (
 )
 from rag_pipeline.prompt_builder import build_prompt
 from rag_pipeline.quote_extractor import extract_supporting_quotes
-from rag_pipeline.query_decomposer import decompose_query, is_comparative_query
+from rag_pipeline.query_decomposer import (
+    decompose_query,
+    expand_query,
+    is_broad_query,
+    is_comparative_query,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -197,6 +202,12 @@ def _merge_multi_query_results(results_per_query: list[list]) -> tuple[list, dic
     return [r.model_copy(update={"final_rank": i}) for i, r in enumerate(merged, start=1)], provenance
 
 
+# Comparative/broad questions may name up to ~8 distinct concepts (e.g. a
+# full employee-compliance checklist); decompose_query's own default (4) is
+# tuned for typical two/three-way comparisons, so multi-concept retrieval
+# passes a higher ceiling explicitly rather than raising the shared default.
+_MAX_MULTI_CONCEPT_SUBQUERIES = 8
+
 _MAX_CONCURRENT_RETRIEVAL_WORKERS = 4
 
 
@@ -232,6 +243,26 @@ def _retrieve_subqueries_concurrently(subqueries: list[str], retrieve_one) -> li
                 logger.exception("retrieve() failed for sub-query %r -- treating as empty", subqueries[i])
                 results[i] = []
     return results
+
+
+def _needs_query_expansion(results: list) -> bool:
+    """True when a single-concept retrieval attempt found nothing worth
+    trusting: no candidates at all, or the top candidate's rerank_score
+    signals "not a real match" (<= 0, the same floor
+    ``confidence_scorer._retrieval_score`` clamps negative rerank scores to
+    before it ever reaches the "no relevant passages" UI threshold).
+
+    PassthroughReranker (the default, memory-constrained deployment) never
+    sets rerank_score, so under that backend this only fires on a true
+    empty result -- a real reranker (cross_encoder/nvidia) additionally
+    triggers expansion when it actively scores the top candidate as a poor
+    match, which is exactly the "wording mismatch against a real answer"
+    case query expansion exists to catch.
+    """
+    if not results:
+        return True
+    top = min(results, key=lambda r: r.final_rank)
+    return top.rerank_score is not None and top.rerank_score <= 0
 
 
 def _build_claim_diagnostics(verification: VerificationReport, context) -> list[dict]:
@@ -370,10 +401,15 @@ class RagPipeline:
         here so the two paths can't drift.
         """
         comparative = is_comparative_query(question)
+        broad = is_broad_query(question)
+        multi_concept = comparative or broad
         decompose_capture: dict = {}
         subqueries = (
-            decompose_query(question, self._generation_provider, capture=decompose_capture)
-            if comparative else [question]
+            decompose_query(
+                question, self._generation_provider,
+                max_subqueries=_MAX_MULTI_CONCEPT_SUBQUERIES, capture=decompose_capture,
+            )
+            if multi_concept else [question]
         )
 
         def _retrieve_one(q: str, trace_for_call):
@@ -386,13 +422,33 @@ class RagPipeline:
         else:
             results_per_query = _retrieve_subqueries_concurrently(subqueries, _retrieve_one)
 
+        # A single-concept question whose only retrieval pass came back
+        # empty or with no real match likely has a wording mismatch against
+        # the source text, not a genuinely uncovered topic -- retry with
+        # alternate phrasings before giving up (see _needs_query_expansion).
+        # Only engages on a real miss, so already-working single-fact
+        # queries are retrieved exactly as before, at no extra cost.
+        if not multi_concept and _needs_query_expansion(results_per_query[0]):
+            expanded = expand_query(question, self._generation_provider, capture=decompose_capture)
+            if len(expanded) > 1:
+                subqueries = expanded
+                results_per_query = _retrieve_subqueries_concurrently(subqueries, _retrieve_one)
+
         concepts_retrieved = sum(1 for results in results_per_query if results)
         dev_trace.log_query_decomposition(
-            comparative, subqueries, decompose_capture.get("raw"), concepts_retrieved,
+            multi_concept, subqueries, decompose_capture.get("raw"), concepts_retrieved,
         )
         retrieved_chunks, provenance_map = _merge_multi_query_results(results_per_query)
-        retrieved_chunks = sorted(retrieved_chunks, key=lambda r: r.final_rank)[:max_chunks]
-        required_chunks = max(3 if comparative else 1, len(subqueries))
+        # A merged multi-concept pool must not be sliced down to max_chunks
+        # (5 by default) before every sub-query's best chunk has a chance to
+        # survive -- an 8-way decomposition losing 3 concepts to a 5-slot
+        # cutoff *before* pruning even runs was exactly why "Compare PAYE,
+        # UIF and SDL" silently dropped PAYE. Only ever widens the slice for
+        # genuine multi-query results (len(subqueries) > 1); a single-query
+        # answer keeps today's exact max_chunks behavior.
+        effective_max_chunks = max(max_chunks, len(subqueries)) if len(subqueries) > 1 else max_chunks
+        retrieved_chunks = sorted(retrieved_chunks, key=lambda r: r.final_rank)[:effective_max_chunks]
+        required_chunks = max(3 if multi_concept else 1, len(subqueries))
         pruned_chunks = prune_by_score_margin(
             retrieved_chunks, self._context_prune_margin, min_keep=required_chunks,
         )
@@ -412,7 +468,7 @@ class RagPipeline:
 
         layout = (
             ContextLayout.GROUPED
-            if comparative and self._context_layout == ContextLayout.GROUPED
+            if multi_concept and self._context_layout == ContextLayout.GROUPED
             else ContextLayout.FLAT
         )
         context = build_context(context_chunks, subqueries, layout=layout)
