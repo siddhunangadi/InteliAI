@@ -2,11 +2,10 @@ import { useState } from 'react'
 import { motion } from 'framer-motion'
 import { Check } from 'lucide-react'
 import Step1Upload from './Step1Upload'
-import Step2Extract from './Step2Extract'
 import Step3Review from './Step3Review'
 import Step4Success from './Step4Success'
 
-type Step = 1 | 2 | 3 | 4
+type Step = 1 | 2 | 3
 type Result = { filename: string; status: string; error: string | null }
 
 interface UploadData {
@@ -17,9 +16,8 @@ interface UploadData {
 
 const STEPS = [
   { number: 1, name: 'Upload', description: 'Select documents' },
-  { number: 2, name: 'Details', description: 'Add metadata' },
-  { number: 3, name: 'Review', description: 'Verify information' },
-  { number: 4, name: 'Complete', description: 'Documents indexed' },
+  { number: 2, name: 'Details', description: 'Optional metadata' },
+  { number: 3, name: 'Complete', description: 'Documents indexed' },
 ]
 
 export default function UploadWorkflow() {
@@ -31,13 +29,9 @@ export default function UploadWorkflow() {
     setCurrentStep(2)
   }
 
-  const handleStep2Complete = () => {
-    setCurrentStep(3)
-  }
-
-  const handleStep3Complete = (results: Result[]) => {
+  const handleStep2Complete = (results: Result[]) => {
     setData(prev => ({ ...prev, results }))
-    setCurrentStep(4)
+    setCurrentStep(3)
   }
 
   const setMetadata = (metadata: Record<string, unknown>) => {
@@ -81,22 +75,14 @@ export default function UploadWorkflow() {
       >
         {currentStep === 1 && <Step1Upload onComplete={handleStep1Complete} />}
         {currentStep === 2 && (
-          <Step2Extract
+          <Step3Review
             files={data.files}
             metadata={data.metadata}
             onChange={setMetadata}
             onComplete={handleStep2Complete}
           />
         )}
-        {currentStep === 3 && (
-          <Step3Review
-            files={data.files}
-            metadata={data.metadata}
-            onChange={setMetadata}
-            onComplete={handleStep3Complete}
-          />
-        )}
-        {currentStep === 4 && <Step4Success results={data.results} />}
+        {currentStep === 3 && <Step4Success results={data.results} />}
       </motion.div>
     </div>
   )

@@ -77,7 +77,7 @@ export default function Step1Upload({ onComplete }: Step1UploadProps) {
       )}
 
       <Button onClick={() => onComplete(files)} disabled={files.length === 0} className="w-full">
-        Continue to AI Extraction
+        Continue
       </Button>
     </div>
   )
