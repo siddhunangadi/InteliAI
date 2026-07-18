@@ -178,6 +178,27 @@ def test_trailing_text_after_valid_json_is_recovered():
     assert result.verification.total_claims == 1
 
 
+def test_truncated_json_recovers_answer_field_via_regex():
+    """Production bug: a max_tokens cutoff truncates the JSON mid-object
+    (missing closing braces), which no structural repair can fix. The
+    "answer" field is still intact near the start though -- must recover
+    it via regex instead of showing the user a raw JSON fragment with
+    curly braces and unclosed strings."""
+    chunks = [make_retrieved_chunk("c1", "some text")]
+    truncated = (
+        '{"answer": "Compliance primarily protects consumers by ensuring '
+        'businesses act responsibly.", "claims": [{"text": "Some claim'
+        # cut off mid-string, no closing quote/brace at all
+    )
+    pipeline = RagPipeline(FakeRetriever(chunks), MockProvider(canned_json=truncated))
+
+    result = pipeline.answer("question")
+
+    assert result.answer == "Compliance primarily protects consumers by ensuring businesses act responsibly."
+    assert result.error is not None
+    assert not result.answer.strip().startswith("{")
+
+
 def test_inline_citation_drift_is_flagged_not_rewritten():
     """When inline [dN] markers in the answer prose disagree with the
     structured claims' citation_ids, the pipeline must not rewrite the

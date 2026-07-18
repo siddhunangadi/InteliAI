@@ -508,6 +508,20 @@ class RagPipeline:
                     # the user as a literal answer.
                     parsed, _ = json.JSONDecoder().raw_decode(raw_output.strip())
                 except json.JSONDecodeError as e:
+                    # Genuinely truncated JSON (response cut off mid-object,
+                    # usually a max_tokens limit) can't be repaired
+                    # structurally -- but the "answer" field is almost
+                    # always intact near the start, so pull just that
+                    # string out with a regex rather than showing the user
+                    # a raw JSON fragment full of curly braces.
+                    match = re.search(r'"answer"\s*:\s*"((?:[^"\\]|\\.)*)"', raw_output)
+                    if match:
+                        try:
+                            recovered = json.loads(f'"{match.group(1)}"')
+                            degraded = RagAnswerDraft(answer=recovered, claims=[], metadata=metadata)
+                            return degraded, f"failed to parse structured generation output: {e}"
+                        except json.JSONDecodeError:
+                            pass
                     degraded = RagAnswerDraft(answer=raw_output, claims=[], metadata=metadata)
                     return degraded, f"failed to parse structured generation output: {e}"
 

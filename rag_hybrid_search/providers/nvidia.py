@@ -56,7 +56,11 @@ class NvidiaProvider(EmbeddingProvider, GenerationProvider):
         payload = {
             "model": self._generation_model,
             "messages": [{"role": "user", "content": prompt}],
-            "max_tokens": 1024,
+            # 1024 was too tight for the structured {answer, claims[]} JSON
+            # output on longer/multi-claim questions -- the response gets
+            # cut off mid-object, producing unparseable truncated JSON that
+            # falls all the way back to showing the raw text to the user.
+            "max_tokens": 2048,
         }
         payload.update(kwargs)
         response = self._client.post(f"{_BASE_URL}/chat/completions", json=payload)
