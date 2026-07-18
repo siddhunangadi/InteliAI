@@ -498,9 +498,18 @@ class RagPipeline:
         except json.JSONDecodeError:
             try:
                 parsed = json.loads(_repair_unescaped_quotes(raw_output))
-            except json.JSONDecodeError as e:
-                degraded = RagAnswerDraft(answer=raw_output, claims=[], metadata=metadata)
-                return degraded, f"failed to parse structured generation output: {e}"
+            except json.JSONDecodeError:
+                try:
+                    # Model sometimes emits a valid JSON object followed by
+                    # trailing rambling text ("Extra data" past the closing
+                    # '}') -- parse just the first complete object and
+                    # discard whatever comes after it, instead of dumping
+                    # the whole raw completion (including the good JSON) to
+                    # the user as a literal answer.
+                    parsed, _ = json.JSONDecoder().raw_decode(raw_output.strip())
+                except json.JSONDecodeError as e:
+                    degraded = RagAnswerDraft(answer=raw_output, claims=[], metadata=metadata)
+                    return degraded, f"failed to parse structured generation output: {e}"
 
         try:
             claims = [Claim(**c) for c in parsed.get("claims", [])]

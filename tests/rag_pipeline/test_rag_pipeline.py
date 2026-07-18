@@ -153,6 +153,31 @@ def test_malformed_json_from_provider_degrades_gracefully():
     assert result.verification.total_claims == 0
 
 
+def test_trailing_text_after_valid_json_is_recovered():
+    """Production bug: the model sometimes emits a complete, valid JSON
+    object and then keeps rambling afterward, producing
+    json.JSONDecodeError("Extra data"). The old fallback dumped the whole
+    raw completion -- including the good JSON -- as the literal answer
+    text shown to the user. Must parse the first JSON object and ignore
+    the trailing garbage instead of degrading."""
+    chunks = [make_retrieved_chunk("c1", "The business's treatment towards consumers is regulated.")]
+    valid_json = json.dumps({
+        "answer": "Consumer protection covers how a business treats its consumers [d1].",
+        "claims": [{
+            "text": "Consumer protection covers business treatment of consumers.",
+            "citation_ids": ["d1"],
+        }],
+    })
+    trailing_garbage = valid_json + "\n\nHope this helps! Let me know if you have more questions."
+    pipeline = RagPipeline(FakeRetriever(chunks), MockProvider(canned_json=trailing_garbage))
+
+    result = pipeline.answer("Which compliance areas protect consumers?")
+
+    assert result.error is None
+    assert result.answer == "Consumer protection covers how a business treats its consumers [d1]."
+    assert result.verification.total_claims == 1
+
+
 def test_inline_citation_drift_is_flagged_not_rewritten():
     """When inline [dN] markers in the answer prose disagree with the
     structured claims' citation_ids, the pipeline must not rewrite the
