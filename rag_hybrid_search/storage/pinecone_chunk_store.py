@@ -17,6 +17,7 @@ one exception: Pinecone's delete endpoint does accept a metadata filter
 directly, unlike query/list).
 """
 from concurrent.futures import ThreadPoolExecutor
+from datetime import datetime, timezone
 from typing import Iterator
 
 from rag_hybrid_search.compliance.regulation_models import LegalMetadata
@@ -67,6 +68,7 @@ def _chunk_to_metadata(chunk: Chunk, source_path: str | None = None) -> dict:
         "page": chunk.page if chunk.page is not None else -1,
         "char_count": chunk.char_count,
         "source_path": source_path or "",
+        "indexed_at": datetime.now(timezone.utc).isoformat(),
     }
     if lm:
         metadata.update({
@@ -336,7 +338,24 @@ class PineconeChunkStore(ChunkStore):
             document_id = metadata.get("document_id")
             entry = counts.setdefault(
                 document_id,
-                {"document_id": document_id, "source_path": metadata.get("source_path"), "chunk_count": 0},
+                {
+                    "document_id": document_id,
+                    "source_path": metadata.get("source_path"),
+                    "chunk_count": 0,
+                    "indexed_at": metadata.get("indexed_at", ""),
+                },
             )
             entry["chunk_count"] += 1
-        return sorted(counts.values(), key=lambda d: d["document_id"])
+            # All chunks of one document are written in the same ingest
+            # call, but take the earliest just in case a re-ingest ever
+            # mixes hashes across a partial old/new write.
+            if metadata.get("indexed_at", "") and (
+                not entry["indexed_at"] or metadata["indexed_at"] < entry["indexed_at"]
+            ):
+                entry["indexed_at"] = metadata["indexed_at"]
+        # Most recently indexed first -- documents written before this field
+        # existed have "" and sort last. Falls back to document_id (a
+        # content hash) only to break ties deterministically.
+        return sorted(
+            counts.values(), key=lambda d: (d["indexed_at"], d["document_id"]), reverse=True,
+        )
