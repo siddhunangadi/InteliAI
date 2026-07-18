@@ -92,10 +92,22 @@ class ApiClient {
   }
 
   async *answerStream(request: Types.AnswerRequest): AsyncGenerator<string> {
-    const response = await this.client.post('/answer/stream', request, {
-      responseType: 'stream',
+    // axios's `responseType: 'stream'` only yields a Web ReadableStream in
+    // Node; in the browser response.data has no .getReader(). SSE needs a
+    // real fetch() response.body here instead.
+    const apiKey = localStorage.getItem('apiKey')
+    const response = await fetch(`${BASE_URL}/answer/stream`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        ...(apiKey ? { 'X-API-Key': apiKey } : {}),
+      },
+      body: JSON.stringify(request),
     })
-    const reader = response.data.getReader()
+    if (!response.ok || !response.body) {
+      throw new Error(`Stream request failed: ${response.status}`)
+    }
+    const reader = response.body.getReader()
     const decoder = new TextDecoder()
 
     try {
