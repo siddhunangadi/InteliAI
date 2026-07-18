@@ -158,13 +158,35 @@ def test_get_missing_chunk_returns_none(mock_client):
     assert store.get("missing") is None
 
 
-def test_delete_by_document(mock_client):
+def test_delete_by_document_deletes_by_id_not_filter(mock_client):
+    """Pinecone serverless indexes (the default, and what this project
+    provisions) silently ignore index.delete(filter=...) -- it's a
+    pod-index-only feature. delete_by_document must scan for the matching
+    chunk ids (the same client-side pattern get_by_document uses) and
+    delete by explicit id list instead, or deletes are a no-op in
+    production with no error raised."""
     client, mock_index = mock_client
+    mock_index.list.return_value = iter([_list_page("c1", "c2")])
+    mock_index.fetch.return_value = MagicMock(
+        vectors={
+            "c1": MagicMock(metadata=_metadata("d1", 0, "hello")),
+            "c2": MagicMock(metadata=_metadata("d2", 0, "world")),
+        }
+    )
     store = PineconeChunkStore(client, embedding_dimension=3)
     store.delete_by_document("d1")
-    mock_index.delete.assert_called_once_with(
-        filter={"document_id": {"$eq": "d1"}},
+    mock_index.delete.assert_called_once_with(ids=["c1"])
+
+
+def test_delete_by_document_skips_delete_call_when_nothing_matches(mock_client):
+    client, mock_index = mock_client
+    mock_index.list.return_value = iter([_list_page("c2")])
+    mock_index.fetch.return_value = MagicMock(
+        vectors={"c2": MagicMock(metadata=_metadata("d2", 0, "world"))}
     )
+    store = PineconeChunkStore(client, embedding_dimension=3)
+    store.delete_by_document("d1")
+    mock_index.delete.assert_not_called()
 
 
 # -- get_by_document / get_document_hash / get_by_legal_metadata --------------

@@ -275,7 +275,18 @@ class PineconeChunkStore(ChunkStore):
         return None
 
     def delete_by_document(self, document_id: str) -> None:
-        self._client.index.delete(filter={"document_id": {"$eq": document_id}})
+        # Metadata-filter delete (index.delete(filter=...)) only works on
+        # pod-based Pinecone indexes; serverless indexes (the default today,
+        # and what this project provisions) silently drop it -- no error,
+        # no deletion. Delete by explicit id list instead, same pattern
+        # get_by_document already uses via _scan_all().
+        ids = [
+            chunk_id
+            for chunk_id, metadata, _values in self._scan_all()
+            if metadata.get("document_id") == document_id
+        ]
+        if ids:
+            self._client.index.delete(ids=ids)
 
     def all(self) -> Iterator[Chunk]:
         for chunk_id, metadata, _values in self._scan_all():
