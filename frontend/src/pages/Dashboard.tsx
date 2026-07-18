@@ -1,6 +1,5 @@
 import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { motion } from 'framer-motion'
 import { formatDistanceToNow } from 'date-fns'
 import { Search, Upload, MessageCircle, FileText, ArrowUpRight } from 'lucide-react'
 import { apiClient } from '@/lib/api'
@@ -23,8 +22,8 @@ export default function Dashboard() {
   }, [])
 
   const readiness = diagnostics?.readiness ?? []
-  const allReady = readiness.length > 0 && readiness.every(c => c.ok)
-  const someDown = readiness.some(c => !c.ok)
+  const allReady = readiness.length > 0 && readiness.every((c) => c.ok)
+  const someDown = readiness.some((c) => !c.ok)
 
   const stats = [
     { label: 'Regulations', value: docs?.total_documents ?? 0 },
@@ -34,71 +33,80 @@ export default function Dashboard() {
 
   return (
     <div className="space-y-10">
-      {/* Hero */}
-      <motion.div initial={{ opacity: 0, y: -12 }} animate={{ opacity: 1, y: 0 }} className="space-y-6">
+      {/* Hero: the ask-first workspace. Search dominates; stats recede to a
+          thin inline strip beneath it (DESIGN.md: ask is the hero, stats a
+          supporting player, never the reverse). */}
+      <div className="space-y-6">
         <div className="flex items-start justify-between gap-6 flex-wrap">
           <div>
-            <h1 className="text-4xl font-semibold tracking-tighter">Welcome back</h1>
-            <p className="text-slate-400 mt-1.5">
+            <h1 className="text-display text-ink">Welcome back</h1>
+            <p className="text-ink-muted mt-1.5">
               {docs?.total_documents
                 ? `${docs.total_documents} regulation${docs.total_documents !== 1 ? 's' : ''} indexed and searchable.`
                 : 'Upload your first regulation to get started.'}
             </p>
           </div>
           <div
-            className={`flex items-center gap-2 px-3 py-1.5 rounded-full border text-sm font-medium ${
+            className={`flex items-center gap-2 px-3 py-1.5 rounded-sm border text-label ${
               readiness.length === 0
-                ? 'border-slate-700 text-slate-400 bg-slate-800/50'
+                ? 'border-seam text-ink-muted bg-panel'
                 : allReady
-                ? 'border-emerald-500/30 text-emerald-400 bg-emerald-500/10'
-                : 'border-red-500/30 text-red-400 bg-red-500/10'
+                ? 'border-status-verified/30 text-status-verified bg-status-verified/10'
+                : 'border-status-critical/30 text-status-critical bg-status-critical/10'
             }`}
           >
-            <span className={`w-1.5 h-1.5 rounded-full ${allReady ? 'bg-emerald-400' : someDown ? 'bg-red-400' : 'bg-slate-500'}`} />
+            <span className={`w-1.5 h-1.5 rounded-full ${allReady ? 'bg-status-verified' : someDown ? 'bg-status-critical' : 'bg-ink-muted'}`} />
             {readiness.length === 0 ? 'Diagnostics unavailable' : allReady ? 'All systems operational' : 'Degraded'}
           </div>
+        </div>
+
+        {/* Ask -- the primary action on this screen */}
+        <button
+          onClick={() => navigate('/chat')}
+          className="w-full text-left card p-6 hover:bg-panel-raised transition-colors group"
+        >
+          <div className="flex items-center gap-3">
+            <MessageCircle className="w-5 h-5 text-signal flex-shrink-0" />
+            <span className="text-title text-ink-muted group-hover:text-ink transition-colors">
+              Ask a question about your regulations, policies, or filings...
+            </span>
+          </div>
+        </button>
+
+        <div className="flex flex-col sm:flex-row gap-3">
+          <div className="flex-1 relative">
+            <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-ink-muted" />
+            <input
+              type="text"
+              placeholder="Search regulations, circulars, or acts..."
+              className="input pl-10"
+              onClick={() => navigate('/regulations')}
+              readOnly
+            />
+          </div>
+          <Button onClick={() => navigate('/upload')} variant="secondary" icon={<Upload className="w-4 h-4" />}>
+            Upload
+          </Button>
         </div>
 
         {/* Inline stat strip -- not cards */}
         <div className="flex items-center gap-8 flex-wrap">
           {stats.map((s, i) => (
-            <div key={s.label} className={`flex items-baseline gap-2 ${i > 0 ? 'pl-8 border-l border-slate-800' : ''}`}>
-              <span className="text-2xl font-semibold tracking-tighter tabular-nums">{loading ? '—' : s.value}</span>
-              <span className="text-sm text-slate-400">{s.label}</span>
+            <div key={s.label} className={`flex items-baseline gap-2 ${i > 0 ? 'pl-8 border-l border-seam' : ''}`}>
+              <span className="text-2xl font-semibold tracking-tighter tabular-nums text-ink">{loading ? '—' : s.value}</span>
+              <span className="text-label text-ink-muted">{s.label}</span>
             </div>
           ))}
         </div>
+      </div>
 
-        {/* Search & Actions */}
-        <div className="flex flex-col sm:flex-row gap-3">
-          <div className="flex-1 relative">
-            <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-500" />
-            <input
-              type="text"
-              placeholder="Search regulations, circulars, or acts..."
-              className="w-full pl-10 pr-4 py-2.5 bg-slate-900/60 border border-slate-800 rounded-xl text-slate-300 placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-blue-500/40 focus:border-blue-500/50 transition-all"
-              onClick={() => navigate('/regulations')}
-              readOnly
-            />
-          </div>
-          <Button onClick={() => navigate('/chat')} className="flex items-center gap-2">
-            <MessageCircle className="w-4 h-4" />
-            Ask AI
-          </Button>
-          <Button onClick={() => navigate('/upload')} variant="secondary" className="flex items-center gap-2">
-            <Upload className="w-4 h-4" />
-            Upload
-          </Button>
-        </div>
-      </motion.div>
-
-      {/* Activity timeline */}
+      {/* Recent activity */}
       <div>
         <div className="flex items-center justify-between mb-4">
-          <h2 className="text-sm font-medium text-slate-300">Recent Activity</h2>
+          <h2 className="text-title text-ink">Recent Activity</h2>
           <button
             onClick={() => navigate('/regulations')}
-            className="text-xs text-slate-500 hover:text-slate-300 transition-colors flex items-center gap-1"
+            className="text-label text-ink-muted hover:text-ink transition-colors flex items-center gap-1"
           >
             View all <ArrowUpRight className="w-3 h-3" />
           </button>
@@ -110,34 +118,31 @@ export default function Dashboard() {
           </div>
         ) : docs?.documents?.length ? (
           <Card className="p-0 overflow-hidden">
-            <div className="divide-y divide-slate-800">
-              {docs.documents.slice(0, 6).map((doc, idx) => (
-                <motion.button
+            <div className="divide-y divide-seam">
+              {docs.documents.slice(0, 6).map((doc) => (
+                <button
                   key={doc.document_id}
-                  initial={{ opacity: 0, x: -8 }}
-                  animate={{ opacity: 1, x: 0 }}
-                  transition={{ delay: idx * 0.04 }}
                   onClick={() => navigate('/regulations')}
-                  className="w-full flex items-center gap-4 p-4 hover:bg-slate-800/40 transition-colors text-left group"
+                  className="w-full flex items-center gap-4 p-4 hover:bg-panel-raised transition-colors text-left group"
                 >
-                  <div className="w-9 h-9 rounded-lg bg-blue-500/10 border border-blue-500/20 flex items-center justify-center flex-shrink-0">
-                    <FileText className="w-4 h-4 text-blue-400" />
+                  <div className="w-9 h-9 rounded-sm bg-panel-raised border border-seam flex items-center justify-center flex-shrink-0">
+                    <FileText className="w-4 h-4 text-ink-muted" />
                   </div>
                   <div className="flex-1 min-w-0">
-                    <p className="text-sm font-medium truncate">{doc.filename}</p>
-                    <p className="text-xs text-slate-500 mt-0.5">{doc.chunk_count} chunks indexed</p>
+                    <p className="text-sm font-medium truncate text-ink">{doc.filename}</p>
+                    <p className="text-label text-ink-muted mt-0.5">{doc.chunk_count} chunks indexed</p>
                   </div>
-                  <span className="text-xs text-slate-500 whitespace-nowrap">
+                  <span className="text-label text-ink-muted whitespace-nowrap">
                     {doc.indexed_at ? formatDistanceToNow(new Date(doc.indexed_at), { addSuffix: true }) : ''}
                   </span>
-                  <ArrowUpRight className="w-3.5 h-3.5 text-slate-600 group-hover:text-slate-400 transition-colors flex-shrink-0" />
-                </motion.button>
+                  <ArrowUpRight className="w-3.5 h-3.5 text-ink-muted group-hover:text-ink transition-colors flex-shrink-0" />
+                </button>
               ))}
             </div>
           </Card>
         ) : (
           <Card>
-            <p className="text-sm text-slate-400 py-6 text-center">No regulations uploaded yet.</p>
+            <p className="text-sm text-ink-muted py-6 text-center">No regulations uploaded yet.</p>
           </Card>
         )}
       </div>
