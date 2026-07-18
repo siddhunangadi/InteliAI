@@ -14,40 +14,55 @@ const config: Config = {
       },
       letterSpacing: {
         tight: '-0.02em',
+        tighter: '-0.035em',
       },
-      // Neutral base: cool steel-blue near-black (hue ~230), not generic
-      // Tailwind slate -- the instrument-panel/compliance-terminal register.
-      // Replaces the default `slate` scale project-wide (37 files already
-      // use slate-* utilities), the single highest-leverage lever for a
-      // full identity change without touching every component.
+      boxShadow: {
+        premium: '0 1px 2px rgba(0,0,0,0.4), 0 8px 24px -8px rgba(0,0,0,0.5)',
+        glow: '0 0 0 1px rgba(124,92,240,0.4), 0 8px 32px -8px rgba(98,56,232,0.5)',
+      },
+      backdropBlur: {
+        xs: '2px',
+      },
+      // True near-black neutrals (Vercel-register, minimal chroma, faint
+      // violet tint toward the primary hue) -- overrides the default
+      // `slate` scale project-wide (~40 files use slate-* utilities), the
+      // single highest-leverage lever for a full identity change.
       colors: {
         slate: {
-          50: '#f4f6fa',
-          100: '#e7ebf3',
-          200: '#d0d7e6',
-          300: '#a9b4cc',
-          400: '#7986a6',
-          500: '#576181',
-          600: '#414a66',
-          700: '#2f374f',
-          800: '#1c2236',
-          900: '#131826',
-          950: '#0a0d16',
+          50: '#f6f6f9',
+          100: '#ececf3',
+          200: '#d6d6e4',
+          300: '#b0b0c9',
+          400: '#8484a3',
+          500: '#5e5e79',
+          600: '#46465d',
+          700: '#313142',
+          800: '#1a1a24',
+          900: '#101015',
+          950: '#08080b',
         },
-        // Primary: chronometer/instrument blue (hue ~210), the confident
-        // precision accent -- primary actions, current selection, links.
+        // Primary: punchy indigo-violet -- premium/Linear-Vercel register,
+        // deliberately not generic SaaS blue. Primary actions, current
+        // selection, focus rings, links.
         blue: {
-          50: '#eef7fd',
-          100: '#d7edfb',
-          200: '#b0daf5',
-          300: '#7cc0eb',
-          400: '#43a1db',
-          500: '#2183c4',
-          600: '#1667a0',
-          700: '#14547f',
-          800: '#154568',
-          900: '#163a56',
-          950: '#0e2436',
+          50: '#f1eefe',
+          100: '#e1dafd',
+          200: '#c3b6fb',
+          300: '#9f88f7',
+          400: '#7c5cf0',
+          500: '#6238e8',
+          600: '#4f28c9',
+          700: '#4020a3',
+          800: '#351c80',
+          900: '#2c1a63',
+          950: '#1a0f3d',
+        },
+        // Accent: warm coral/rose, used sparingly (gradient highlights,
+        // rare emphasis) -- never a primary-action color.
+        accent: {
+          400: '#fb7a9b',
+          500: '#f4507a',
+          600: '#dc3563',
         },
       },
     },

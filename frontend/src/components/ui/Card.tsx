@@ -11,8 +11,9 @@ export function Card({ children, className, interactive }: CardProps) {
   return (
     <div
       className={clsx(
-        'bg-slate-900 border border-slate-800 rounded-lg p-6 shadow-lg',
-        interactive && 'hover:border-slate-700 transition-colors cursor-pointer',
+        'bg-slate-900/60 border border-slate-800 rounded-xl p-6 shadow-premium backdrop-blur-xs',
+        'ring-1 ring-inset ring-white/[0.03]',
+        interactive && 'hover:border-slate-700 hover:bg-slate-900/80 transition-all duration-200 cursor-pointer',
         className
       )}
     >
@@ -31,7 +32,7 @@ export function MetricCard({ label, value, trend, unit }: {
     <Card>
       <p className="text-slate-400 text-sm font-medium">{label}</p>
       <div className="flex items-end gap-2 mt-2">
-        <p className="text-3xl font-bold">{value}</p>
+        <p className="text-3xl font-semibold tracking-tighter">{value}</p>
         {unit && <p className="text-slate-400 text-sm mb-1">{unit}</p>}
       </div>
       {trend && (
@@ -63,7 +64,7 @@ export function StatusCard({ status, label, details }: {
   }
 
   return (
-    <div className={`border rounded-lg p-4 ${statusColors[status]}`}>
+    <div className={`border rounded-xl p-4 ${statusColors[status]}`}>
       <div className="flex items-center gap-2">
         <div className={`w-2 h-2 rounded-full ${statusDots[status]}`} />
         <span className="font-medium text-sm">{label}</span>
