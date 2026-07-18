@@ -1,7 +1,7 @@
 import pytest
 
 from rag_hybrid_search.models import Chunk, ChunkProvenance, ContextChunk, RetrievedChunk
-from rag_hybrid_search.trace import RequestTrace
+from rag_hybrid_search.trace import RequestTrace, langsmith_enabled
 
 
 def make_result(chunk_id, rrf_score=0.5, rerank_score=None, final_rank=1):
@@ -117,6 +117,52 @@ def test_log_query_decomposition_records_subqueries_raw_output_and_coverage(monk
     assert "Coverage" in out
     assert "67%" in out
     assert "Raw decomposition output" in out
+
+
+def test_langsmith_enabled_reflects_api_key_presence(monkeypatch):
+    monkeypatch.delenv("LANGSMITH_API_KEY", raising=False)
+    assert langsmith_enabled() is False
+    monkeypatch.setenv("LANGSMITH_API_KEY", "test-key")
+    assert langsmith_enabled() is True
+
+
+def test_finish_sends_to_langsmith_when_enabled(monkeypatch):
+    monkeypatch.delenv("TRACE_RAG", raising=False)
+    monkeypatch.setenv("LANGSMITH_API_KEY", "test-key")
+    trace = RequestTrace("question", {})
+
+    calls = []
+    trace._send_to_langsmith = lambda: calls.append(True)
+    trace.finish()
+
+    assert calls == [True]
+
+
+def test_finish_skips_langsmith_when_disabled(monkeypatch):
+    monkeypatch.delenv("TRACE_RAG", raising=False)
+    monkeypatch.delenv("LANGSMITH_API_KEY", raising=False)
+    trace = RequestTrace("question", {})
+
+    calls = []
+    trace._send_to_langsmith = lambda: calls.append(True)
+    trace.finish()
+
+    assert calls == []
+
+
+def test_send_to_langsmith_swallows_client_errors(monkeypatch):
+    monkeypatch.setenv("LANGSMITH_API_KEY", "test-key")
+    trace = RequestTrace("question", {})
+
+    class BoomClient:
+        def create_run(self, **kwargs):
+            raise RuntimeError("network down")
+
+    monkeypatch.setattr(
+        "rag_hybrid_search.trace._get_langsmith_client", lambda: BoomClient()
+    )
+
+    trace._send_to_langsmith()  # must not raise
 
 
 def test_log_query_decomposition_coverage_zero_when_no_subqueries():
