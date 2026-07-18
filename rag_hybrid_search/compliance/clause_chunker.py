@@ -30,17 +30,21 @@ class ClauseChunker(Chunker):
         self,
         document_title: str,
         regulation: str | None = None,
+        authority: str | None = None,
         jurisdiction: str | None = None,
         version_label: str | None = None,
         document_type: DocumentType | None = None,
         effective_date: date | None = None,
+        risk_category: str | None = None,
     ):
         self._document_title = document_title
         self._regulation = regulation
+        self._authority = authority
         self._jurisdiction = jurisdiction
         self._version_label = version_label
         self._document_type = document_type
         self._effective_date = effective_date
+        self._risk_category = risk_category
 
     def chunk(self, document: Document) -> list[Chunk]:
         if not document.content.strip():
@@ -58,6 +62,7 @@ class ClauseChunker(Chunker):
                 document_id=clause_span.metadata.document_id,
                 document_title=clause_span.metadata.document_title,
                 regulation=self._regulation,
+                authority=self._authority,
                 version=self._version_label,
                 jurisdiction=self._jurisdiction,
                 article=clause_span.metadata.article,
@@ -66,6 +71,7 @@ class ClauseChunker(Chunker):
                 effective_date=self._effective_date,
                 document_type=self._document_type,
                 page=clause_span.metadata.page,
+                risk_category=self._risk_category,
             )
             chunks.append(
                 Chunk(

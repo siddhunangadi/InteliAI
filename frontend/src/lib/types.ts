@@ -74,6 +74,23 @@ export interface DocumentDetail {
   document_type: string | null
   page: number | null
   risk_category: string | null
+  version: string | null
+}
+
+export interface ExtractedMetadata {
+  document_type: string | null
+  authority: string | null
+  regulation: string | null
+  jurisdiction: string | null
+  risk_category: string | null
+  version: string | null
+  effective_date: string | null
+}
+
+export interface MetadataExtractionResponse {
+  metadata: ExtractedMetadata
+  low_confidence: boolean
+  error: string | null
 }
 
 export interface AnswerRequest {

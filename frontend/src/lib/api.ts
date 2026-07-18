@@ -59,6 +59,16 @@ class ApiClient {
     await this.client.delete(`/documents/${documentId}`)
   }
 
+  async extractMetadata(file: File): Promise<Types.MetadataExtractionResponse> {
+    const formData = new FormData()
+    formData.append('file', file)
+
+    const { data } = await this.client.post('/upload/extract-metadata', formData, {
+      headers: { 'Content-Type': 'multipart/form-data' },
+    })
+    return data
+  }
+
   async uploadDocuments(files: File[], metadata: Record<string, unknown>): Promise<Types.JobStatusResponse> {
     const formData = new FormData()
     files.forEach((file) => formData.append('files', file))

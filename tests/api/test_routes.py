@@ -212,6 +212,54 @@ def test_index_rejects_empty_document_list(client):
     assert response.status_code == 422
 
 
+def test_extract_metadata_returns_low_confidence_null_result_under_mock_provider(client):
+    """Sandbox has no NVIDIA/Gemini key configured (see client fixture), so the
+    metadata extraction provider falls back to MockProvider -- its canned
+    response has no metadata fields, so extraction should degrade to an
+    all-null, low-confidence result rather than erroring."""
+    response = client.post(
+        "/upload/extract-metadata",
+        files=[("file", ("regulation.txt", b"Section 1: NBFCs must maintain a 15% capital ratio.", "text/plain"))],
+    )
+
+    assert response.status_code == 200
+    body = response.json()
+    assert body["error"] is None
+    assert body["low_confidence"] is True
+    assert body["metadata"] == {
+        "document_type": None,
+        "authority": None,
+        "regulation": None,
+        "jurisdiction": None,
+        "risk_category": None,
+        "version": None,
+        "effective_date": None,
+    }
+
+
+def test_extract_metadata_does_not_index_the_document(client):
+    client.post(
+        "/upload/extract-metadata",
+        files=[("file", ("regulation.txt", b"Section 1: NBFCs must maintain a 15% capital ratio.", "text/plain"))],
+    )
+
+    documents = client.get("/documents").json()
+    assert documents["total_documents"] == 0
+
+
+def test_extract_metadata_survives_an_unsupported_file_extension(client):
+    response = client.post(
+        "/upload/extract-metadata",
+        files=[("file", ("notes.exe", b"whatever", "application/octet-stream"))],
+    )
+
+    assert response.status_code == 200
+    body = response.json()
+    assert body["low_confidence"] is True
+    assert body["error"] is not None
+    assert body["metadata"]["document_type"] is None
+
+
 def test_answer_degrades_gracefully_with_mock_provider(client):
     client.post(
         "/index",
