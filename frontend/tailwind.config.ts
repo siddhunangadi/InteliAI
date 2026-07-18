@@ -9,60 +9,52 @@ const config: Config = {
   ],
   theme: {
     extend: {
+      // Three fonts, three jobs (DESIGN.md "The Verbatim-Gets-Mono Rule"):
+      // Inter Tight for display headlines, Inter for body/UI, IBM Plex Mono
+      // for retrieved/logged data (chunk text, citations, audit rows).
       fontFamily: {
         sans: ['Inter', ...defaultTheme.fontFamily.sans],
+        display: ['"Inter Tight"', 'Inter', ...defaultTheme.fontFamily.sans],
+        mono: ['"IBM Plex Mono"', ...defaultTheme.fontFamily.mono],
       },
       letterSpacing: {
-        tight: '-0.02em',
-        tighter: '-0.035em',
+        tight: '-0.01em',
+        tighter: '-0.02em',
+      },
+      borderRadius: {
+        sm: '6px',
+        md: '10px',
+        lg: '14px',
       },
       boxShadow: {
-        premium: '0 1px 2px rgba(0,0,0,0.4), 0 8px 24px -8px rgba(0,0,0,0.5)',
-        glow: '0 0 0 1px rgba(124,92,240,0.4), 0 8px 32px -8px rgba(98,56,232,0.5)',
+        // The only shadow in the system -- floating/portal elements only.
+        // See DESIGN.md "The Flat-at-Rest Rule": never used on static cards.
+        // Warm-tinted (from ink, not pure black) to match the nude palette.
+        float: '0 12px 28px rgba(43,33,24,0.16)',
       },
-      backdropBlur: {
-        xs: '2px',
-      },
-      // True near-black neutrals (Vercel-register, minimal chroma, faint
-      // violet tint toward the primary hue) -- overrides the default
-      // `slate` scale project-wide (~40 files use slate-* utilities), the
-      // single highest-leverage lever for a full identity change.
+      // DESIGN.md palette: "The Terminal for Trust" -- warm nude/paper
+      // neutrals, one accent (clay) reserved for AI activity + primary
+      // actions, three status colors reserved strictly for retrieval/
+      // verification/health outcomes. Light register by explicit direction.
       colors: {
-        slate: {
-          50: '#f6f6f9',
-          100: '#ececf3',
-          200: '#d6d6e4',
-          300: '#b0b0c9',
-          400: '#8484a3',
-          500: '#5e5e79',
-          600: '#46465d',
-          700: '#313142',
-          800: '#1a1a24',
-          900: '#101015',
-          950: '#08080b',
+        sand: '#f1e9e2',
+        paper: {
+          DEFAULT: '#faf6f2',
+          raised: '#e9ded3',
         },
-        // Primary: punchy indigo-violet -- premium/Linear-Vercel register,
-        // deliberately not generic SaaS blue. Primary actions, current
-        // selection, focus rings, links.
-        blue: {
-          50: '#f1eefe',
-          100: '#e1dafd',
-          200: '#c3b6fb',
-          300: '#9f88f7',
-          400: '#7c5cf0',
-          500: '#6238e8',
-          600: '#4f28c9',
-          700: '#4020a3',
-          800: '#351c80',
-          900: '#2c1a63',
-          950: '#1a0f3d',
+        rule: '#d9c9b8',
+        ink: {
+          DEFAULT: '#2b2118',
+          muted: '#6b5d52',
         },
-        // Accent: warm coral/rose, used sparingly (gradient highlights,
-        // rare emphasis) -- never a primary-action color.
-        accent: {
-          400: '#fb7a9b',
-          500: '#f4507a',
-          600: '#dc3563',
+        clay: {
+          DEFAULT: '#a9613f',
+          hover: '#8f4e32',
+        },
+        status: {
+          verified: '#4f7a4a',
+          caution: '#9c6b1f',
+          critical: '#a4402f',
         },
       },
     },
