@@ -1,22 +1,27 @@
 import { useState, useEffect } from 'react'
 import { isAxiosError } from 'axios'
-import { motion } from 'framer-motion'
-import { FileText } from 'lucide-react'
+import { FileText, Trash2 } from 'lucide-react'
 import { apiClient } from '@/lib/api'
-import { DocumentSummary } from '@/lib/types'
-import { Card, Button, Input } from '@/components/ui'
+import { DocumentSummary, DocumentDetail } from '@/lib/types'
+import { Card, Button, Input, ConfirmDialog, useToast } from '@/components/ui'
 
 export default function Regulations() {
   const [docs, setDocs] = useState<DocumentSummary[]>([])
   const [filteredDocs, setFilteredDocs] = useState<DocumentSummary[]>([])
   const [searchTerm, setSearchTerm] = useState('')
   const [selectedDoc, setSelectedDoc] = useState<DocumentSummary | null>(null)
+  const [detail, setDetail] = useState<DocumentDetail | null>(null)
+  const [detailLoading, setDetailLoading] = useState(false)
+  const [confirmDelete, setConfirmDelete] = useState(false)
+  const [deleting, setDeleting] = useState(false)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string>()
+  const { addToast } = useToast()
 
   const pageSize = 20
 
-  useEffect(() => {
+  const load = () => {
+    setLoading(true)
     apiClient.listDocuments().then((res) => {
       setDocs(res.documents || [])
       setFilteredDocs(res.documents || [])
@@ -30,7 +35,9 @@ export default function Regulations() {
       }
       setLoading(false)
     })
-  }, [])
+  }
+
+  useEffect(load, [])
 
   useEffect(() => {
     const result = docs.filter((doc) => {
@@ -40,97 +47,158 @@ export default function Regulations() {
     setFilteredDocs(result)
   }, [searchTerm, docs])
 
+  useEffect(() => {
+    if (!selectedDoc) {
+      setDetail(null)
+      return
+    }
+    setDetailLoading(true)
+    apiClient.getDocument(selectedDoc.document_id)
+      .then(setDetail)
+      .catch(() => setDetail(null))
+      .finally(() => setDetailLoading(false))
+  }, [selectedDoc])
+
+  const handleDelete = async () => {
+    if (!selectedDoc) return
+    setDeleting(true)
+    try {
+      await apiClient.deleteDocument(selectedDoc.document_id)
+      addToast('success', `${selectedDoc.filename} deleted.`)
+      setSelectedDoc(null)
+      setConfirmDelete(false)
+      load()
+    } catch {
+      addToast('error', 'Failed to delete document.')
+    } finally {
+      setDeleting(false)
+    }
+  }
+
   return (
     <div className="space-y-6">
-      <motion.div initial={{ opacity: 0, y: -20 }} animate={{ opacity: 1, y: 0 }}>
-        <h1 className="text-3xl font-bold">Regulations & Compliance Documents</h1>
-        <p className="text-slate-400 mt-1">Browse regulatory documents</p>
-      </motion.div>
+      <div>
+        <h1 className="text-display text-ink">Regulations & Compliance Documents</h1>
+        <p className="text-ink-muted mt-1">Browse regulatory documents</p>
+      </div>
 
-      {/* Search */}
-      <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.1 }}>
-        <div className="flex gap-3">
-          <Input
-            placeholder="Search by filename..."
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-            className="flex-1"
-          />
-        </div>
-      </motion.div>
+      <Input
+        placeholder="Search by filename..."
+        value={searchTerm}
+        onChange={(e) => setSearchTerm(e.target.value)}
+      />
 
       {error && (
-        <Card className="bg-red-500/10 border-red-500/30">
-          <p className="text-red-400 text-sm">{error}</p>
+        <Card className="bg-status-critical/10 border-status-critical/30">
+          <p className="text-status-critical text-sm">{error}</p>
         </Card>
       )}
 
-      {/* Documents List */}
       {loading ? (
         <div className="space-y-3">
           {Array.from({ length: 5 }).map((_, i) => (
-            <div key={i} className="h-16 bg-slate-800/50 rounded animate-pulse" />
+            <div key={i} className="h-16 bg-paper-raised rounded-md" />
           ))}
         </div>
       ) : error ? null : (
-        <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.2 }}>
+        <Card>
+          {filteredDocs.length === 0 ? (
+            <p className="text-ink-muted text-center py-8">No documents found</p>
+          ) : (
+            <div className="space-y-1">
+              {filteredDocs.slice(0, pageSize).map((doc) => (
+                <button
+                  key={doc.document_id}
+                  onClick={() => setSelectedDoc(doc)}
+                  className="w-full flex items-start gap-3 p-4 hover:bg-paper-raised rounded-sm transition-colors text-left"
+                >
+                  <FileText className="w-5 h-5 text-clay flex-shrink-0 mt-1" />
+                  <div className="flex-1 min-w-0">
+                    <p className="font-medium text-ink">{doc.filename}</p>
+                    <p className="text-label text-ink-muted mt-1">{doc.chunk_count} chunks</p>
+                  </div>
+                </button>
+              ))}
+            </div>
+          )}
+        </Card>
+      )}
+
+      {/* Detail view: real metadata + content preview from GET /documents/{id} */}
+      {selectedDoc && (
+        <div>
+          <div className="flex items-center justify-between mb-4">
+            <Button onClick={() => setSelectedDoc(null)} variant="secondary">
+              ← Back to List
+            </Button>
+            <Button variant="danger" icon={<Trash2 className="w-4 h-4" />} onClick={() => setConfirmDelete(true)}>
+              Delete Document
+            </Button>
+          </div>
           <Card>
-            {filteredDocs.length === 0 ? (
-              <p className="text-slate-400 text-center py-8">No documents found</p>
-            ) : (
-              <div className="space-y-2">
-                {filteredDocs.slice(0, pageSize).map((doc, idx) => (
-                  <motion.button
-                    key={doc.document_id}
-                    initial={{ opacity: 0, x: -20 }}
-                    animate={{ opacity: 1, x: 0 }}
-                    transition={{ delay: idx * 0.05 }}
-                    onClick={() => setSelectedDoc(doc)}
-                    className="w-full flex items-start gap-3 p-4 hover:bg-slate-800/50 rounded-lg transition-colors text-left"
-                  >
-                    <FileText className="w-5 h-5 text-blue-400 flex-shrink-0 mt-1" />
-                    <div className="flex-1 min-w-0">
-                      <p className="font-medium text-white">{doc.filename}</p>
-                      <p className="text-xs text-slate-400 mt-1">{doc.chunk_count} chunks</p>
-                    </div>
-                  </motion.button>
-                ))}
+            <h2 className="text-title text-ink mb-4">{selectedDoc.filename}</h2>
+            {detailLoading ? (
+              <p className="text-ink-muted text-sm">Loading details...</p>
+            ) : detail ? (
+              <div className="space-y-4">
+                <div className="flex flex-wrap gap-2">
+                  {[
+                    detail.regulation && { label: 'Regulation', value: detail.regulation },
+                    detail.jurisdiction && { label: 'Jurisdiction', value: detail.jurisdiction },
+                    detail.risk_category && { label: 'Risk', value: detail.risk_category },
+                    detail.document_type && { label: 'Type', value: detail.document_type },
+                    detail.article && { label: 'Article', value: detail.article },
+                    detail.section && { label: 'Section', value: detail.section },
+                    detail.clause && { label: 'Clause', value: detail.clause },
+                    detail.page && { label: 'Page', value: String(detail.page) },
+                    detail.effective_date && { label: 'Effective', value: detail.effective_date },
+                  ]
+                    .filter(Boolean)
+                    .map((m) => m && (
+                      <span key={m.label} className="badge bg-paper-raised border border-rule text-ink-muted">
+                        {m.label}: {m.value}
+                      </span>
+                    ))}
+                </div>
+                <div>
+                  <p className="text-label text-ink-muted mb-1">Document ID</p>
+                  <p className="text-mono-data text-ink-muted">{selectedDoc.document_id}</p>
+                </div>
+                <div>
+                  <p className="text-label text-ink-muted mb-1">Chunks Indexed</p>
+                  <p className="text-sm text-ink">{detail.chunk_count}</p>
+                </div>
+                <div>
+                  <p className="text-label text-ink-muted mb-1">Content Preview</p>
+                  <p className="text-mono-data text-ink bg-paper-raised border border-rule rounded-sm p-3 whitespace-pre-wrap">
+                    {detail.content_preview}
+                  </p>
+                </div>
               </div>
+            ) : (
+              <p className="text-ink-muted text-sm">Unable to load document details.</p>
             )}
           </Card>
-        </motion.div>
+        </div>
       )}
 
-      {/* Detail View */}
-      {selectedDoc && (
-        <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
-          <Button onClick={() => setSelectedDoc(null)} variant="secondary" className="mb-4">
-            ← Back to List
-          </Button>
-          <Card>
-            <h2 className="text-2xl font-bold mb-4">{selectedDoc.filename}</h2>
-            <div className="space-y-4 text-sm text-slate-300">
-              <div>
-                <p className="font-semibold text-white">Document ID</p>
-                <p className="text-xs font-mono text-slate-400 mt-1">{selectedDoc.document_id}</p>
-              </div>
-              <div>
-                <p className="font-semibold text-white">Chunks Indexed</p>
-                <p className="mt-1">{selectedDoc.chunk_count}</p>
-              </div>
-            </div>
-          </Card>
-        </motion.div>
-      )}
-
-      {/* Summary */}
       {!error && (
         <Card>
-          <p className="text-sm text-slate-400">
+          <p className="text-sm text-ink-muted">
             Total: {filteredDocs.length} document{filteredDocs.length !== 1 ? 's' : ''} ({docs.reduce((sum, d) => sum + d.chunk_count, 0)} chunks)
           </p>
         </Card>
       )}
+
+      <ConfirmDialog
+        isOpen={confirmDelete}
+        onClose={() => setConfirmDelete(false)}
+        onConfirm={handleDelete}
+        title="Delete document?"
+        description={`This permanently removes "${selectedDoc?.filename}" and all its indexed chunks from the search index. This cannot be undone.`}
+        confirmText={deleting ? 'Deleting...' : 'Delete'}
+        isDangerous
+      />
     </div>
   )
 }

@@ -111,6 +111,28 @@ class DocumentsResponse(BaseModel):
     documents: list[DocumentSummary]
 
 
+class DocumentDetailResponse(BaseModel):
+    """Response body for GET /documents/{document_id} -- the Regulations page
+    detail view. Metadata/content preview come straight from the first
+    chunk's LegalMetadata and text, same data delete_document already reads
+    via chunk_store.get_by_document."""
+
+    document_id: str
+    filename: str
+    chunk_count: int
+    content_preview: str
+    regulation: str | None = None
+    authority: str | None = None
+    jurisdiction: str | None = None
+    article: str | None = None
+    section: str | None = None
+    clause: str | None = None
+    effective_date: date | None = None
+    document_type: str | None = None
+    page: int | None = None
+    risk_category: str | None = None
+
+
 class HealthResponse(BaseModel):
     """Response body for GET /health."""
 

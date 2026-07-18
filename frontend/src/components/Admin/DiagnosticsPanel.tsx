@@ -7,7 +7,7 @@ interface DiagnosticsPanelProps {
 }
 
 export default function DiagnosticsPanel({ diagnostics, loading }: DiagnosticsPanelProps) {
-  if (loading) return <div className="h-40 bg-slate-800/50 rounded animate-pulse" />
+  if (loading) return <div className="h-40 bg-paper-raised rounded-md" />
 
   if (!diagnostics) return <Card>No diagnostic data available</Card>
 
@@ -18,39 +18,39 @@ export default function DiagnosticsPanel({ diagnostics, loading }: DiagnosticsPa
   return (
     <div className="space-y-4">
       <Card>
-        <h3 className="font-semibold mb-3">System Information</h3>
+        <h3 className="text-title text-ink mb-3">System Information</h3>
         <div className="space-y-2 text-sm">
           <div className="flex justify-between">
-            <span className="text-slate-400">Build</span>
-            <span className="text-white font-mono">{diagnostics.build.name}</span>
+            <span className="text-ink-muted">Build</span>
+            <span className="text-mono-data text-ink">{diagnostics.build.name}</span>
           </div>
           <div className="flex justify-between">
-            <span className="text-slate-400">Version</span>
-            <span className="text-white font-mono">{diagnostics.build.version}</span>
+            <span className="text-ink-muted">Version</span>
+            <span className="text-mono-data text-ink">{diagnostics.build.version}</span>
           </div>
         </div>
       </Card>
 
       <Card>
-        <h3 className="font-semibold mb-3">Service Providers</h3>
+        <h3 className="text-title text-ink mb-3">Service Providers</h3>
         <div className="space-y-2 text-sm">
           <div className="flex justify-between">
-            <span className="text-slate-400">Generation Provider</span>
-            <span className="text-white font-mono">{diagnostics.providers.generation}</span>
+            <span className="text-ink-muted">Generation Provider</span>
+            <span className="text-mono-data text-ink">{diagnostics.providers.generation}</span>
           </div>
           <div className="flex justify-between">
-            <span className="text-slate-400">Embedding Provider</span>
-            <span className="text-white font-mono">{diagnostics.providers.embedding}</span>
+            <span className="text-ink-muted">Embedding Provider</span>
+            <span className="text-mono-data text-ink">{diagnostics.providers.embedding}</span>
           </div>
           <div className="flex justify-between">
-            <span className="text-slate-400">Reranking Backend</span>
-            <span className="text-white font-mono">{diagnostics.providers.rerank_backend}</span>
+            <span className="text-ink-muted">Reranking Backend</span>
+            <span className="text-mono-data text-ink">{diagnostics.providers.rerank_backend}</span>
           </div>
         </div>
       </Card>
 
       <Card>
-        <h3 className="font-semibold mb-3">Service Status</h3>
+        <h3 className="text-title text-ink mb-3">Service Status</h3>
         <div className="space-y-2 text-sm">
           {[
             ['Vector Search', 'pinecone'],
@@ -61,10 +61,10 @@ export default function DiagnosticsPanel({ diagnostics, loading }: DiagnosticsPa
             const ready = getReadinessStatus(key)
             return (
               <div key={key} className="flex justify-between">
-                <span className="text-slate-400">{label}</span>
+                <span className="text-ink-muted">{label}</span>
                 <div className="flex items-center gap-2">
-                  <div className={`w-2 h-2 rounded-full ${ready ? 'bg-emerald-400' : 'bg-red-400'}`} />
-                  <span className={ready ? 'text-emerald-400' : 'text-red-400'}>
+                  <div className={`w-2 h-2 rounded-full ${ready ? 'bg-status-verified' : 'bg-status-critical'}`} />
+                  <span className={ready ? 'text-status-verified' : 'text-status-critical'}>
                     {ready ? 'Ready' : 'Down'}
                   </span>
                 </div>
@@ -75,39 +75,39 @@ export default function DiagnosticsPanel({ diagnostics, loading }: DiagnosticsPa
       </Card>
 
       <Card>
-        <h3 className="font-semibold mb-3">Performance Metrics</h3>
+        <h3 className="text-title text-ink mb-3">Performance Metrics</h3>
         <div className="space-y-2 text-sm">
           <div className="flex justify-between">
-            <span className="text-slate-400">Requests</span>
-            <span className="text-white">{diagnostics.metrics.request_count}</span>
+            <span className="text-ink-muted">Requests</span>
+            <span className="text-ink">{diagnostics.metrics.request_count}</span>
           </div>
           <div className="flex justify-between">
-            <span className="text-slate-400">Avg Response Time</span>
-            <span className="text-white">{Math.round(diagnostics.metrics.avg_latency_ms)}ms</span>
+            <span className="text-ink-muted">Avg Response Time</span>
+            <span className="text-ink">{Math.round(diagnostics.metrics.avg_latency_ms)}ms</span>
           </div>
         </div>
       </Card>
 
       <Card>
-        <h3 className="font-semibold mb-3">Ingestion Stats</h3>
+        <h3 className="text-title text-ink mb-3">Ingestion Stats</h3>
         <div className="space-y-2 text-sm">
           <div className="flex justify-between">
-            <span className="text-slate-400">Total Documents</span>
-            <span className="text-white">{diagnostics.ingestion_stats.total_documents}</span>
+            <span className="text-ink-muted">Total Documents</span>
+            <span className="text-ink">{diagnostics.ingestion_stats.total_documents}</span>
           </div>
           <div className="flex justify-between">
-            <span className="text-slate-400">Total Chunks</span>
-            <span className="text-white">{diagnostics.ingestion_stats.total_chunks}</span>
+            <span className="text-ink-muted">Total Chunks</span>
+            <span className="text-ink">{diagnostics.ingestion_stats.total_chunks}</span>
           </div>
         </div>
       </Card>
 
       <Card>
-        <h3 className="font-semibold mb-3">Audit Stats</h3>
+        <h3 className="text-title text-ink mb-3">Audit Stats</h3>
         <div className="space-y-2 text-sm">
           <div className="flex justify-between">
-            <span className="text-slate-400">Total Events</span>
-            <span className="text-white">{diagnostics.audit_stats.total_events}</span>
+            <span className="text-ink-muted">Total Events</span>
+            <span className="text-ink">{diagnostics.audit_stats.total_events}</span>
           </div>
         </div>
       </Card>

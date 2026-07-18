@@ -14,28 +14,20 @@ export function Input({ label, error, icon, hint, className, id, ...props }: Inp
   return (
     <div className="space-y-1">
       {label && (
-        <label htmlFor={inputId} className="block text-sm font-medium text-slate-200">
+        <label htmlFor={inputId} className="block text-label text-ink-muted">
           {label}
         </label>
       )}
       <div className="relative">
-        {icon && <div className="absolute left-3 top-3 text-slate-400">{icon}</div>}
+        {icon && <div className="absolute left-3 top-3 text-ink-muted">{icon}</div>}
         <input
           id={inputId}
-          className={clsx(
-            'w-full px-4 py-2 bg-slate-800 border rounded-lg text-slate-50 placeholder:text-slate-500',
-            'focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent',
-            'transition-all',
-            icon && 'pl-10',
-            error && 'border-red-500 focus:ring-red-500',
-            !error && 'border-slate-700',
-            className
-          )}
+          className={clsx('input', icon && 'pl-10', error && 'input-error', className)}
           {...props}
         />
       </div>
-      {error && <p className="text-sm text-red-400">{error}</p>}
-      {hint && !error && <p className="text-sm text-slate-400">{hint}</p>}
+      {error && <p className="text-label text-status-critical">{error}</p>}
+      {hint && !error && <p className="text-label text-ink-muted">{hint}</p>}
     </div>
   )
 }
@@ -46,23 +38,17 @@ export function Textarea({ label, error, hint, className, id, ...props }: Omit<I
   return (
     <div className="space-y-1">
       {label && (
-        <label htmlFor={inputId} className="block text-sm font-medium text-slate-200">
+        <label htmlFor={inputId} className="block text-label text-ink-muted">
           {label}
         </label>
       )}
       <textarea
         id={inputId}
-        className={clsx(
-          'w-full px-4 py-2 bg-slate-800 border border-slate-700 rounded-lg text-slate-50 placeholder:text-slate-500',
-          'focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent',
-          'transition-all resize-none',
-          error && 'border-red-500 focus:ring-red-500',
-          className
-        )}
+        className={clsx('input resize-none', error && 'input-error', className)}
         {...props}
       />
-      {error && <p className="text-sm text-red-400">{error}</p>}
-      {hint && !error && <p className="text-sm text-slate-400">{hint}</p>}
+      {error && <p className="text-label text-status-critical">{error}</p>}
+      {hint && !error && <p className="text-label text-ink-muted">{hint}</p>}
     </div>
   )
 }

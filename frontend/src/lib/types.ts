@@ -59,6 +59,23 @@ export interface DocumentsResponse {
   documents: DocumentSummary[]
 }
 
+export interface DocumentDetail {
+  document_id: string
+  filename: string
+  chunk_count: number
+  content_preview: string
+  regulation: string | null
+  authority: string | null
+  jurisdiction: string | null
+  article: string | null
+  section: string | null
+  clause: string | null
+  effective_date: string | null
+  document_type: string | null
+  page: number | null
+  risk_category: string | null
+}
+
 export interface AnswerRequest {
   question: string
   top_k?: number

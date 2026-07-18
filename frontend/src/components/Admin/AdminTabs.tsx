@@ -1,5 +1,4 @@
 import { useState } from 'react'
-import { motion } from 'framer-motion'
 import { clsx } from 'clsx'
 
 interface Tab {
@@ -22,16 +21,14 @@ export default function AdminTabs({ tabs, activeTab: controlledTab, onTabChange 
   return (
     <div>
       {/* Tab Navigation */}
-      <div className="flex gap-2 border-b border-slate-700 mb-6 overflow-x-auto">
+      <div className="flex gap-2 border-b border-rule mb-6 overflow-x-auto">
         {tabs.map(tab => (
           <button
             key={tab.name}
             onClick={() => setActiveTab(tab.name)}
             className={clsx(
-              'px-4 py-2 text-sm font-medium transition-all whitespace-nowrap',
-              activeTab === tab.name
-                ? 'text-white border-b-2 border-blue-500'
-                : 'text-slate-400 hover:text-slate-300'
+              'px-4 py-2 text-sm font-medium transition-colors whitespace-nowrap',
+              activeTab === tab.name ? 'text-ink border-b-2 border-clay' : 'text-ink-muted hover:text-ink'
             )}
           >
             {tab.label}
@@ -39,15 +36,9 @@ export default function AdminTabs({ tabs, activeTab: controlledTab, onTabChange 
         ))}
       </div>
 
-      {/* Tab Content */}
-      <motion.div
-        key={activeTab}
-        initial={{ opacity: 0 }}
-        animate={{ opacity: 1 }}
-        transition={{ duration: 0.2 }}
-      >
-        {tabs.find(t => t.name === activeTab)?.component}
-      </motion.div>
+      {/* Tab content -- switching tabs is an instant state change, not an
+          entrance to animate. */}
+      <div>{tabs.find(t => t.name === activeTab)?.component}</div>
     </div>
   )
 }

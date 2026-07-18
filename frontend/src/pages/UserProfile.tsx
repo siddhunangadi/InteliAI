@@ -1,7 +1,12 @@
 import { useState } from 'react'
-import { motion } from 'framer-motion'
 import { Card, Button } from '@/components/ui'
 
+// Real /settings page. The old version (and the deleted duplicate at
+// pages/Settings.tsx) shipped a theme toggle, notification checkboxes, and a
+// "default search behavior" select that saved nothing and did nothing --
+// DESIGN.md bans shipping fake-looking UI as if finished. API key storage is
+// the one setting this app actually persists (see lib/api.ts request
+// interceptor), so it's the only thing here.
 export default function UserProfile() {
   const [apiKey, setApiKey] = useState(localStorage.getItem('apiKey') || '')
   const [saved, setSaved] = useState(false)
@@ -13,15 +18,15 @@ export default function UserProfile() {
   }
 
   return (
-    <motion.div initial={{ opacity: 0, y: -20 }} animate={{ opacity: 1, y: 0 }} className="max-w-2xl space-y-8">
+    <div className="max-w-2xl space-y-8">
       <div>
-        <h1 className="text-3xl font-bold">Settings</h1>
-        <p className="text-slate-400 mt-1">Manage your preferences and account</p>
+        <h1 className="text-display text-ink">Settings</h1>
+        <p className="text-ink-muted mt-1">Manage your API access</p>
       </div>
 
       <Card>
-        <h3 className="font-semibold mb-4">API Access</h3>
-        <p className="text-slate-400 text-sm mb-4">
+        <h3 className="text-title text-ink mb-4">API Access</h3>
+        <p className="text-ink-muted text-sm mb-4">
           Enter the API key your administrator issued to authenticate requests to this deployment.
         </p>
         <div className="flex gap-2">
@@ -30,50 +35,11 @@ export default function UserProfile() {
             value={apiKey}
             onChange={e => setApiKey(e.target.value)}
             placeholder="API key"
-            className="flex-1 px-3 py-2 bg-slate-800 border border-slate-700 rounded text-sm"
+            className="input flex-1"
           />
           <Button onClick={saveApiKey}>{saved ? 'Saved' : 'Save'}</Button>
         </div>
       </Card>
-
-      <Card>
-        <h3 className="font-semibold mb-4">Appearance</h3>
-        <div className="space-y-3">
-          <label className="flex items-center gap-3 cursor-pointer">
-            <input type="radio" name="theme" value="dark" defaultChecked className="rounded" />
-            <span className="text-sm">Dark Mode (Default)</span>
-          </label>
-          <label className="flex items-center gap-3 cursor-pointer">
-            <input type="radio" name="theme" value="light" className="rounded" />
-            <span className="text-sm">Light Mode</span>
-          </label>
-        </div>
-      </Card>
-
-      <Card>
-        <h3 className="font-semibold mb-4">Notifications</h3>
-        <div className="space-y-3">
-          <label className="flex items-center justify-between">
-            <span className="text-sm">Regulatory Updates</span>
-            <input type="checkbox" defaultChecked className="rounded" />
-          </label>
-          <label className="flex items-center justify-between">
-            <span className="text-sm">System Alerts</span>
-            <input type="checkbox" defaultChecked className="rounded" />
-          </label>
-        </div>
-      </Card>
-
-      <Card>
-        <h3 className="font-semibold mb-4">Default Search Behavior</h3>
-        <select className="w-full px-3 py-2 bg-slate-800 border border-slate-700 rounded text-sm">
-          <option>Hybrid (Full-Text + Semantic)</option>
-          <option>Full-Text Only</option>
-          <option>Semantic Only</option>
-        </select>
-      </Card>
-
-      <Button>Save Changes</Button>
-    </motion.div>
+    </div>
   )
 }

@@ -1,6 +1,5 @@
 import { useState, useEffect } from 'react'
 import { Zap, Database, RefreshCw, Activity } from 'lucide-react'
-import { motion } from 'framer-motion'
 import { apiClient } from '@/lib/api'
 import { HealthResponse, ReadinessResponse } from '@/lib/types'
 import { Card } from '@/components/ui'
@@ -11,10 +10,7 @@ export default function Health() {
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
-    Promise.all([
-      apiClient.getHealth(),
-      apiClient.getReadiness(),
-    ])
+    Promise.all([apiClient.getHealth(), apiClient.getReadiness()])
       .then(([h, r]) => {
         setHealth(h)
         setReadiness(r)
@@ -50,71 +46,46 @@ export default function Health() {
   ]
 
   return (
-    <motion.div initial={{ opacity: 0, y: -20 }} animate={{ opacity: 1, y: 0 }} className="space-y-6">
+    <div className="space-y-6">
       <div>
-        <h1 className="text-3xl font-bold">System Health</h1>
-        <p className="text-slate-400 mt-1">Real-time monitoring of critical services</p>
+        <h1 className="text-display text-ink">System Health</h1>
+        <p className="text-ink-muted mt-1">Real-time monitoring of critical services</p>
       </div>
 
-      {/* Status Grid */}
       {loading ? (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
           {Array.from({ length: 4 }).map((_, i) => (
-            <div key={i} className="h-32 bg-slate-800/50 rounded animate-pulse" />
+            <div key={i} className="h-28 bg-paper-raised rounded-md" />
           ))}
         </div>
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-          {checks.map((check, idx) => (
-            <motion.div
-              key={check.name}
-              initial={{ opacity: 0, y: 10 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: idx * 0.1 }}
-            >
-              <Card>
-                <div className="flex items-start gap-3 mb-3">
-                  <div className={check.ok ? 'text-emerald-400' : 'text-orange-400'}>
-                    {check.icon}
-                  </div>
-                  <div>
-                    <p className="font-semibold text-white">{check.name}</p>
-                    <p className={`text-xs ${check.ok ? 'text-emerald-400' : 'text-orange-400'}`}>
-                      {check.status}
-                    </p>
-                  </div>
+          {checks.map((check) => (
+            <Card key={check.name}>
+              <div className="flex items-start gap-3">
+                <div className={check.ok ? 'text-status-verified' : 'text-status-caution'}>{check.icon}</div>
+                <div>
+                  <p className="font-medium text-ink">{check.name}</p>
+                  <p className={`text-label ${check.ok ? 'text-status-verified' : 'text-status-caution'}`}>
+                    {check.status}
+                  </p>
                 </div>
-                <div className="w-full h-1.5 bg-slate-800 rounded overflow-hidden">
-                  <div
-                    className={`h-full transition-all ${check.ok ? 'bg-emerald-400' : 'bg-orange-400'}`}
-                    style={{ width: check.ok ? '100%' : '70%' }}
-                  />
-                </div>
-              </Card>
-            </motion.div>
+              </div>
+            </Card>
           ))}
         </div>
       )}
 
       {/* Overall Status */}
       <Card>
-        <h3 className="font-semibold mb-3">Overall System Status</h3>
+        <h3 className="text-title text-ink mb-3">Overall System Status</h3>
         <div className="flex items-center gap-3">
-          <div
-            className={`w-3 h-3 rounded-full ${
-              health?.status === 'ok' ? 'bg-emerald-400' : 'bg-orange-400'
-            }`}
-          />
-          <p className={`font-medium ${health?.status === 'ok' ? 'text-emerald-400' : 'text-orange-400'}`}>
-            {health?.status === 'ok'
-              ? 'All Systems Operational'
-              : 'Some Systems Degraded'}
+          <div className={`w-2 h-2 rounded-full ${health?.status === 'ok' ? 'bg-status-verified' : 'bg-status-caution'}`} />
+          <p className={`font-medium ${health?.status === 'ok' ? 'text-status-verified' : 'text-status-caution'}`}>
+            {health?.status === 'ok' ? 'All Systems Operational' : 'Some Systems Degraded'}
           </p>
         </div>
-        {health?.status === 'ok' && (
-          <p className="text-xs text-emerald-400 mt-2">✓ All services healthy</p>
-        )}
       </Card>
-    </motion.div>
+    </div>
   )
 }

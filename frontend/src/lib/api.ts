@@ -50,6 +50,11 @@ class ApiClient {
     return data
   }
 
+  async getDocument(documentId: string): Promise<Types.DocumentDetail> {
+    const { data } = await this.client.get(`/documents/${documentId}`)
+    return data
+  }
+
   async deleteDocument(documentId: string): Promise<void> {
     await this.client.delete(`/documents/${documentId}`)
   }
@@ -111,9 +116,15 @@ class ApiClient {
   }
 
   // Audit
-  async getAuditEvents(limit = 100, offset = 0): Promise<Types.AuditEventsResponse> {
+  async getAuditEvents(params: {
+    limit?: number
+    offset?: number
+    event_type?: string
+    status?: string
+    role?: string
+  } = {}): Promise<Types.AuditEventsResponse> {
     const { data } = await this.client.get('/audit/events', {
-      params: { limit, offset },
+      params: { limit: 100, offset: 0, ...params },
     })
     return data
   }
