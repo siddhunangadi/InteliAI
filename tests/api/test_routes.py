@@ -1,3 +1,4 @@
+import time
 from unittest.mock import MagicMock, patch
 
 import pytest
@@ -185,6 +186,24 @@ def test_upload_filename_with_path_traversal_cannot_escape_uploads_dir(client, t
     assert not (tmp_path / "evil.txt").exists()
     escaped = [p for p in tmp_path.rglob("evil.txt") if "uploads" not in p.parts]
     assert escaped == []
+
+
+def test_upload_async_ingests_file_and_job_reports_ready(client):
+    response = client.post(
+        "/upload/async",
+        files=[("files", ("regulation.txt", b"Section 1: NBFCs must maintain a 15% capital ratio.", "text/plain"))],
+    )
+    assert response.status_code == 202
+    job_id = response.json()["job_id"]
+
+    for _ in range(50):
+        job = client.get(f"/jobs/{job_id}").json()
+        if job["status"] != "processing":
+            break
+        time.sleep(0.1)
+
+    assert job["status"] == "ready", job.get("error")
+    assert job["result"]["results"][0]["status"] == "ready"
 
 
 def test_index_rejects_empty_document_list(client):

@@ -573,34 +573,18 @@ async def upload_documents_async(
     large or slow upload can't tie up the request thread or time out the
     client (see api/jobs.py -- JobStore serializes ingestion on one worker
     thread to avoid racing the shared BM25 rebuild).
-
-    Shares one dedup cache and defers the BM25 rebuild to once after the
-    whole batch instead of once per file (see IngestionPipeline.ingest_batch
-    docstring), avoiding the full-corpus rescan profiling identified as the
-    ingestion bottleneck -- the dominant cost at the 1000-file scale this
-    endpoint exists for.
     """
     payloads = [((file.filename or "upload"), await file.read()) for file in files]
 
     def work() -> dict:
-        existing_pairs = [
-            (item.chunk, item.embedding) for item in container.chunk_store.all_with_embeddings()
-        ] if payloads else []
-        document_hashes = {
-            s["source_path"]: s["document_id"] for s in container.chunk_store.get_document_summaries()
-        } if payloads else {}
         results = [
             _ingest_bytes(
                 filename, contents, document_type, container,
                 regulation=regulation, authority=authority, jurisdiction=jurisdiction,
                 effective_date=effective_date, risk_category=risk_category,
-                existing_pairs=existing_pairs, rebuild_bm25=False,
-                document_hashes=document_hashes,
             )
             for filename, contents in payloads
         ]
-        if payloads:
-            container.index_manager.rebuild_bm25_index()
         container.metrics.increment("uploads", len(payloads))
         for result in results:
             _record_audit(
