@@ -3,8 +3,7 @@ import { isAxiosError } from 'axios'
 import { Card, Button, Input } from '@/components/ui'
 import { useUploadJob } from '@/lib/uploadJob'
 
-const selectClass =
-  'w-full px-4 py-2 bg-slate-800 border border-slate-700 rounded-lg text-slate-50 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all'
+const selectClass = 'input'
 
 const DOCUMENT_TYPES = ['general', 'regulation', 'policy', 'contract', 'standard', 'guideline']
 const RISK_CATEGORIES = ['low', 'medium', 'high', 'critical']
@@ -45,8 +44,8 @@ export default function Step3Review({ files, metadata, onChange, onComplete }: S
   return (
     <div className="space-y-6">
       <div>
-        <h2 className="text-2xl font-bold">Step 2: Details & Upload</h2>
-        <p className="text-slate-400 mt-2">
+        <h2 className="text-title text-ink">Step 2: Details & Upload</h2>
+        <p className="text-ink-muted mt-2">
           Everything below is optional — tag {files.length} document{files.length !== 1 ? 's' : ''} now, or skip straight to upload.
         </p>
       </div>
@@ -54,7 +53,7 @@ export default function Step3Review({ files, metadata, onChange, onComplete }: S
       <Card>
         <div className="grid grid-cols-2 gap-4">
           <div>
-            <label className="text-sm font-medium block mb-2">Document Type</label>
+            <label className="text-label text-ink-muted block mb-2">Document Type</label>
             <select
               className={selectClass}
               value={(metadata.document_type as string) || 'general'}
@@ -64,7 +63,7 @@ export default function Step3Review({ files, metadata, onChange, onComplete }: S
             </select>
           </div>
           <div>
-            <label className="text-sm font-medium block mb-2">Risk Category</label>
+            <label className="text-label text-ink-muted block mb-2">Risk Category</label>
             <select
               className={selectClass}
               value={(metadata.risk_category as string) || ''}
@@ -75,19 +74,19 @@ export default function Step3Review({ files, metadata, onChange, onComplete }: S
             </select>
           </div>
           <div>
-            <label className="text-sm font-medium block mb-2">Authority</label>
+            <label className="text-label text-ink-muted block mb-2">Authority</label>
             <Input value={(metadata.authority as string) || ''} onChange={e => set('authority', e.target.value)} />
           </div>
           <div>
-            <label className="text-sm font-medium block mb-2">Regulation</label>
+            <label className="text-label text-ink-muted block mb-2">Regulation</label>
             <Input value={(metadata.regulation as string) || ''} onChange={e => set('regulation', e.target.value)} />
           </div>
           <div>
-            <label className="text-sm font-medium block mb-2">Jurisdiction</label>
+            <label className="text-label text-ink-muted block mb-2">Jurisdiction</label>
             <Input value={(metadata.jurisdiction as string) || ''} onChange={e => set('jurisdiction', e.target.value)} />
           </div>
           <div>
-            <label className="text-sm font-medium block mb-2">Effective Date</label>
+            <label className="text-label text-ink-muted block mb-2">Effective Date</label>
             <Input
               type="date"
               value={(metadata.effective_date as string) || ''}
@@ -99,7 +98,7 @@ export default function Step3Review({ files, metadata, onChange, onComplete }: S
       </Card>
 
       {error && (
-        <div className="p-4 bg-red-500/10 border border-red-500/30 rounded-lg text-red-400 text-sm">
+        <div className="p-4 bg-status-critical/10 border border-status-critical/30 rounded-sm text-status-critical text-sm">
           {error}
         </div>
       )}

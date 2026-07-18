@@ -35,8 +35,8 @@ export default function Step1Upload({ onComplete }: Step1UploadProps) {
   return (
     <div className="space-y-6">
       <div>
-        <h2 className="text-2xl font-bold">Step 1: Upload Documents</h2>
-        <p className="text-slate-400 mt-2">Select regulatory documents to analyze</p>
+        <h2 className="text-title text-ink">Step 1: Upload Documents</h2>
+        <p className="text-ink-muted mt-2">Select regulatory documents to analyze</p>
       </div>
 
       <div
@@ -44,13 +44,13 @@ export default function Step1Upload({ onComplete }: Step1UploadProps) {
         onDragLeave={handleDrag}
         onDragOver={handleDrag}
         onDrop={handleDrop}
-        className={`border-2 border-dashed rounded-lg p-12 text-center transition-all ${
-          dragActive ? 'border-blue-500 bg-blue-50/5' : 'border-slate-700 hover:border-slate-600'
+        className={`border-2 border-dashed rounded-md p-12 text-center transition-colors ${
+          dragActive ? 'border-signal bg-signal/[0.06]' : 'border-seam hover:border-ink-muted'
         }`}
       >
-        <UploadIcon className="w-12 h-12 mx-auto mb-4 text-slate-400" />
-        <h3 className="text-lg font-semibold mb-2">Drag documents here</h3>
-        <p className="text-slate-400 mb-4">or select files (PDF, DOCX, XLSX, CSV, MD, TXT, HTML)</p>
+        <UploadIcon className="w-12 h-12 mx-auto mb-4 text-ink-muted" />
+        <h3 className="text-title text-ink mb-2">Drag documents here</h3>
+        <p className="text-ink-muted mb-4">or select files (PDF, DOCX, XLSX, CSV, MD, TXT, HTML)</p>
         <input
           ref={fileInputRef}
           type="file"
@@ -64,12 +64,12 @@ export default function Step1Upload({ onComplete }: Step1UploadProps) {
 
       {files.length > 0 && (
         <Card>
-          <h3 className="font-semibold mb-3">Selected Files ({files.length})</h3>
+          <h3 className="text-title text-ink mb-3">Selected Files ({files.length})</h3>
           <div className="space-y-2">
             {files.map((f, i) => (
-              <div key={i} className="flex justify-between text-sm p-2 bg-slate-800/50 rounded">
-                <span>{f.name}</span>
-                <span className="text-slate-400">{(f.size / 1024 / 1024).toFixed(1)} MB</span>
+              <div key={i} className="flex justify-between text-sm p-2 bg-panel-raised rounded-sm">
+                <span className="text-ink">{f.name}</span>
+                <span className="text-ink-muted">{(f.size / 1024 / 1024).toFixed(1)} MB</span>
               </div>
             ))}
           </div>

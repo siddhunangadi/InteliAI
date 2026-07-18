@@ -1,5 +1,4 @@
 import { useState } from 'react'
-import { motion } from 'framer-motion'
 import { Check } from 'lucide-react'
 import Step1Upload from './Step1Upload'
 import Step3Review from './Step3Review'
@@ -41,35 +40,23 @@ export default function UploadWorkflow() {
       <div className="flex justify-between">
         {STEPS.map((step, idx) => (
           <div key={step.number} className="flex items-center flex-1">
-            <motion.div
-              className={`w-10 h-10 rounded-full flex items-center justify-center font-bold transition-all ${
-                currentStep >= step.number
-                  ? 'bg-blue-600 text-white'
-                  : 'bg-slate-800 text-slate-400'
+            <div
+              className={`w-9 h-9 rounded-sm flex items-center justify-center text-sm font-semibold transition-colors ${
+                currentStep >= step.number ? 'bg-signal text-void' : 'bg-panel text-ink-muted'
               }`}
-              initial={{ scale: 0.8 }}
-              animate={{ scale: 1 }}
             >
-              {currentStep > step.number ? <Check className="w-5 h-5" /> : step.number}
-            </motion.div>
+              {currentStep > step.number ? <Check className="w-4 h-4" /> : step.number}
+            </div>
             {idx < STEPS.length - 1 && (
-              <div
-                className={`flex-1 h-1 mx-2 transition-all ${
-                  currentStep > step.number ? 'bg-blue-600' : 'bg-slate-800'
-                }`}
-              />
+              <div className={`flex-1 h-px mx-2 transition-colors ${currentStep > step.number ? 'bg-signal' : 'bg-seam'}`} />
             )}
           </div>
         ))}
       </div>
 
-      {/* Step Content */}
-      <motion.div
-        key={currentStep}
-        initial={{ opacity: 0, y: 10 }}
-        animate={{ opacity: 1, y: 0 }}
-        exit={{ opacity: 0, y: -10 }}
-      >
+      {/* Step content -- no entrance motion, the step indicator above already
+          communicates the state change. */}
+      <div>
         {currentStep === 1 && <Step1Upload onComplete={handleStep1Complete} />}
         {currentStep === 2 && (
           <Step3Review
@@ -80,7 +67,7 @@ export default function UploadWorkflow() {
           />
         )}
         {currentStep === 3 && <Step4Success />}
-      </motion.div>
+      </div>
     </div>
   )
 }
