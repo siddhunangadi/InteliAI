@@ -2,23 +2,25 @@ import { ButtonHTMLAttributes, ReactNode } from 'react'
 import clsx from 'clsx'
 
 interface ButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
-  variant?: 'primary' | 'secondary' | 'ghost' | 'danger'
+  variant?: 'primary' | 'secondary' | 'danger'
   size?: 'sm' | 'md' | 'lg'
   icon?: ReactNode
   iconPosition?: 'left' | 'right'
   isLoading?: boolean
 }
 
+// DESIGN.md: only primary/secondary exist -- "no tertiary/ghost variant
+// beyond this to avoid button-hierarchy sprawl." Danger reuses
+// status-critical for destructive confirms (delete document, etc).
 const variantClasses = {
-  primary: 'bg-blue-600 hover:bg-blue-500 text-white shadow-premium',
-  secondary: 'bg-slate-800/80 hover:bg-slate-800 text-slate-100 border border-slate-700/80 backdrop-blur-xs',
-  ghost: 'hover:bg-slate-800/60 text-slate-200',
-  danger: 'bg-red-600 hover:bg-red-500 text-white shadow-premium',
+  primary: 'btn-primary',
+  secondary: 'btn-secondary',
+  danger: 'bg-status-critical hover:bg-status-critical/85 text-void',
 }
 
 const sizeClasses = {
   sm: 'px-3 py-1.5 text-sm',
-  md: 'px-4 py-2 text-sm',
+  md: '',
   lg: 'px-6 py-3 text-base',
 }
 
@@ -35,15 +37,7 @@ export function Button({
 }: ButtonProps) {
   return (
     <button
-      className={clsx(
-        'inline-flex items-center justify-center rounded-lg font-medium transition-all duration-150 ease-out',
-        'active:scale-[0.98]',
-        'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-offset-slate-950 focus-visible:ring-blue-500',
-        'disabled:opacity-50 disabled:cursor-not-allowed disabled:active:scale-100',
-        variantClasses[variant],
-        sizeClasses[size],
-        className
-      )}
+      className={clsx('btn', variantClasses[variant], sizeClasses[size], className)}
       disabled={disabled || isLoading}
       {...props}
     >
