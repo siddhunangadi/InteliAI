@@ -1,10 +1,9 @@
 import { useState, useRef, useEffect } from 'react'
 import { isAxiosError } from 'axios'
-import { Send, Loader } from 'lucide-react'
-import { motion } from 'framer-motion'
+import { Send } from 'lucide-react'
 import { apiClient } from '@/lib/api'
-import { StructuredCitation } from '@/lib/types'
-import { Card, Button } from '@/components/ui'
+import { StructuredCitation, RagAnswer } from '@/lib/types'
+import { Card } from '@/components/ui'
 import ChatMessage from '@/components/Chat/ChatMessage'
 import SuggestedQuestions from '@/components/Chat/SuggestedQuestions'
 
@@ -14,6 +13,7 @@ interface Message {
   content: string
   citations?: StructuredCitation[]
   confidenceScore?: number
+  streaming?: boolean
   timestamp: Date
 }
 
@@ -23,6 +23,24 @@ const EXAMPLE_QUESTIONS = [
   'Has GST input tax credit changed recently?',
   'Which regulations affect NBFC lending?',
 ]
+
+// Parses the `event: <type>\ndata: <json>\n\n` SSE frames emitted by
+// POST /answer/stream (see api/routes.py answer_stream). apiClient.answerStream
+// yields raw decoded text chunks, which may split a frame across chunks, so
+// this buffers and only emits on a complete blank-line-terminated frame.
+function parseSSE(buffer: string): { events: { type: string; data: string }[]; rest: string } {
+  const events: { type: string; data: string }[] = []
+  const frames = buffer.split('\n\n')
+  const rest = frames.pop() ?? ''
+  for (const frame of frames) {
+    const typeLine = frame.split('\n').find((l) => l.startsWith('event: '))
+    const dataLine = frame.split('\n').find((l) => l.startsWith('data: '))
+    if (typeLine && dataLine) {
+      events.push({ type: typeLine.slice(7), data: dataLine.slice(6) })
+    }
+  }
+  return { events, rest }
+}
 
 export default function Chat() {
   const [messages, setMessages] = useState<Message[]>([])
@@ -45,27 +63,48 @@ export default function Chat() {
       content: input,
       timestamp: new Date(),
     }
-    setMessages(prev => [...prev, userMessage])
+    const assistantId = Math.random().toString(36)
+    setMessages((prev) => [
+      ...prev,
+      userMessage,
+      { id: assistantId, role: 'assistant', content: '', streaming: true, timestamp: new Date() },
+    ])
     setInput('')
     setError(undefined)
     setLoading(true)
 
     try {
-      const response = await apiClient.answer({
-        question: input,
-        top_k: 5,
-      })
-
-      const assistantMessage: Message = {
-        id: Math.random().toString(36),
-        role: 'assistant',
-        content: response.answer,
-        citations: response.structured_citations,
-        confidenceScore: response.confidence.overall,
-        timestamp: new Date(),
+      let buffer = ''
+      for await (const chunk of apiClient.answerStream({ question: userMessage.content, top_k: 5 })) {
+        buffer += chunk
+        const { events, rest } = parseSSE(buffer)
+        buffer = rest
+        for (const evt of events) {
+          if (evt.type === 'delta') {
+            const { text } = JSON.parse(evt.data) as { text: string }
+            setMessages((prev) =>
+              prev.map((m) => (m.id === assistantId ? { ...m, content: m.content + text } : m))
+            )
+          } else if (evt.type === 'final') {
+            const final = JSON.parse(evt.data) as RagAnswer
+            setMessages((prev) =>
+              prev.map((m) =>
+                m.id === assistantId
+                  ? {
+                      ...m,
+                      content: final.answer,
+                      citations: final.structured_citations,
+                      confidenceScore: final.confidence.overall,
+                      streaming: false,
+                    }
+                  : m
+              )
+            )
+          }
+        }
       }
-      setMessages(prev => [...prev, assistantMessage])
     } catch (err) {
+      setMessages((prev) => prev.filter((m) => m.id !== assistantId))
       if (isAxiosError(err) && err.response?.status === 401) {
         setError('Your API key is missing or invalid. Add it in Settings to use the AI Assistant.')
       } else {
@@ -79,47 +118,30 @@ export default function Chat() {
   return (
     <div className="flex flex-col h-[calc(100vh-120px)]">
       {messages.length === 0 ? (
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          className="flex-1 flex flex-col items-center justify-center"
-        >
+        <div className="flex-1 flex flex-col items-center justify-center">
           <div className="max-w-2xl w-full space-y-8">
             <div className="text-center">
-              <h1 className="text-3xl font-bold mb-2">AI Compliance Assistant</h1>
-              <p className="text-slate-400">
+              <h1 className="text-display text-ink mb-2">Ask</h1>
+              <p className="text-ink-muted">
                 Ask questions about regulatory requirements, compliance changes, and policy interpretations
               </p>
             </div>
 
-            <SuggestedQuestions
-              questions={EXAMPLE_QUESTIONS}
-              onSelect={q => setInput(q)}
-            />
+            <SuggestedQuestions questions={EXAMPLE_QUESTIONS} onSelect={(q) => setInput(q)} />
           </div>
-        </motion.div>
+        </div>
       ) : (
         <div className="flex-1 overflow-y-auto space-y-4 mb-6">
-          {messages.map(msg => (
+          {messages.map((msg) => (
             <ChatMessage key={msg.id} {...msg} />
           ))}
-          {loading && (
-            <motion.div
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              className="flex items-center gap-2"
-            >
-              <Loader className="w-4 h-4 animate-spin text-blue-400" />
-              <span className="text-sm text-slate-400">Analyzing regulations...</span>
-            </motion.div>
-          )}
           <div ref={messagesEndRef} />
         </div>
       )}
 
       {error && (
-        <Card className="bg-red-500/10 border-red-500/30 mb-4">
-          <p className="text-red-400 text-sm">{error}</p>
+        <Card className="bg-status-critical/10 border-status-critical/30 mb-4">
+          <p className="text-status-critical text-sm">{error}</p>
         </Card>
       )}
 
@@ -127,14 +149,14 @@ export default function Chat() {
         <input
           type="text"
           value={input}
-          onChange={e => setInput(e.target.value)}
+          onChange={(e) => setInput(e.target.value)}
           placeholder="Ask about regulations, compliance requirements..."
-          className="flex-1 px-4 py-2.5 bg-slate-800 border border-slate-700 rounded-lg text-slate-100 placeholder-slate-500 focus:outline-none focus:border-blue-500"
+          className="input flex-1"
           disabled={loading}
         />
-        <Button type="submit" disabled={loading || !input.trim()}>
+        <button type="submit" className="btn btn-primary" disabled={loading || !input.trim()}>
           <Send className="w-4 h-4" />
-        </Button>
+        </button>
       </form>
     </div>
   )

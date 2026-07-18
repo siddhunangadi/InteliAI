@@ -1,4 +1,3 @@
-import { motion } from 'framer-motion'
 import { StructuredCitation } from '@/lib/types'
 import ConfidenceIndicator from './ConfidenceIndicator'
 import CitationPanel from './CitationPanel'
@@ -8,46 +7,33 @@ interface ChatMessageProps {
   content: string
   citations?: StructuredCitation[]
   confidenceScore?: number
+  streaming?: boolean
   timestamp: Date
 }
 
-export default function ChatMessage({
-  role,
-  content,
-  citations,
-  confidenceScore,
-}: ChatMessageProps) {
+export default function ChatMessage({ role, content, citations, confidenceScore, streaming }: ChatMessageProps) {
   return (
-    <motion.div
-      initial={{ opacity: 0, y: 10 }}
-      animate={{ opacity: 1, y: 0 }}
-      className={`flex ${role === 'user' ? 'justify-end' : 'justify-start'}`}
-    >
-      <div
-        className={`max-w-2xl ${
-          role === 'user'
-            ? 'bg-blue-600/20 border border-blue-500/30 rounded-lg p-4 text-white'
-            : 'space-y-3 w-full'
-        }`}
-      >
+    <div className={`flex ${role === 'user' ? 'justify-end' : 'justify-start'}`}>
+      <div className={`max-w-2xl ${role === 'user' ? 'bg-panel border border-seam rounded-md p-4 text-ink' : 'space-y-3 w-full'}`}>
         {role === 'user' ? (
           <p className="text-sm">{content}</p>
         ) : (
           <>
-            <div className="bg-slate-800/50 border border-slate-700 rounded-lg p-4 text-slate-100">
-              <p className="text-sm leading-relaxed">{content}</p>
+            <div className="bg-panel border border-seam rounded-md p-4 text-ink">
+              <p className="text-sm leading-relaxed max-w-[70ch] whitespace-pre-wrap">
+                {content}
+                {/* Motion reports real state: token stream in progress, cyan is
+                    reserved for AI activity (DESIGN.md One Accent Rule). */}
+                {streaming && <span className="inline-block w-1.5 h-3.5 ml-0.5 bg-signal align-middle animate-pulse" />}
+              </p>
             </div>
 
-            {confidenceScore !== undefined && (
-              <ConfidenceIndicator score={confidenceScore} />
-            )}
+            {confidenceScore !== undefined && <ConfidenceIndicator score={confidenceScore} />}
 
-            {citations && citations.length > 0 && (
-              <CitationPanel citations={citations} />
-            )}
+            {citations && citations.length > 0 && <CitationPanel citations={citations} />}
           </>
         )}
       </div>
-    </motion.div>
+    </div>
   )
 }

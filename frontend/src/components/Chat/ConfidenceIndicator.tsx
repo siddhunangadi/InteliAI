@@ -5,10 +5,20 @@ interface ConfidenceIndicatorProps {
   score: number
 }
 
+// Confidence describes retrieval/verification outcome, so it is one of the
+// few places the reserved status colors (DESIGN.md Status-Means-Something
+// Rule) are allowed outside Health/Audit.
+// Tailwind's compiler needs literal class strings, not interpolated ones --
+// each status gets its own fully-spelled class set.
+const styles = {
+  verified: { card: 'bg-status-verified/10 border-status-verified/30', text: 'text-status-verified' },
+  caution: { card: 'bg-status-caution/10 border-status-caution/30', text: 'text-status-caution' },
+  critical: { card: 'bg-status-critical/10 border-status-critical/30', text: 'text-status-critical' },
+} as const
+
 export default function ConfidenceIndicator({ score }: ConfidenceIndicatorProps) {
   const level = score > 0.8 ? 'High' : score > 0.6 ? 'Medium' : 'Low'
-  const colorClass = score > 0.8 ? 'emerald' : score > 0.6 ? 'yellow' : 'red'
-  const icon = score > 0.8 ? <CheckCircle className="w-4 h-4" /> : <AlertCircle className="w-4 h-4" />
+  const status = score > 0.8 ? 'verified' : score > 0.6 ? 'caution' : 'critical'
 
   const reasons: Record<string, string> = {
     High: 'Multiple current regulations support this answer.',
@@ -16,33 +26,15 @@ export default function ConfidenceIndicator({ score }: ConfidenceIndicatorProps)
     Low: 'Limited evidence supports this answer. Verify with compliance team.',
   }
 
-  const bgColorMap: Record<string, string> = {
-    emerald: 'bg-emerald-500/10',
-    yellow: 'bg-yellow-500/10',
-    red: 'bg-red-500/10',
-  }
-
-  const borderColorMap: Record<string, string> = {
-    emerald: 'border-emerald-500/30',
-    yellow: 'border-yellow-500/30',
-    red: 'border-red-500/30',
-  }
-
-  const textColorMap: Record<string, string> = {
-    emerald: 'text-emerald-400',
-    yellow: 'text-yellow-400',
-    red: 'text-red-400',
-  }
-
   return (
-    <Card className={`${bgColorMap[colorClass]} border ${borderColorMap[colorClass]}`}>
+    <Card className={styles[status].card}>
       <div className="flex items-start gap-2">
-        <div className={textColorMap[colorClass]}>{icon}</div>
+        <div className={styles[status].text}>
+          {level === 'High' ? <CheckCircle className="w-4 h-4" /> : <AlertCircle className="w-4 h-4" />}
+        </div>
         <div>
-          <p className={`text-sm font-medium ${textColorMap[colorClass]}`}>
-            Confidence: {level}
-          </p>
-          <p className="text-xs text-slate-400 mt-1">{reasons[level]}</p>
+          <p className={`text-sm font-medium ${styles[status].text}`}>Confidence: {level}</p>
+          <p className="text-label text-ink-muted mt-1">{reasons[level]}</p>
         </div>
       </div>
     </Card>
