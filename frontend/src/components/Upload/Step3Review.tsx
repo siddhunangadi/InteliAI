@@ -11,11 +11,12 @@ const RISK_CATEGORIES = ['low', 'medium', 'high', 'critical']
 interface Step3ReviewProps {
   files: File[]
   metadata: Record<string, unknown>
+  extractionStatus?: 'success' | 'partial' | null
   onChange: (metadata: Record<string, unknown>) => void
   onComplete: () => void
 }
 
-export default function Step3Review({ files, metadata, onChange, onComplete }: Step3ReviewProps) {
+export default function Step3Review({ files, metadata, extractionStatus, onChange, onComplete }: Step3ReviewProps) {
   const { startUpload } = useUploadJob()
   const [submitting, setSubmitting] = useState(false)
   const [error, setError] = useState<string | null>(null)
@@ -49,6 +50,17 @@ export default function Step3Review({ files, metadata, onChange, onComplete }: S
           Everything below is optional — tag {files.length} document{files.length !== 1 ? 's' : ''} now, or skip straight to upload.
         </p>
       </div>
+
+      {extractionStatus === 'success' && (
+        <div className="p-4 bg-status-verified/15 border border-status-verified/30 rounded-sm text-status-verified text-sm">
+          ✓ Metadata extracted successfully
+        </div>
+      )}
+      {extractionStatus === 'partial' && (
+        <div className="p-4 bg-status-caution/15 border border-status-caution/30 rounded-sm text-status-caution text-sm">
+          Some fields could not be determined automatically.
+        </div>
+      )}
 
       <Card>
         <div className="grid grid-cols-2 gap-4">
@@ -84,6 +96,10 @@ export default function Step3Review({ files, metadata, onChange, onComplete }: S
           <div>
             <label className="text-label text-ink-muted block mb-2">Jurisdiction</label>
             <Input value={(metadata.jurisdiction as string) || ''} onChange={e => set('jurisdiction', e.target.value)} />
+          </div>
+          <div>
+            <label className="text-label text-ink-muted block mb-2">Version</label>
+            <Input value={(metadata.version as string) || ''} onChange={e => set('version', e.target.value)} />
           </div>
           <div>
             <label className="text-label text-ink-muted block mb-2">Effective Date</label>

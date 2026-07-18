@@ -49,6 +49,7 @@ from rag_hybrid_search.ingestion.chunkers.recursive import RecursiveChunker
 from rag_hybrid_search.ingestion.loaders.base import Loader
 from rag_hybrid_search.ingestion.pipeline import IngestionPipeline
 from rag_hybrid_search.providers.base import EmbeddingProvider, GenerationProvider
+from rag_hybrid_search.providers.gemini import GeminiProvider
 from rag_hybrid_search.providers.nvidia import NvidiaProvider
 from rag_hybrid_search.providers.base import RerankProvider
 from rag_hybrid_search.retrieval.dense import DenseRetriever
@@ -145,6 +146,7 @@ class Container:
     index_manager: IndexManager
     chunker: Chunker
     rag_pipeline: RagPipeline
+    metadata_extraction_provider: GenerationProvider
     uploads_dir: Path
     job_store: JobStore
     rate_limiter: RateLimiter
@@ -200,6 +202,26 @@ def _select_embedding_provider(settings: Settings) -> tuple[EmbeddingProvider, s
         provider = NvidiaProvider(**_nvidia_kwargs(settings))
         return provider, "nvidia", provider
     return FakeEmbeddingProvider(), "fake", None
+
+
+def _select_metadata_extraction_provider(
+    settings: Settings, fallback: GenerationProvider
+) -> GenerationProvider:
+    """Pick the provider used for upload-time metadata extraction (routes.py
+    POST /upload/extract-metadata).
+
+    Extraction is intentionally decoupled from the main /answer generation
+    provider selection above: ``settings.provider`` ("gemini" default, or
+    "nvidia") lets an operator route extraction to Gemini specifically --
+    it's a cheap structured-extraction task well suited to Gemini's JSON
+    mode -- without changing which provider answers chat questions. Falls
+    back to whatever the main pipeline is already using (nvidia or mock)
+    when Gemini isn't configured, so extraction always has a working
+    provider without a second required API key.
+    """
+    if settings.provider == "gemini" and settings.gemini_api_key:
+        return GeminiProvider(api_key=settings.gemini_api_key)
+    return fallback
 
 
 def _select_rerank_provider(settings: Settings) -> RerankProvider:
@@ -287,6 +309,7 @@ def build_container(settings: Settings | None = None) -> Container:
         index_manager=index_manager,
         chunker=chunker,
         rag_pipeline=rag_pipeline,
+        metadata_extraction_provider=_select_metadata_extraction_provider(settings, generation_provider),
         uploads_dir=uploads_dir,
         job_store=JobStore(),
         rate_limiter=RateLimiter(settings.rate_limit_per_minute),

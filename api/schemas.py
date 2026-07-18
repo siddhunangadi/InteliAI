@@ -49,6 +49,9 @@ class IndexDocument(BaseModel):
     risk_category: RiskCategoryParam | None = Field(
         default=None, description="Compliance risk category. Compliance documents only."
     )
+    version: str | None = Field(
+        default=None, description="Document version or edition label. Compliance documents only."
+    )
 
 
 class IndexRequest(BaseModel):
@@ -131,6 +134,36 @@ class DocumentDetailResponse(BaseModel):
     document_type: str | None = None
     page: int | None = None
     risk_category: str | None = None
+    version: str | None = None
+
+
+class ExtractedMetadataResponse(BaseModel):
+    """A single AI-suggested metadata field value, plus whether the model
+    could confidently determine it -- ``value`` is null instead of guessed
+    whenever the model isn't confident, so the frontend never has to guess
+    which nulls are "unconfident" vs. "genuinely absent" (they're the same)."""
+
+    document_type: str | None = None
+    authority: str | None = None
+    regulation: str | None = None
+    jurisdiction: str | None = None
+    risk_category: str | None = None
+    version: str | None = None
+    effective_date: str | None = None
+
+
+class MetadataExtractionResponse(BaseModel):
+    """Response body for POST /upload/extract-metadata."""
+
+    metadata: ExtractedMetadataResponse
+    low_confidence: bool = Field(
+        description="True when one or more fields could not be determined -- the "
+        "frontend shows 'Some fields could not be determined automatically.'"
+    )
+    error: str | None = Field(
+        default=None, description="Set when extraction itself failed (not just low confidence); "
+        "metadata is still returned, all-null, so the upload can proceed with manual entry."
+    )
 
 
 class HealthResponse(BaseModel):

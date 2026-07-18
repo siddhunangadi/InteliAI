@@ -8,6 +8,7 @@ import asyncio
 import json
 import logging
 import mimetypes
+import tempfile
 import time
 import uuid
 from datetime import date, datetime
@@ -31,6 +32,7 @@ from api.schemas import (
     DocumentSummary,
     DocumentsResponse,
     DocumentTypeParam,
+    ExtractedMetadataResponse,
     HealthResponse,
     IndexDocument,
     IndexRequest,
@@ -38,6 +40,7 @@ from api.schemas import (
     IndexResult,
     JobStatusResponse,
     LivenessResponse,
+    MetadataExtractionResponse,
     MetricsResponse,
     ReadinessResponse,
     RiskCategoryParam,
@@ -55,6 +58,7 @@ from rag_hybrid_search.ingestion.loaders.markdown import MarkdownLoader
 from rag_hybrid_search.ingestion.loaders.pdf import PdfLoader
 from rag_hybrid_search.ingestion.loaders.text import TextLoader
 from rag_hybrid_search.ingestion.loaders.xlsx_loader import XlsxLoader
+from rag_hybrid_search.metadata_extraction import ExtractedMetadata, extract_metadata
 from rag_hybrid_search.models import ChunkProvenance, ContextChunk, IndexStatus
 from rag_hybrid_search.retrieval.fusion import weighted_rrf
 from rag_pipeline.context_builder import ContextLayout, build_context
@@ -185,6 +189,7 @@ def _chunker_for_document_type(
     jurisdiction: str | None = None,
     effective_date: date | None = None,
     risk_category: RiskCategoryParam | None = None,
+    version: str | None = None,
 ) -> Chunker | None:
     """Pick a compliance-aware chunker for regulation-like documents, else the container default.
 
@@ -199,8 +204,11 @@ def _chunker_for_document_type(
         document_title=document_title,
         document_type=document_type,
         regulation=regulation,
+        authority=authority,
         jurisdiction=jurisdiction,
         effective_date=effective_date,
+        risk_category=risk_category,
+        version_label=version,
     )
 
 
@@ -218,6 +226,7 @@ def _ingest_one(
         jurisdiction=document.jurisdiction,
         effective_date=document.effective_date,
         risk_category=document.risk_category,
+        version=document.version,
     )
 
 
@@ -231,6 +240,7 @@ def _ingest_bytes(
     jurisdiction: str | None = None,
     effective_date: date | None = None,
     risk_category: RiskCategoryParam | None = None,
+    version: str | None = None,
     existing_pairs: list | None = None,
     rebuild_bm25: bool = True,
 ) -> IndexResult:
@@ -253,7 +263,7 @@ def _ingest_bytes(
         chunker = _chunker_for_document_type(
             document_type, safe_name,
             regulation=regulation, authority=authority, jurisdiction=jurisdiction,
-            effective_date=effective_date, risk_category=risk_category,
+            effective_date=effective_date, risk_category=risk_category, version=version,
         )
         ingestion_pipeline = container.build_ingestion_pipeline(loader, chunker=chunker)
         status = ingestion_pipeline.ingest(
@@ -276,6 +286,7 @@ async def _ingest_upload(
     jurisdiction: str | None = None,
     effective_date: date | None = None,
     risk_category: RiskCategoryParam | None = None,
+    version: str | None = None,
 ) -> IndexResult:
     """Read an uploaded file's raw bytes and ingest it inline (blocks until done)."""
     filename = file.filename or "upload"
@@ -283,7 +294,7 @@ async def _ingest_upload(
     return _ingest_bytes(
         filename, contents, document_type, container,
         regulation=regulation, authority=authority, jurisdiction=jurisdiction,
-        effective_date=effective_date, risk_category=risk_category,
+        effective_date=effective_date, risk_category=risk_category, version=version,
     )
 
 
@@ -508,6 +519,45 @@ async def index_documents(
     return IndexResponse(results=results)
 
 
+@router.post("/upload/extract-metadata", response_model=MetadataExtractionResponse)
+async def extract_upload_metadata(
+    file: UploadFile = File(...),
+    container: Container = Depends(get_container),
+    _identity: Identity = Depends(get_identity),
+) -> MetadataExtractionResponse:
+    """Infer document_type/authority/regulation/jurisdiction/risk_category/
+    version/effective_date from an uploaded file's content, to prefill the
+    Step 2 metadata form before the user reviews and submits it. Does not
+    ingest or index anything.
+
+    Never raises: a bad file, an unsupported extension, or an LLM/provider
+    failure all degrade to an all-null, ``low_confidence`` result (with
+    ``error`` set for the unexpected-failure case) so the user can still
+    fill in the form manually -- extraction is a convenience, never a
+    blocker on the upload flow.
+    """
+    filename = file.filename or "upload"
+    contents = await file.read()
+    error: str | None = None
+    try:
+        safe_name = _safe_filename(filename)
+        loader = _loader_for_filename(safe_name)
+        with tempfile.NamedTemporaryFile(suffix=Path(safe_name).suffix) as tmp:
+            tmp.write(contents)
+            tmp.flush()
+            document = loader.load(tmp.name)
+        result = extract_metadata(container.metadata_extraction_provider, document.content)
+    except Exception as e:  # noqa: BLE001 - extraction must never block the upload flow
+        logger.exception("metadata extraction request failed for %r", filename)
+        result = ExtractedMetadata()
+        error = str(e)
+    return MetadataExtractionResponse(
+        metadata=ExtractedMetadataResponse(**result.model_dump()),
+        low_confidence=result.fields_found < len(type(result).model_fields),
+        error=error,
+    )
+
+
 @router.post("/upload", response_model=IndexResponse)
 async def upload_documents(
     http_request: Request,
@@ -518,6 +568,7 @@ async def upload_documents(
     jurisdiction: str | None = Form(default=None),
     effective_date: date | None = Form(default=None),
     risk_category: RiskCategoryParam | None = Form(default=None),
+    version: str | None = Form(default=None),
     container: Container = Depends(get_container),
     identity: Identity = Depends(get_identity),
 ) -> IndexResponse:
@@ -542,7 +593,7 @@ async def upload_documents(
         await _ingest_upload(
             file, container, document_type,
             regulation=regulation, authority=authority, jurisdiction=jurisdiction,
-            effective_date=effective_date, risk_category=risk_category,
+            effective_date=effective_date, risk_category=risk_category, version=version,
         )
         for file in files
     ]
@@ -559,6 +610,7 @@ async def upload_documents(
                 "jurisdiction": jurisdiction,
                 "effective_date": str(effective_date) if effective_date else None,
                 "risk_category": risk_category,
+                "version": version,
             },
             error=filename_result.error,
         )
@@ -575,6 +627,7 @@ async def upload_documents_async(
     jurisdiction: str | None = Form(default=None),
     effective_date: date | None = Form(default=None),
     risk_category: RiskCategoryParam | None = Form(default=None),
+    version: str | None = Form(default=None),
     container: Container = Depends(get_container),
     identity: Identity = Depends(get_identity),
 ) -> UploadAcceptedResponse:
@@ -602,7 +655,7 @@ async def upload_documents_async(
             _ingest_bytes(
                 filename, contents, document_type, container,
                 regulation=regulation, authority=authority, jurisdiction=jurisdiction,
-                effective_date=effective_date, risk_category=risk_category,
+                effective_date=effective_date, risk_category=risk_category, version=version,
                 existing_pairs=existing_pairs, rebuild_bm25=False,
             )
             for filename, contents in payloads
@@ -622,6 +675,7 @@ async def upload_documents_async(
                     "jurisdiction": jurisdiction,
                     "effective_date": str(effective_date) if effective_date else None,
                     "risk_category": risk_category,
+                    "version": version,
                 },
                 error=result.error,
             )
@@ -735,6 +789,7 @@ async def get_document(
         document_type=meta.document_type if meta else None,
         page=first.page,
         risk_category=meta.risk_category if meta else None,
+        version=meta.version if meta else None,
     )
 
 

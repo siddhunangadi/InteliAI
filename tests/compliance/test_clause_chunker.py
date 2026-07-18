@@ -68,3 +68,18 @@ def test_document_level_metadata_stamped_on_every_clause_alongside_clause_level_
     articles = {c.legal_metadata.article for c in chunks}
     assert "5" in articles
     assert "17" in articles
+
+
+def test_authority_risk_category_and_version_stamped_on_every_clause():
+    chunker = ClauseChunker(
+        document_title="RBI Circular",
+        authority="Reserve Bank of India",
+        risk_category="high",
+        version_label="2025",
+    )
+    chunks = chunker.chunk(_doc(_GDPR_TEXT, document_id="doc-rbi"))
+    assert len(chunks) >= 2
+    for c in chunks:
+        assert c.legal_metadata.authority == "Reserve Bank of India"
+        assert c.legal_metadata.risk_category == "high"
+        assert c.legal_metadata.version == "2025"
