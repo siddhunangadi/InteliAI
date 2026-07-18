@@ -50,18 +50,20 @@ export function ToastProvider({ children }: { children: ReactNode }) {
 }
 
 function ToastItem({ toast, onClose }: { toast: Toast; onClose: () => void }) {
+  // info uses neutral ink, not clay -- clay is reserved for AI activity and
+  // primary actions (DESIGN.md One Accent Rule), not a generic toast accent.
   const icons = {
-    success: <CheckCircle className="w-5 h-5 text-emerald-400" />,
-    error: <AlertCircle className="w-5 h-5 text-red-400" />,
-    info: <InfoIcon className="w-5 h-5 text-blue-400" />,
-    warning: <AlertTriangle className="w-5 h-5 text-amber-400" />,
+    success: <CheckCircle className="w-5 h-5 text-status-verified" />,
+    error: <AlertCircle className="w-5 h-5 text-status-critical" />,
+    info: <InfoIcon className="w-5 h-5 text-ink-muted" />,
+    warning: <AlertTriangle className="w-5 h-5 text-status-caution" />,
   }
 
   const bgColors = {
-    success: 'bg-emerald-500/10 border-emerald-500/30',
-    error: 'bg-red-500/10 border-red-500/30',
-    info: 'bg-blue-500/10 border-blue-500/30',
-    warning: 'bg-amber-500/10 border-amber-500/30',
+    success: 'bg-status-verified/10 border-status-verified/30',
+    error: 'bg-status-critical/10 border-status-critical/30',
+    info: 'bg-paper-raised border-rule',
+    warning: 'bg-status-caution/10 border-status-caution/30',
   }
 
   return (
@@ -69,11 +71,11 @@ function ToastItem({ toast, onClose }: { toast: Toast; onClose: () => void }) {
       initial={{ opacity: 0, y: 20, x: 20 }}
       animate={{ opacity: 1, y: 0, x: 0 }}
       exit={{ opacity: 0, y: 20, x: 20 }}
-      className={`rounded-lg border p-4 flex items-center gap-3 pointer-events-auto ${bgColors[toast.type]} max-w-md`}
+      className={`rounded-md border shadow-float p-4 flex items-center gap-3 pointer-events-auto ${bgColors[toast.type]} max-w-md`}
     >
       {icons[toast.type]}
-      <span className="flex-1 text-sm text-slate-200">{toast.message}</span>
-      <button onClick={onClose} className="text-slate-400 hover:text-slate-200">
+      <span className="flex-1 text-sm text-ink">{toast.message}</span>
+      <button onClick={onClose} className="text-ink-muted hover:text-ink">
         <X className="w-4 h-4" />
       </button>
     </motion.div>
