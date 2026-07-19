@@ -9,6 +9,12 @@ from pathlib import Path
 
 from pydantic import ValidationError
 
+try:
+    from langsmith import traceable
+except ImportError:  # pragma: no cover - langsmith is optional at runtime
+    def traceable(*args, **kwargs):
+        return (lambda fn: fn) if not (args and callable(args[0])) else args[0]
+
 from rag_hybrid_search.compliance.citation_mapper import build_citations
 from rag_hybrid_search.compliance.query_router import route_query
 from rag_hybrid_search.trace import RequestTrace
@@ -296,6 +302,7 @@ class RagPipeline:
     def context_layout(self) -> ContextLayout:
         return self._context_layout
 
+    @traceable(name="rag_pipeline.answer", run_type="chain")
     def answer(
         self, question: str, max_chunks: int = 5, verify: bool = True,
         dev_trace: RequestTrace | None = None,
