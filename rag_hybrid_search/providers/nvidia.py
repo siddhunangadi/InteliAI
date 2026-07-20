@@ -1,4 +1,5 @@
 import logging
+import time
 
 import httpx
 
@@ -52,7 +53,7 @@ class NvidiaProvider(EmbeddingProvider, GenerationProvider):
         logger.info("embed: built %d embedding lists rss_mb=%.1f", len(result), rss_mb())
         return result
 
-    def generate(self, prompt: str, **kwargs) -> str:
+    def generate(self, prompt: str, max_attempts: int = 5, **kwargs) -> str:
         payload = {
             "model": self._generation_model,
             "messages": [{"role": "user", "content": prompt}],
@@ -63,8 +64,27 @@ class NvidiaProvider(EmbeddingProvider, GenerationProvider):
             "max_tokens": 2048,
         }
         payload.update(kwargs)
-        response = self._client.post(f"{_BASE_URL}/chat/completions", json=payload)
-        response.raise_for_status()
+        # Concurrent callers (parallel eval runs, concurrent RAG requests)
+        # all hit this endpoint at once -- 429 is the expected case under
+        # real concurrency, not an edge case, and previously had no retry
+        # at all: one rate-limited request failed the whole answer/judge
+        # call. Exponential backoff, same pattern as the embed path.
+        for attempt in range(max_attempts):
+            response = self._client.post(f"{_BASE_URL}/chat/completions", json=payload)
+            if response.status_code == 429 and attempt < max_attempts - 1:
+                wait_s = 2 ** attempt
+                retry_after = response.headers.get("retry-after")
+                if retry_after:
+                    try:
+                        wait_s = max(wait_s, float(retry_after))
+                    except ValueError:
+                        pass
+                logger.warning("generate: 429 rate-limited, backing off %.1fs (attempt %d/%d)", wait_s, attempt + 1, max_attempts)
+                time.sleep(wait_s)
+                continue
+            response.raise_for_status()
+            return response.json()["choices"][0]["message"]["content"]
+        response.raise_for_status()  # last attempt: surface the real error rather than looping forever
         return response.json()["choices"][0]["message"]["content"]
 
     @property
