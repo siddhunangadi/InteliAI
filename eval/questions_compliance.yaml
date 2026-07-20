@@ -1,0 +1,634 @@
+dataset:
+  name: compliance-corpus-v1
+  version: "1.0.0"
+
+questions:
+  - id: q001
+    question: "Under GDPR, what is the maximum administrative fine for infringements of the basic principles for processing, including conditions for consent?"
+    category: factual
+    expected:
+      answer: "Up to 20,000,000 EUR, or up to 4% of total worldwide annual turnover of the preceding financial year, whichever is higher."
+      citation_doc_ids: ["gdpr_consolidated.pdf"]
+
+  - id: q002
+    question: "What is a data subject's right under GDPR to receive their personal data in a structured, commonly used, machine-readable format?"
+    category: definition
+    expected:
+      answer: "The right to data portability."
+      citation_doc_ids: ["gdpr_consolidated.pdf"]
+
+  - id: q003
+    question: "How does the EU AI Act categorize risk for AI systems, and what are the main risk tiers?"
+    category: summarization
+    expected:
+      answer: "The EU AI Act uses a risk-based tiered approach: unacceptable risk (prohibited practices), high-risk AI systems (subject to strict obligations), limited risk (transparency obligations), and minimal risk (largely unregulated)."
+      citation_doc_ids: ["ai_act_2024_1689.pdf"]
+
+  - id: q004
+    question: "What obligations does the EU AI Act place on providers of high-risk AI systems?"
+    category: factual
+    expected:
+      answer: "Providers of high-risk AI systems must implement a risk management system, ensure data governance and quality, maintain technical documentation, enable record-keeping/logging, provide transparency and instructions for use, ensure human oversight, and meet accuracy, robustness, and cybersecurity requirements."
+      citation_doc_ids: ["ai_act_2024_1689.pdf"]
+
+  - id: q005
+    question: "How does the 5th Anti-Money Laundering Directive (AMLD5) amend the 4th AML Directive (AMLD4) regarding virtual currencies?"
+    category: comparative
+    expected:
+      answer: "AMLD5 extends AML obligations to providers engaged in exchange services between virtual currencies and fiat currencies, and to custodian wallet providers, which were not covered under AMLD4."
+      citation_doc_ids: ["amld4_2015_849.pdf", "amld5_2018_843.pdf"]
+
+  - id: q006
+    question: "What is the key structural difference between AMLD4 and AMLD5 in terms of beneficial ownership registers?"
+    category: comparative
+    expected:
+      answer: "AMLD5 requires broader public access to beneficial ownership registers for companies and introduces registers for trusts, going beyond AMLD4's more limited access provisions."
+      citation_doc_ids: ["amld4_2015_849.pdf", "amld5_2018_843.pdf"]
+
+  - id: q007
+    question: "What are the three pillars of the Basel Framework?"
+    category: factual
+    expected:
+      answer: "Pillar 1 (minimum capital requirements), Pillar 2 (supervisory review process), and Pillar 3 (market discipline/disclosure requirements)."
+      citation_doc_ids: ["bis_basel_framework_full.pdf"]
+
+  - id: q008
+    question: "How do climate-related risk drivers, per the Basel Committee's guidance, transmit into traditional financial risk categories?"
+    category: multi-hop
+    expected:
+      answer: "Climate-related risk drivers (physical and transition risks) transmit into traditional risk categories such as credit risk, market risk, operational risk, and liquidity risk, as described in the Basel Committee's climate risk transmission channels document, which cross-references the Basel Framework's chapters on those risk categories."
+      citation_doc_ids: ["bis_climate_risk_d517.pdf", "bis_consolidated_d462.pdf"]
+
+  - id: q009
+    question: "What changed in the structure of the consolidated Basel Framework between the 2019 and 2024 editions?"
+    category: comparative
+    expected:
+      answer: "The structure map documents evolved to reflect newly added or reorganized chapters as the Basel Committee published new standards over time; the 2024 structure reflects a more current and expanded chapter set than the 2019 version."
+      citation_doc_ids: ["bis_framework_structure_2019.pdf", "bis_framework_structure_2024.pdf"]
+
+  - id: q010
+    question: "What does Regulation B (12 CFR Part 1002) prohibit under the Equal Credit Opportunity Act?"
+    category: factual
+    expected:
+      answer: "It prohibits creditors from discriminating against credit applicants on the basis of race, color, religion, national origin, sex, marital status, age, receipt of public assistance income, or exercise of rights under the Consumer Credit Protection Act."
+      citation_doc_ids: ["cfr_12_1002_reg_b.pdf"]
+
+  - id: q011
+    question: "What consumer protections does Regulation E (12 CFR Part 1005) provide for electronic fund transfers?"
+    category: factual
+    expected:
+      answer: "Regulation E establishes rights, liabilities, and responsibilities for participants in electronic fund transfer systems, including error resolution procedures, disclosure requirements, and limits on consumer liability for unauthorized transfers."
+      citation_doc_ids: ["cfr_12_1005_reg_e.pdf"]
+
+  - id: q012
+    question: "How does Regulation P (12 CFR Part 1016) implement GLBA's privacy requirements?"
+    category: multi-hop
+    expected:
+      answer: "Regulation P is the CFPB's implementing rule for the Gramm-Leach-Bliley Act's financial privacy provisions, requiring financial institutions to provide privacy notices and give consumers the ability to opt out of certain information sharing with nonaffiliated third parties."
+      citation_doc_ids: ["cfr_12_1016_reg_p.pdf", "glba_plaw_106-102.pdf"]
+
+  - id: q013
+    question: "What disclosures does Regulation Z (12 CFR Part 226) require under the Truth in Lending Act?"
+    category: factual
+    expected:
+      answer: "Regulation Z requires creditors to disclose credit terms including the annual percentage rate (APR), finance charges, amount financed, total of payments, and payment schedule, so consumers can compare credit costs across lenders."
+      citation_doc_ids: ["cfr_12_226_reg_z.pdf"]
+
+  - id: q014
+    question: "What is the purpose of the general definitions in 45 CFR Part 160 relative to HIPAA's Part 164 rules?"
+    category: multi-hop
+    expected:
+      answer: "45 CFR Part 160 establishes the general administrative requirements and definitions (e.g. covered entity, business associate) that are referenced throughout Part 164's Privacy, Security, and Breach Notification Rules."
+      citation_doc_ids: ["cfr_45_160_hipaa_general.pdf", "cfr_45_164_hipaa_security.pdf"]
+
+  - id: q015
+    question: "What are the three main rules established under 45 CFR Part 164?"
+    category: summarization
+    expected:
+      answer: "The Privacy Rule, the Security Rule, and the Breach Notification Rule."
+      citation_doc_ids: ["cfr_45_164_hipaa_security.pdf"]
+
+  - id: q016
+    question: "How does the Consumer Credit Directive II (2023/2225) differ from the original Consumer Credit Directive (2008/48/EC)?"
+    category: comparative
+    expected:
+      answer: "CCD II (2023/2225) explicitly repeals and replaces CCD I (2008/48/EC), broadening scope to cover additional credit products (e.g. certain low-value and buy-now-pay-later type agreements) and strengthening creditworthiness assessment and pre-contractual information requirements."
+      citation_doc_ids: ["consumer_credit_dir_2008_48.pdf", "consumer_credit_dir_2023_2225.pdf"]
+
+  - id: q017
+    question: "What is the relationship between the Capital Requirements Directive IV (CRD IV) and the Capital Requirements Regulation (CRR)?"
+    category: comparative
+    expected:
+      answer: "CRD IV and the CRR are companion EU legislative instruments implementing Basel III in EU law together: the CRR is directly applicable and sets detailed prudential requirements, while CRD IV is a directive requiring national transposition, covering areas like capital buffers, governance, and supervisory powers."
+      citation_doc_ids: ["crd_iv_2013_36.pdf", "crr_575_2013.pdf"]
+
+  - id: q018
+    question: "What did CRR2 (Regulation 2019/876) amend in the original CRR (575/2013)?"
+    category: comparative
+    expected:
+      answer: "CRR2 amended the original CRR article-by-article, introducing changes such as a binding leverage ratio requirement, a net stable funding ratio (NSFR) requirement, and revised market risk and counterparty credit risk frameworks."
+      citation_doc_ids: ["crr_575_2013.pdf", "crr2_2019_876.pdf"]
+
+  - id: q019
+    question: "What does the Corporate Sustainability Reporting Directive (CSRD) amend?"
+    category: factual
+    expected:
+      answer: "The CSRD amends the Accounting Directive, the Transparency Directive, and the Audit Directive to expand and standardize corporate sustainability reporting requirements."
+      citation_doc_ids: ["csrd_2022_2464.pdf"]
+
+  - id: q020
+    question: "What are the major titles/areas of reform covered by the Dodd-Frank Wall Street Reform Act?"
+    category: summarization
+    expected:
+      answer: "Dodd-Frank covers areas including financial stability oversight, orderly liquidation authority, the Volcker Rule, derivatives regulation, creation of the CFPB, credit rating agency reform, and executive compensation/corporate governance reforms, among many other titles."
+      citation_doc_ids: ["dodd_frank_act_plaw_111-203.pdf"]
+
+  - id: q021
+    question: "What is the difference between the original Dodd-Frank Public Law text and the compiled/current version?"
+    category: comparative
+    expected:
+      answer: "The original Public Law (111-203) text is the act as enacted in 2010, while the compiled/current version reflects subsequent amendments integrated into the operative text over time."
+      citation_doc_ids: ["dodd_frank_act_plaw_111-203.pdf", "dodd_frank_comps_9515.pdf"]
+
+  - id: q022
+    question: "What does DORA (Regulation 2022/2554) require of financial entities regarding ICT risk?"
+    category: factual
+    expected:
+      answer: "DORA requires financial entities to establish a comprehensive ICT risk management framework, report major ICT-related incidents, conduct digital operational resilience testing, and manage third-party ICT risk, including oversight of critical ICT third-party providers."
+      citation_doc_ids: ["dora_2022_2554.pdf"]
+
+  - id: q023
+    question: "What does EMIR (Regulation 648/2012) require for OTC derivatives?"
+    category: factual
+    expected:
+      answer: "EMIR requires central clearing of standardized OTC derivatives contracts, risk mitigation techniques for non-centrally-cleared contracts, and reporting of derivatives contracts to trade repositories."
+      citation_doc_ids: ["emir_648_2012.pdf"]
+
+  - id: q024
+    question: "How did Directive 2009/136/EC amend the original ePrivacy Directive (2002/58/EC)?"
+    category: comparative
+    expected:
+      answer: "Directive 2009/136/EC (the 'Citizens' Rights Directive') amended the ePrivacy Directive to strengthen rules on cookies (requiring consent), data breach notification for telecom providers, and enforcement powers."
+      citation_doc_ids: ["eprivacy_2002_58.pdf", "gdpr_ePrivacy_amend_2009_136.pdf"]
+
+  - id: q025
+    question: "What is the difference between the original Fair Credit Reporting Act text and its compiled current version?"
+    category: comparative
+    expected:
+      answer: "The compiled current version (fcra_comps) integrates all amendments made since original enactment into a single up-to-date text, while the original text reflects only the law as first passed."
+      citation_doc_ids: ["fcra_comps_1720.pdf"]
+
+  - id: q026
+    question: "What is the SR 12-17 Consolidated Supervision Framework primarily about?"
+    category: summarization
+    expected:
+      answer: "SR 12-17 describes the Federal Reserve's framework for consolidated supervision of large financial institutions, emphasizing a firm-wide view of risk across the entire organization rather than only its individual legal entities."
+      citation_doc_ids: ["fed_sr1217_consolidated_supervision.pdf"]
+
+  - id: q027
+    question: "How does SR 26-2 relate to SR 11-7 on model risk management?"
+    category: comparative
+    expected:
+      answer: "SR 26-2 is the Federal Reserve's revised guidance on model risk management, updating and superseding aspects of the earlier SR 11-7 guidance."
+      citation_doc_ids: ["fed_sr2602_model_risk.pdf"]
+
+  - id: q028
+    question: "What distinguishes SR 98-9 from more recent Federal Reserve guidance in terms of era and formatting?"
+    category: factual
+    expected:
+      answer: "SR 98-9 is a legacy 1998 guidance document on assessment of information security, reflecting older formatting/typography conventions compared to more recent SR letters."
+      citation_doc_ids: ["fed_sr9809_info_security.pdf"]
+
+  - id: q029
+    question: "How does the FINRA 2014 Rules Reference Guide compare to the 2019 version in terms of currency?"
+    category: comparative
+    expected:
+      answer: "The 2014 guide is an earlier point in FINRA's advertising/rules reference guide version chain, and the 2019 guide reflects updated rule numbering and content current as of 2019 -- the 2014 version would be outdated for current compliance use."
+      citation_doc_ids: ["finra_2014_rules_reference_guide.pdf", "finra_2019_rules_reference_guide.pdf"]
+
+  - id: q030
+    question: "What does FINRA Rule 2210 govern?"
+    category: factual
+    expected:
+      answer: "FINRA Rule 2210 governs communications with the public, including standards for advertising, correspondence, and other communications by member firms."
+      citation_doc_ids: ["finra_rule2210_advertising_2022.pdf"]
+
+  - id: q031
+    question: "What is the difference between GLBA's original Public Law text (106-102) and its current compiled version?"
+    category: comparative
+    expected:
+      answer: "The Public Law text (106-102) is the Gramm-Leach-Bliley Act as originally enacted in 1999, while the compiled current version reflects all subsequent amendments to the Act."
+      citation_doc_ids: ["glba_plaw_106-102.pdf", "glba_comps_272.pdf"]
+
+  - id: q032
+    question: "What is the relationship between the Investment Firms Regulation (IFR) and the Investment Firms Directive (IFD)?"
+    category: comparative
+    expected:
+      answer: "IFR and IFD are companion EU legislative instruments for investment firm prudential requirements, analogous to the CRR/CRD IV relationship for credit institutions; IFR sets directly applicable prudential rules while IFD covers matters requiring national transposition such as supervisory powers."
+      citation_doc_ids: ["ifr_2019_2033.pdf", "ifd_2019_2034.pdf"]
+
+  - id: q033
+    question: "What does the Market Abuse Regulation (596/2014) prohibit?"
+    category: factual
+    expected:
+      answer: "It prohibits insider dealing, unlawful disclosure of inside information, and market manipulation."
+      citation_doc_ids: ["market_abuse_reg_596_2014.pdf"]
+
+  - id: q034
+    question: "What is the relationship between MiFID II and MiFIR?"
+    category: comparative
+    expected:
+      answer: "MiFID II (Directive 2014/65/EU) and MiFIR (Regulation 600/2014) are companion instruments regulating EU financial markets and investment services: MiFID II requires national transposition and covers matters like investor protection and market structure, while MiFIR is directly applicable and covers matters like transparency and reporting requirements."
+      citation_doc_ids: ["mifid_ii_2014_65.pdf", "mifir_600_2014.pdf"]
+
+  - id: q035
+    question: "What does the NIS2 Directive repeal and replace?"
+    category: factual
+    expected:
+      answer: "NIS2 (Directive 2022/2555) repeals and replaces the original NIS Directive (NIS1), expanding scope and strengthening cybersecurity requirements for essential and important entities."
+      citation_doc_ids: ["nis2_2022_2555.pdf"]
+
+  - id: q036
+    question: "How do FIPS 199 and FIPS 200 relate to each other and to NIST SP 800-53?"
+    category: multi-hop
+    expected:
+      answer: "FIPS 199 establishes standards for categorizing information and information systems by security impact level; FIPS 200 defines minimum security requirements based on those categorizations; both feed into NIST SP 800-53, which provides the detailed security and privacy control catalog referenced by FIPS 200's minimum requirements."
+      citation_doc_ids: ["nist_fips199.pdf", "nist_fips200.pdf", "nist_sp800-53r5.pdf"]
+
+  - id: q037
+    question: "What is the purpose of NIST SP 800-137?"
+    category: factual
+    expected:
+      answer: "NIST SP 800-137 provides guidance on Information Security Continuous Monitoring (ISCM) for federal information systems and organizations, referencing control families from SP 800-53."
+      citation_doc_ids: ["nist_sp800-137.pdf"]
+
+  - id: q038
+    question: "How did NIST SP 800-171 evolve from its original version through Revision 3?"
+    category: multi-hop
+    expected:
+      answer: "SP 800-171 was first published to define requirements for protecting Controlled Unclassified Information (CUI) in nonfederal systems; Revision 1 made moderate updates; Revision 2 was later withdrawn in 2024; Revision 3 is the current version, superseding Revision 2."
+      citation_doc_ids: ["nist_sp800-171.pdf", "nist_sp800-171r1.pdf", "nist_sp800-171r2.pdf", "nist_sp800-171r3.pdf"]
+
+  - id: q039
+    question: "What is the purpose of NIST SP 800-171A Revision 3 relative to SP 800-171 Revision 3?"
+    category: multi-hop
+    expected:
+      answer: "SP 800-171A Rev.3 provides assessment procedures for verifying compliance with the security requirements defined in SP 800-171 Rev.3, cross-referencing its requirement IDs."
+      citation_doc_ids: ["nist_sp800-171Ar3.pdf", "nist_sp800-171r3.pdf"]
+
+  - id: q040
+    question: "What is Zero Trust Architecture as described in NIST SP 800-207?"
+    category: definition
+    expected:
+      answer: "Zero Trust Architecture is a security model that assumes no implicit trust based on network location, instead requiring continuous verification of every access request regardless of whether it originates inside or outside the network perimeter."
+      citation_doc_ids: ["nist_sp800-207.pdf"]
+
+  - id: q041
+    question: "How does NIST SP 800-37 Revision 2 (Risk Management Framework) relate to SP 800-53, SP 800-30, and SP 800-39?"
+    category: multi-hop
+    expected:
+      answer: "SP 800-37 Rev.2 describes the Risk Management Framework process, referencing SP 800-53 for the security control catalog, SP 800-30 for risk assessment guidance, and SP 800-39 for the top-level organizational risk management approach."
+      citation_doc_ids: ["nist_sp800-37r2.pdf", "nist_sp800-53r5.pdf", "nist_sp800-39.pdf"]
+
+  - id: q042
+    question: "What is the relationship between NIST SP 800-53 and SP 800-53A?"
+    category: comparative
+    expected:
+      answer: "SP 800-53 defines the security and privacy control catalog organized into 20 control families; SP 800-53A provides the assessment procedures for verifying that those controls in SP 800-53 have been implemented correctly."
+      citation_doc_ids: ["nist_sp800-53r5.pdf", "nist_sp800-53Ar5.pdf"]
+
+  - id: q043
+    question: "What does NIST SP 800-61 Revision 2 cover?"
+    category: factual
+    expected:
+      answer: "It provides guidelines for computer security incident handling, covering incident response policy, incident detection/analysis, containment/eradication/recovery, and post-incident activity, referencing other SP 800-series documents and legal/forensic guidance."
+      citation_doc_ids: ["nist_sp800-61r2.pdf"]
+
+  - id: q044
+    question: "How does NIST SP 800-63-3 relate to SP 800-63B?"
+    category: multi-hop
+    expected:
+      answer: "SP 800-63-3 is the umbrella Digital Identity Guidelines document, referencing companion volumes including SP 800-63B, which specifically covers authentication and authenticator lifecycle management, including Authenticator Assurance Levels (AALs)."
+      citation_doc_ids: ["nist_sp800-63-3.pdf", "nist_sp800-63b.pdf"]
+
+  - id: q045
+    question: "What does NIST SP 800-88 Revision 1 provide guidance on?"
+    category: factual
+    expected:
+      answer: "It provides guidelines for media sanitization, including recommended sanitization methods (clear, purge, destroy) organized by media type."
+      citation_doc_ids: ["nist_sp800-88r1.pdf"]
+
+  - id: q046
+    question: "What is covered in the OCC Comptroller's Handbook booklet on Asset Securitization?"
+    category: factual
+    expected:
+      answer: "It covers the complex structured-finance topic of asset securitization, including detailed risk considerations and examination guidance, presented with detailed tables."
+      citation_doc_ids: ["occ_asset_securitization.pdf"]
+
+  - id: q047
+    question: "What is the difference between the current and previous editions of the OCC Bank Supervision Process booklet?"
+    category: comparative
+    expected:
+      answer: "The current edition reflects the OCC's up-to-date central examiner reference for bank supervision, superseding the prior edition which remains available for historical reference but is no longer the operative guidance."
+      citation_doc_ids: ["occ_bank_supervision_process.pdf", "occ_bank_supervision_process_previous.pdf"]
+
+  - id: q048
+    question: "What does the current OCC Capital and Dividends booklet reference regarding regulatory capital?"
+    category: multi-hop
+    expected:
+      answer: "It cross-references Basel-based regulatory capital rule sections in assessing a bank's capital adequacy and dividend practices."
+      citation_doc_ids: ["occ_capital_and_dividends.pdf"]
+
+  - id: q049
+    question: "What is different between the current and previous editions of the OCC Community Bank Supervision booklet?"
+    category: comparative
+    expected:
+      answer: "The current edition supersedes the previous edition as the OCC's operative guidance for community bank supervision, reflecting updated examination procedures."
+      citation_doc_ids: ["occ_community_bank_supervision.pdf", "occ_community_bank_supervision_previous.pdf"]
+
+  - id: q050
+    question: "What does the OCC Compliance Management Systems booklet cover?"
+    category: factual
+    expected:
+      answer: "It covers the components and expectations for a bank's compliance management system, cross-referencing consumer protection statutes throughout."
+      citation_doc_ids: ["occ_compliance_management_systems.pdf"]
+
+  - id: q051
+    question: "What is distinctive about the OCC Custody Services booklet compared to more recent OCC handbook booklets?"
+    category: factual
+    expected:
+      answer: "It is a 2002-era booklet reflecting legacy formatting and typography compared to more recently issued OCC Comptroller's Handbook booklets."
+      citation_doc_ids: ["occ_custody_services.pdf"]
+
+  - id: q052
+    question: "What statutes does the current OCC Fair Lending booklet cross-reference?"
+    category: multi-hop
+    expected:
+      answer: "It cross-references the Fair Housing Act, the Equal Credit Opportunity Act (ECOA), and Regulation B."
+      citation_doc_ids: ["occ_fair_lending.pdf", "cfr_12_1002_reg_b.pdf"]
+
+  - id: q053
+    question: "What does the current OCC Interest Rate Risk booklet explicitly note about the booklet it replaces?"
+    category: comparative
+    expected:
+      answer: "The current booklet explicitly notes it replaces the 1997 booklet on interest rate risk, an explicit supersession noted in the text itself."
+      citation_doc_ids: ["occ_interest_rate_risk.pdf", "occ_interest_rate_risk_previous.pdf"]
+
+  - id: q054
+    question: "What is the difference between the current and previous editions of the OCC Large Bank Supervision booklet?"
+    category: comparative
+    expected:
+      answer: "The current edition is the OCC's operative guidance for large bank supervision, superseding the prior edition."
+      citation_doc_ids: ["occ_large_bank_supervision.pdf", "occ_large_bank_supervision_previous.pdf"]
+
+  - id: q055
+    question: "What does the current OCC Liquidity booklet cover?"
+    category: factual
+    expected:
+      answer: "It covers liquidity risk management expectations for banks, including liquidity risk tables and examination guidance, current as of its edition."
+      citation_doc_ids: ["occ_liquidity.pdf"]
+
+  - id: q056
+    question: "What cross-references appear in the OCC Residential Real Estate Lending booklet?"
+    category: multi-hop
+    expected:
+      answer: "It cross-references Regulation Z (Truth in Lending), RESPA (Regulation X), and HMDA requirements relevant to residential real estate lending."
+      citation_doc_ids: ["occ_residential_real_estate.pdf", "cfr_12_226_reg_z.pdf", "cfr_12_1024_reg_x.pdf"]
+
+  - id: q057
+    question: "What statutory provisions does the OCC UDAP/UDAAP booklet reference?"
+    category: multi-hop
+    expected:
+      answer: "It references Section 5 of the FTC Act (prohibiting unfair or deceptive acts or practices) and Section 1031 of the Dodd-Frank Act (prohibiting unfair, deceptive, or abusive acts or practices)."
+      citation_doc_ids: ["occ_udap_udaap.pdf", "dodd_frank_act_plaw_111-203.pdf"]
+
+  - id: q058
+    question: "What does the USA PATRIOT Act amend?"
+    category: factual
+    expected:
+      answer: "The USA PATRIOT Act (Public Law 107-56) amends the Bank Secrecy Act and dozens of other statutes, expanding anti-money laundering and counter-terrorism financing requirements."
+      citation_doc_ids: ["patriot_act_plaw_107-56.pdf", "cfr_31_1010_bsa_general.pdf"]
+
+  - id: q059
+    question: "What is the difference between the PCAOB's 2017 archived auditing standards and the 2024 current standards?"
+    category: comparative
+    expected:
+      answer: "The 2017 archived standards were superseded by the 2024 auditing standards, which apply to audits after December 15, 2024; the reorganization and renumbering between the two versions is documented in the PCAOB Standards Reorganization Reference Table."
+      citation_doc_ids: ["pcaob_auditing_standards_2017.pdf", "pcaob_auditing_standards_2024.pdf", "pcaob_reference_table.pdf"]
+
+  - id: q060
+    question: "What is the purpose of the PCAOB Standards Reorganization Reference Table?"
+    category: factual
+    expected:
+      answer: "It maps old PCAOB standard numbers to their new AS (Auditing Standard) numbers after the PCAOB's standards reorganization."
+      citation_doc_ids: ["pcaob_reference_table.pdf"]
+
+  - id: q061
+    question: "What is the difference between PCI DSS SAQ A and SAQ D for Merchants?"
+    category: comparative
+    expected:
+      answer: "SAQ A is for merchants who fully outsource all cardholder data functions and have the smallest set of applicable requirements, while SAQ D for Merchants is the most comprehensive self-assessment questionnaire, applicable to merchants not eligible for a more targeted SAQ, mapping every PCI DSS requirement into checklist tables."
+      citation_doc_ids: ["pci_dss_v4_0_saq_a.pdf", "pci_dss_v4_0_saq_d_merchant.pdf"]
+
+  - id: q062
+    question: "What is the difference between PCI DSS SAQ D for Merchants and SAQ D for Service Providers?"
+    category: comparative
+    expected:
+      answer: "SAQ D for Merchants is used by merchants who don't qualify for a shorter SAQ, while SAQ D for Service Providers is the corresponding comprehensive questionnaire for service providers, both mapping every PCI DSS requirement number into checklist form but scoped to different entity types."
+      citation_doc_ids: ["pci_dss_v4_0_saq_d_merchant.pdf", "pci_dss_v4_0_saq_d_sp.pdf"]
+
+  - id: q063
+    question: "What does PSD2 (Directive 2015/2366) amend and repeal?"
+    category: factual
+    expected:
+      answer: "PSD2 amends and repeals the original Payment Services Directive (PSD1), expanding scope to cover new payment services like account information and payment initiation services, and introducing strong customer authentication requirements."
+      citation_doc_ids: ["psd2_2015_2366.pdf"]
+
+  - id: q064
+    question: "What is the difference between the Sarbanes-Oxley Act's original Public Law text and its current compiled version?"
+    category: comparative
+    expected:
+      answer: "The Public Law text (107-204) reflects the Act as originally enacted in 2002, while the compiled current version integrates subsequent amendments."
+      citation_doc_ids: ["sarbanes_oxley_plaw_107-204.pdf", "sarbanes_oxley_comps_1883.pdf"]
+
+  - id: q065
+    question: "Why might an evaluator compare the PCAOB copy of the Sarbanes-Oxley Act text against the original Public Law text?"
+    category: multi-hop
+    expected:
+      answer: "To test cross-source consistency -- verifying that an alternate-source copy of SOX (from PCAOB) matches the authoritative Public Law enactment text, since discrepancies between sources could indicate transcription errors or version drift."
+      citation_doc_ids: ["sox_act_pcaob_copy.pdf", "sarbanes_oxley_plaw_107-204.pdf"]
+
+  - id: q066
+    question: "What does the Solvency II Directive (2009/138/EC) establish?"
+    category: factual
+    expected:
+      answer: "Solvency II establishes the prudential regime for insurance and reinsurance undertakings in the EU, covering capital requirements, governance, and risk management, structured around three pillars similar in concept to Basel's banking framework."
+      citation_doc_ids: ["solvency_ii_2009_138.pdf"]
+
+  - id: q067
+    question: "What is the relationship between the UK GDPR/DPA 2018 filing and the EU Law Enforcement Directive (2016/680)?"
+    category: comparative
+    expected:
+      answer: "The EU Law Enforcement Directive (2016/680) is GDPR's companion/sister directive covering data processing by competent authorities for law enforcement purposes, cross-referencing GDPR articles for consistency in data protection principles."
+      citation_doc_ids: ["uk_gdpr_dpa_2018.pdf", "gdpr_consolidated.pdf"]
+
+  - id: q068
+    question: "What is the difference between 15 U.S.C. 6801 (codified GLBA) and the GLBA Public Law original enactment?"
+    category: comparative
+    expected:
+      answer: "15 U.S.C. 6801 is the codified version of GLBA's financial privacy policy provision as it appears in the U.S. Code, while the Public Law text is the Act as originally enacted -- codification can reflect subsequent amendments and renumbering not present in the original enactment."
+      citation_doc_ids: ["uscode_15_6801_glba.pdf", "glba_plaw_106-102.pdf"]
+
+  - id: q069
+    question: "What does the EU Whistleblower Protection Directive (2019/1937) cross-reference in its Annex?"
+    category: multi-hop
+    expected:
+      answer: "It cross-references AML directives, market abuse regulation, GDPR, and dozens of other sectoral EU acts in its Annex, which lists the areas of Union law covered by whistleblower protections."
+      citation_doc_ids: ["whistleblower_dir_2019_1937.pdf", "gdpr_consolidated.pdf", "market_abuse_reg_596_2014.pdf"]
+
+  - id: q070
+    question: "How do the Basel Core Principles Methodology (BCBS130) and the Basel Committee's Principles for Operational Resilience relate to each other?"
+    category: multi-hop
+    expected:
+      answer: "The Operational Resilience principles cross-reference the Basel Core Principles Methodology and the broader Principles for Sound Management of Operational Risk (PSMOR), situating operational resilience within the Committee's broader supervisory assessment framework."
+      citation_doc_ids: ["bis_operational_resilience_d516.pdf", "bis_core_principles_bcbs130.pdf"]
+
+  - id: q071
+    question: "What is the purpose of the FDIC Financial Institution Letters (FIL-8093 and FIL-15005)?"
+    category: summarization
+    expected:
+      answer: "FDIC Financial Institution Letters are individual supervisory communications conveying guidance, policy, or statements to FDIC-supervised institutions on specific topics -- FIL-15005 specifically addresses a banking services statement."
+      citation_doc_ids: ["fdic_fil_08093.pdf", "fdic_fil_15005.pdf"]
+
+  - id: q072
+    question: "What does SR 15-18 (Capital Planning) cross-reference regarding stress testing?"
+    category: multi-hop
+    expected:
+      answer: "SR 15-18 cross-references the CCAR (Comprehensive Capital Analysis and Review) and DFAST (Dodd-Frank Act Stress Test) rules in describing capital planning expectations for large banking organizations."
+      citation_doc_ids: ["fed_sr1518_capital_planning.pdf"]
+
+  - id: q073
+    question: "What is the relationship between the FINRA Communications With the Public Rules Reference Guide and FINRA Rule 2210?"
+    category: multi-hop
+    expected:
+      answer: "The Communications With the Public Rules Reference Guide cross-references multiple FINRA rule numbers, including Rule 2210 (governing advertising and communications) alongside related rules like 2220, in table form."
+      citation_doc_ids: ["finra_communications_reference_guide.pdf", "finra_rule2210_advertising_2022.pdf"]
+
+  - id: q074
+    question: "What is the capital of Mars?"
+    category: factual
+    expected:
+      answer: "This question has no answer grounded in the ingested compliance corpus; a correct system should decline to answer rather than invent one."
+      citation_doc_ids: []
+
+  - id: q075
+    question: "What is the maximum fine under the CCPA for a per-consumer data breach violation?"
+    category: factual
+    expected:
+      answer: "This question has no answer grounded in the ingested corpus -- the CCPA is not among the ingested documents; a correct system should decline to answer or state it lacks the relevant source rather than guessing at a figure."
+      citation_doc_ids: []
+
+  - id: q076
+    question: "How do the OCC Fair Lending booklet's current and previous editions differ?"
+    category: comparative
+    expected:
+      answer: "The current edition supersedes the previous edition as the OCC's operative fair lending examination guidance, reflecting updated procedures and cross-references."
+      citation_doc_ids: ["occ_fair_lending.pdf", "occ_fair_lending_previous.pdf"]
+
+  - id: q077
+    question: "What is the difference between the current and previous editions of the OCC Capital Accounts and Dividends booklet?"
+    category: comparative
+    expected:
+      answer: "The current edition supersedes the previous edition as the OCC's operative guidance on capital accounts and dividend practices."
+      citation_doc_ids: ["occ_capital_and_dividends.pdf", "occ_capital_accounts_dividends_previous.pdf"]
+
+  - id: q078
+    question: "What areas does the OCC Corporate and Risk Governance booklet cross-reference?"
+    category: factual
+    expected:
+      answer: "It cross-references management and earnings rating components used in the OCC's supervisory rating framework."
+      citation_doc_ids: ["occ_corporate_risk_governance.pdf"]
+
+  - id: q079
+    question: "What does the OCC Federal Branches and Agencies Supervision booklet cross-reference?"
+    category: factual
+    expected:
+      answer: "It cross-references provisions of the International Banking Act relevant to supervising federal branches and agencies of foreign banks."
+      citation_doc_ids: ["occ_federal_branches_agencies.pdf"]
+
+  - id: q080
+    question: "What does the OCC Personal Fiduciary Activities booklet cover?"
+    category: factual
+    expected:
+      answer: "It covers trust law cross-references and tables of fiduciary duties relevant to a bank's personal fiduciary/trust activities."
+      citation_doc_ids: ["occ_personal_fiduciary.pdf"]
+
+  - id: q081
+    question: "What is the difference between the current and previous editions of the OCC Retail Lending booklet?"
+    category: comparative
+    expected:
+      answer: "The previous edition reflects an earlier point in the OCC's retail lending examination guidance, since superseded by a current edition."
+      citation_doc_ids: ["occ_retail_lending_previous.pdf"]
+
+  - id: q082
+    question: "How does the current OCC Asset Management Operations and Controls booklet relate to custody services guidance?"
+    category: multi-hop
+    expected:
+      answer: "It cross-references custody and transaction processing sections relevant to asset management operations, connecting to the separate OCC Custody Services booklet's guidance."
+      citation_doc_ids: ["occ_asset_mgmt_ops_controls.pdf", "occ_custody_services.pdf"]
+
+  - id: q083
+    question: "Compare the obligations imposed on financial entities by DORA versus NIS2 for ICT/cybersecurity incident reporting."
+    category: comparative
+    expected:
+      answer: "DORA imposes ICT risk management and incident reporting obligations specifically on financial entities, while NIS2 imposes cybersecurity risk management and incident reporting obligations more broadly on essential and important entities across multiple sectors; both require timely incident reporting but to different regulatory frameworks and with different scoped entities."
+      citation_doc_ids: ["dora_2022_2554.pdf", "nis2_2022_2555.pdf"]
+
+  - id: q084
+    question: "How does the EU AI Act's approach to risk categorization compare to NIST's Risk Management Framework (SP 800-37)?"
+    category: comparative
+    expected:
+      answer: "The EU AI Act uses a fixed regulatory risk-tier classification (unacceptable/high/limited/minimal) with binding legal obligations per tier, whereas NIST SP 800-37's Risk Management Framework is a voluntary process-oriented framework for categorizing and managing risk to federal information systems, not specific to AI and not legally binding in the same way."
+      citation_doc_ids: ["ai_act_2024_1689.pdf", "nist_sp800-37r2.pdf"]
+
+  - id: q085
+    question: "What is the significance of the FCRA implementing rule at 16 CFR Part 660 for furnishers?"
+    category: factual
+    expected:
+      answer: "16 CFR Part 660 is the FTC's implementing rule on FCRA duties of furnishers of information to consumer reporting agencies, cross-referencing statute sections of the Fair Credit Reporting Act."
+      citation_doc_ids: ["cfr_15_41_fcra_ftc.pdf", "fcra_comps_1720.pdf"]
+
+  - id: q086
+    question: "What does 16 CFR Part 313 (the FTC's GLBA Privacy Rule) require, and how does it differ in scope from 12 CFR Part 1016 (Regulation P)?"
+    category: comparative
+    expected:
+      answer: "Both implement GLBA's financial privacy requirements, but 16 CFR Part 313 is the FTC's version applicable to financial institutions under FTC jurisdiction, while 12 CFR Part 1016 (Regulation P) is the CFPB's version applicable to entities under CFPB jurisdiction -- they parallel each other but apply to different regulated populations."
+      citation_doc_ids: ["cfr_16_313_glba_privacy.pdf", "cfr_12_1016_reg_p.pdf"]
+
+  - id: q087
+    question: "What does 12 CFR Part 1030 (Regulation DD, Truth in Savings) require of depository institutions?"
+    category: factual
+    expected:
+      answer: "It requires depository institutions to provide disclosures about deposit accounts, including annual percentage yield and fee information, to allow consumers to compare account terms, including rate-table appendices."
+      citation_doc_ids: ["cfr_12_1030_reg_dd.pdf"]
+
+  - id: q088
+    question: "What is the significance of 17 CFR Part 240 (SEC rules under the Securities Exchange Act of 1934)?"
+    category: factual
+    expected:
+      answer: "It is a very large, extensively cross-referenced multi-hundred-page rule set implementing the Securities Exchange Act of 1934, covering matters such as broker-dealer regulation, disclosure, and market conduct."
+      citation_doc_ids: ["cfr_17_240_sec_exchange_act.pdf"]
+
+  - id: q089
+    question: "What is the purpose of 31 CFR Part 1010, and why is it foundational to other 31 CFR Chapter X parts?"
+    category: multi-hop
+    expected:
+      answer: "31 CFR Part 1010 provides the Bank Secrecy Act's general provisions and definitions, which are referenced by all the other parts within 31 CFR Chapter X covering specific industry AML/BSA requirements."
+      citation_doc_ids: ["cfr_31_1010_bsa_general.pdf"]
+
+  - id: q090
+    question: "How would a compliance officer use the PCAOB Standards Reorganization Reference Table when researching an older audit opinion that cites a pre-reorganization standard number?"
+    category: multi-hop
+    expected:
+      answer: "They would look up the old standard number in the reference table to find its corresponding new AS (Auditing Standard) number, allowing them to locate the equivalent current requirement in the 2024 PCAOB Auditing Standards."
+      citation_doc_ids: ["pcaob_reference_table.pdf", "pcaob_auditing_standards_2024.pdf"]
