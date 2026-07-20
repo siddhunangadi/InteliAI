@@ -1,0 +1,25 @@
+dataset:
+  name: compliance-corpus-v1
+  version: 1.0.0
+questions:
+- id: q001
+  question: Under GDPR, what is the maximum administrative fine for infringements of the basic principles for processing, including conditions for consent?
+  category: factual
+  expected:
+    answer: Up to 20,000,000 EUR, or up to 4% of total worldwide annual turnover of the preceding financial year, whichever is higher.
+    citation_doc_ids:
+    - 55c74e72211c5520043bb3775fbc98b507fd38ad16e61828fa07eb179e75134c
+- id: q005
+  question: How does the 5th Anti-Money Laundering Directive (AMLD5) amend the 4th AML Directive (AMLD4) regarding virtual currencies?
+  category: comparative
+  expected:
+    answer: AMLD5 extends AML obligations to providers engaged in exchange services between virtual currencies and fiat currencies, and to custodian wallet providers, which were not covered under AMLD4.
+    citation_doc_ids:
+    - 6b816640fc114dddf1ee4298143a971e04d37aae2af3897b7fa4417be013f0e8
+    - d34f58f45400f5915224d11ca5731910ccc820d178648c8a294af7c9c59ef621
+- id: q074
+  question: What is the capital of Mars?
+  category: factual
+  expected:
+    answer: This question has no answer grounded in the ingested compliance corpus; a correct system should decline to answer rather than invent one.
+    citation_doc_ids: []
