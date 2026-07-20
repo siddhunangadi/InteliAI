@@ -14,7 +14,14 @@ _COMPARATIVE_RE = re.compile(
     r"versus|vs\.?|across|contrast|relationship|related|relative|between|"
     r"outperform|underperform|better|worse|superior|inferior|"
     r"pros and cons|advantages?|disadvantages?|tradeoffs?|trade-offs?|"
-    r"correlation|correlate"
+    r"correlation|correlate|"
+    # Amendment/supersession verbs: "how does X amend Y", "what did X
+    # repeal" inherently span two documents (the amending act and the
+    # amended one), so they need both retrieved separately -- exactly the
+    # version-pair relationships that fill a compliance corpus (AMLD4->5,
+    # CRR->CRR2, CCD I->II, ...).
+    r"amend|amends|amended|supersede|supersedes|superseded|"
+    r"replace|replaces|replaced|repeal|repeals|repealed"
     r")\b",
     re.IGNORECASE,
 )

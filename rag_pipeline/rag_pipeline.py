@@ -24,7 +24,7 @@ from rag_pipeline.context_pruning import prune_by_score_margin
 from rag_pipeline.context_builder import ContextLayout, build_context
 from rag_pipeline.generation_provider import GenerationProvider
 from rag_pipeline.citation_verifier import verify_citations
-from rag_hybrid_search.models import ChunkProvenance, ContextChunk
+from rag_hybrid_search.models import ChunkProvenance, ContextChunk, RetrievedChunk
 from rag_pipeline.models import (
     Claim,
     CitationStatus,
@@ -278,6 +278,7 @@ class RagPipeline:
         self, retriever, generation_provider: GenerationProvider, chunk_store=None,
         prompt_version: str = "v2", context_prune_margin: float = 0.3,
         context_layout: ContextLayout = ContextLayout.FLAT,
+        neighbor_window: int = 1,
     ):
         self._retriever = retriever
         self._generation_provider = generation_provider
@@ -285,6 +286,11 @@ class RagPipeline:
         self._prompt_version = prompt_version
         self._context_prune_margin = context_prune_margin
         self._context_layout = context_layout
+        # Adjacent-chunk expansion: clause-aware chunking separates a
+        # clause's penalty/preamble from its sub-point list into neighboring
+        # chunks, so a query matching one half retrieves it without the
+        # other. 0 disables. Requires chunk_store (get_adjacent_chunks).
+        self._neighbor_window = neighbor_window
 
     @property
     def retriever(self):
@@ -304,7 +310,7 @@ class RagPipeline:
 
     @traceable(name="rag_pipeline.answer", run_type="chain")
     def answer(
-        self, question: str, max_chunks: int = 5, verify: bool = True,
+        self, question: str, max_chunks: int = 8, verify: bool = True,
         dev_trace: RequestTrace | None = None,
     ) -> RagAnswer:
         dev_trace = dev_trace or RequestTrace(question, {
@@ -328,7 +334,7 @@ class RagPipeline:
             raw_output, gen_latency_ms, retrieved_chunks, context, verify, dev_trace,
         )
 
-    def answer_stream(self, question: str, max_chunks: int = 5, verify: bool = True):
+    def answer_stream(self, question: str, max_chunks: int = 8, verify: bool = True):
         """Stream the raw generation as text deltas, then yield the final verified RagAnswer.
 
         Citation verification and confidence scoring need the complete
@@ -369,6 +375,40 @@ class RagPipeline:
             ),
         )
 
+    def _expand_with_neighbors(self, chunks, provenance_map):
+        """Append each retrieved chunk's adjacent same-document chunks, so a
+        clause split across chunk boundaries (see
+        PineconeChunkStore.get_adjacent_chunks) reaches the generator whole.
+
+        Neighbors are inserted right after their parent and inherit its
+        provenance; deduped against chunks already present so an overlap
+        between two retrieved chunks' neighbor windows isn't added twice."""
+        if self._neighbor_window <= 0 or self._chunk_store is None:
+            return chunks
+        get_adjacent = getattr(self._chunk_store, "get_adjacent_chunks", None)
+        if get_adjacent is None:
+            return chunks
+
+        seen = {r.chunk.chunk_id for r in chunks}
+        expanded = []
+        for r in chunks:
+            expanded.append(r)
+            for neighbor in get_adjacent(r.chunk.document_id, r.chunk.chunk_index, self._neighbor_window):
+                if neighbor.chunk_id in seen:
+                    continue
+                seen.add(neighbor.chunk_id)
+                # rerank_score=None marks it as context-expansion, not an
+                # independently-scored retrieval hit; final_rank mirrors the
+                # parent so it stays adjacent in the built context.
+                expanded.append(RetrievedChunk(
+                    chunk=neighbor, dense_score=None, bm25_score=None,
+                    rrf_score=r.rrf_score, rerank_score=None, final_rank=r.final_rank,
+                ))
+                provenance_map[neighbor.chunk_id] = provenance_map.get(
+                    r.chunk.chunk_id, ChunkProvenance(primary_subquery=0, all_subqueries=[0])
+                )
+        return expanded
+
     def _prepare_context(self, question: str, max_chunks: int, dev_trace: RequestTrace):
         """Shared pre-generation stage: decompose, retrieve, merge, prune, build prompt.
 
@@ -404,7 +444,7 @@ class RagPipeline:
             retrieved_chunks, self._context_prune_margin, min_keep=required_chunks,
         )
         dev_trace.log_pruning(retrieved_chunks, pruned_chunks)
-        retrieved_chunks = pruned_chunks
+        retrieved_chunks = self._expand_with_neighbors(pruned_chunks, provenance_map)
 
         context_chunks = [
             ContextChunk(

@@ -159,6 +159,7 @@ class PineconeChunkStore(ChunkStore):
     def __init__(self, client: PineconeConnection, embedding_dimension: int):
         self._scan_cache = None
         self._scan_cache_at = 0.0
+        self._neighbor_index = None  # {document_id: {chunk_index: (chunk_id, metadata)}}
         self._client = client
         # Needed only for put()'s placeholder-vector creation path below --
         # confirm this matches the real embedding provider's output
@@ -310,6 +311,37 @@ class PineconeChunkStore(ChunkStore):
 
     def _invalidate_scan_cache(self) -> None:
         self._scan_cache = None
+        self._neighbor_index = None
+
+    def get_adjacent_chunks(self, document_id: str, chunk_index: int, window: int = 1) -> list[Chunk]:
+        """Chunks from the same document within +/-window of chunk_index
+        (excluding chunk_index itself), for context/neighbor expansion.
+
+        Clause-aware chunking splits a clause's sub-points into separate
+        chunks -- e.g. GDPR Art 83(5)'s penalty amount ("up to 20 000 000
+        EUR") lands in one chunk and the list of violations it applies to
+        ("(a) the basic principles...") in the very next one. A query
+        matching the violation list retrieves that chunk but not the
+        adjacent one holding the actual number; pulling neighbors restores
+        the split-apart context. Served entirely from the in-memory scan
+        cache (built once, reused), so this adds no per-call network round
+        trips on the query path.
+        """
+        if self._neighbor_index is None:
+            index: dict[str, dict[int, tuple[str, dict]]] = {}
+            for chunk_id, metadata, _values in self._scan_all():
+                index.setdefault(metadata["document_id"], {})[metadata["chunk_index"]] = (chunk_id, metadata)
+            self._neighbor_index = index
+
+        by_index = self._neighbor_index.get(document_id, {})
+        neighbors = []
+        for offset in range(-window, window + 1):
+            if offset == 0:
+                continue
+            entry = by_index.get(chunk_index + offset)
+            if entry is not None:
+                neighbors.append(_metadata_to_chunk(entry[0], entry[1]))
+        return neighbors
 
     def get_by_document(self, document_id: str) -> list[Chunk]:
         chunks = [
