@@ -5,6 +5,7 @@ import platform
 import subprocess
 import sys
 import time
+from concurrent.futures import ThreadPoolExecutor
 from datetime import datetime, timezone
 from importlib.metadata import PackageNotFoundError, version
 from pathlib import Path
@@ -123,6 +124,7 @@ def main() -> None:
     parser.add_argument("--questions", default="eval/questions.yaml")
     parser.add_argument("--out-dir", default=None)
     parser.add_argument("--fixture-pipeline", action="store_true", help="Use an in-memory fixture pipeline instead of building the real one (for smoke-testing this script).")
+    parser.add_argument("--workers", type=int, default=8, help="Questions to answer+judge concurrently.")
     parser.add_argument("--update-baseline", action="store_true")
     parser.add_argument("--compare-baseline", action="store_true")
     parser.add_argument("--baseline-name", default="main")
@@ -140,16 +142,22 @@ def main() -> None:
     pipeline, generation_provider, settings = _build_pipeline(args.fixture_pipeline)
     judge_provider = generation_provider  # Phase 1 default: judge = generation
 
-    records = []
-    for question in questions:
+    def _run_one(question):
         trace = RequestTrace(question.question, {"Generation": type(generation_provider).__name__})
         started = time.perf_counter()
         try:
             rag_answer = pipeline.answer(question.question, dev_trace=trace)
             latency_ms = (time.perf_counter() - started) * 1000
-            records.append(evaluate_question(question, rag_answer, trace.data, latency_ms, judge_provider))
+            return evaluate_question(question, rag_answer, trace.data, latency_ms, judge_provider)
         except Exception as e:
-            records.append(error_record(question, error_type=type(e).__name__, error_message=str(e)))
+            return error_record(question, error_type=type(e).__name__, error_message=str(e))
+
+    # Each question is an independent answer()+judge() round trip (network
+    # I/O bound: retrieval, generation, judge calls) -- running them one at
+    # a time made an 87-question eval take ~45min. executor.map keeps
+    # results in question order despite completing out of order.
+    with ThreadPoolExecutor(max_workers=args.workers) as pool:
+        records = list(pool.map(_run_one, questions))
 
     metadata = {
         "report_version": "1",
