@@ -37,6 +37,26 @@ _LEGAL_FILTER_KEYS = {
 # latest-effective-dated match at or before that date.
 _RESERVED_FILTER_KEYS = {"is_current", "as_of_date"}
 
+# regulation/authority are free-text descriptive names (e.g. ingested as
+# "EU GDPR (Regulation 2016/679)"), while callers -- notably
+# query_router.classify_query()'s _KNOWN_REGULATIONS set -- pass short
+# canonical names ("GDPR"). Exact-equality on these two fields made every
+# query naming a regulation by its short form match zero chunks, silently
+# emptying retrieval for any question that said e.g. "Under GDPR, ..."
+# (confirmed directly: filters={"regulation": "GDPR"} matched 0/44465
+# chunks, filters={"regulation": "EU GDPR (Regulation 2016/679)"} matched
+# 1572). article/section/clause/etc. stay exact-match: those are structured
+# identifiers where substring matching would be actively wrong (e.g. "8"
+# would wrongly match "83").
+_SUBSTRING_MATCH_KEYS = {"regulation", "authority"}
+
+
+def _legal_field_matches(key: str, value: str, metadata: dict) -> bool:
+    stored = metadata.get(f"legal_{key}") or ""
+    if key in _SUBSTRING_MATCH_KEYS:
+        return value.lower() in stored.lower()
+    return stored == value
+
 
 # Pinecone's per-vector metadata limit is 40KB (serialized). Chunk text is
 # almost all of this payload's size -- everything else here is short fields.
@@ -340,7 +360,7 @@ class PineconeChunkStore(ChunkStore):
             raise ValueError(f"unknown legal metadata filter key: {next(iter(unknown))!r}")
         matched = []
         for chunk_id, metadata, _values in self._scan_all():
-            if all(metadata.get(f"legal_{key}") == value for key, value in equality_filters.items()):
+            if all(_legal_field_matches(key, value, metadata) for key, value in equality_filters.items()):
                 matched.append(_metadata_to_chunk(chunk_id, metadata))
 
         is_current = filters.get("is_current")

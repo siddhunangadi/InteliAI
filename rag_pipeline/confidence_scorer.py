@@ -1,3 +1,5 @@
+import math
+
 from rag_hybrid_search.models import RetrievedChunk
 from rag_pipeline.models import ConfidenceScores, PromptContext, VerificationReport
 
@@ -29,7 +31,15 @@ def _retrieval_score(retrieved_chunks: list[RetrievedChunk]) -> float:
         return 0.0
     top = min(retrieved_chunks, key=lambda r: r.final_rank)
     if top.rerank_score is not None:
-        return max(0.0, min(1.0, top.rerank_score))
+        # rerank_score is a raw cross-encoder/NVIDIA-rerank logit -- an
+        # unbounded real number, negative logits included (a negative
+        # logit is a completely normal "somewhat relevant" result, not a
+        # bad match). Clamping directly via max(0, min(1, score)) treated
+        # every negative logit as exactly 0.0 confidence regardless of how
+        # close to 0 it was, which is what a min-max-normalized [0,1]
+        # reranker (e.g. CrossEncoderReranker) actually returns. Sigmoid
+        # maps any real logit into (0, 1) instead of collapsing negatives.
+        return 1.0 / (1.0 + math.exp(-top.rerank_score))
     # rrf_score is an unbounded raw RRF value (max ~1/(rrf_k+1)), not a 0-1
     # confidence -- using it directly understates confidence by orders of
     # magnitude whenever no scored reranker ran (e.g. PassthroughReranker,

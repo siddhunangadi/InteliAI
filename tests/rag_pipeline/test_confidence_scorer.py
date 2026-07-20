@@ -84,8 +84,12 @@ def test_overall_is_weighted_combination():
         claim_results=[make_claim_result(["d1"], passed=True)],
     )
     scores = score_confidence(chunks, report, context)
-    # retrieval=1.0 (normalized top rerank score), citations=1.0, coverage=1.0
-    assert scores.overall == 0.4 * 1.0 + 0.4 * 1.0 + 0.2 * 1.0
+    # retrieval = sigmoid(1.0) ~= 0.731 (rerank_score is a raw unbounded
+    # logit, not already a 0-1 confidence -- see confidence_scorer.py),
+    # citations=1.0, coverage=1.0
+    import math
+    expected_retrieval = 1.0 / (1.0 + math.exp(-1.0))
+    assert scores.overall == 0.4 * expected_retrieval + 0.4 * 1.0 + 0.2 * 1.0
 
 
 def test_retrieval_score_falls_back_to_rank_when_no_rerank_score():
