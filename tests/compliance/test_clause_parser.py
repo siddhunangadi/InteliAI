@@ -48,25 +48,30 @@ def test_unstructured_document_sets_fallback_used():
     assert result.fallback_used is True
 
 
-def test_hipaa_style_splits_lettered_subclauses():
+def test_hipaa_style_keeps_pure_lettered_section_together():
+    # A section whose sub-items are lettered only (no numbered wrapper)
+    # stays whole -- splitting each (a)/(b) into its own chunk fragments a
+    # section's context; keeping them together is better for retrieval and
+    # the oversized-chunk splitter bounds the size.
     result = parse_clauses(_read("hipaa_style.txt"), document_id="doc-2", document_title="HIPAA")
     section_502_clauses = [c for c in result.clauses if c.metadata.section == "164.502"]
-    assert len(section_502_clauses) == 2
-    clause_ids = {c.metadata.clause for c in section_502_clauses}
-    assert len(clause_ids) == 2
-    assert "Standard" in section_502_clauses[0].text
-    assert "Implementation specification" in section_502_clauses[1].text
+    assert len(section_502_clauses) == 1
+    text = section_502_clauses[0].text
+    assert "Standard" in text
+    assert "Implementation specification" in text
 
 
-def test_gdpr_style_splits_lettered_subclauses_nested_under_numbered_clause():
+def test_gdpr_style_keeps_lettered_subitems_with_their_numbered_clause():
+    # GDPR Art 17(3) reads "Paragraph 1 shall not apply ...: (a) ...; (b) ..."
+    # -- the (a)/(b) items must stay in the same chunk as their numbered
+    # clause 17.3 (the exact fix for the Art 83(5) case where a penalty
+    # amount was separated from the violations it applies to).
     result = parse_clauses(_read("gdpr_style.txt"), document_id="doc-1", document_title="GDPR")
-    article_17_clauses = [c for c in result.clauses if c.metadata.article == "17"]
-    lettered = [c for c in article_17_clauses if c.metadata.clause and "(" in c.metadata.clause]
-    assert len(lettered) == 2
-    clause_ids = {c.metadata.clause for c in lettered}
-    assert len(clause_ids) == 2
-    for cid in clause_ids:
-        assert cid.startswith("17.3")
+    clause_17_3 = [c for c in result.clauses if c.metadata.clause == "17.3"]
+    assert len(clause_17_3) == 1
+    text = clause_17_3[0].text
+    assert "(a) for exercising the right of freedom of expression" in text
+    assert "(b) for compliance with a legal obligation" in text
 
 
 def test_heading_type_switch_resets_stale_state():
