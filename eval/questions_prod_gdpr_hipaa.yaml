@@ -1,0 +1,142 @@
+dataset:
+  name: prod-readiness-gdpr-hipaa
+  version: "1.0.0"
+
+# Focused production-readiness set on two flagship regulations:
+#   GDPR  = 55c74e72211c5520043bb3775fbc98b507fd38ad16e61828fa07eb179e75134c
+#   HIPAA = a87b2afe059745c5ddfeb1652c4c9e2c3d75d1fa30699f98d8470e889dc86936 (45 CFR 164)
+# Covers every category + scenario-based reasoning + per-category negatives.
+
+questions:
+  # ---------- FACTUAL ----------
+  - id: f1
+    question: "Under GDPR, what is the maximum administrative fine for infringements of the basic principles for processing, including the conditions for consent?"
+    category: factual
+    expected:
+      answer: "Up to 20,000,000 EUR, or in the case of an undertaking up to 4% of total worldwide annual turnover of the preceding financial year, whichever is higher."
+      citation_doc_ids: ["55c74e72211c5520043bb3775fbc98b507fd38ad16e61828fa07eb179e75134c"]
+
+  - id: f2
+    question: "Under GDPR, within what timeframe must a controller notify the supervisory authority of a personal data breach?"
+    category: factual
+    expected:
+      answer: "Without undue delay and, where feasible, not later than 72 hours after becoming aware of the breach."
+      citation_doc_ids: ["55c74e72211c5520043bb3775fbc98b507fd38ad16e61828fa07eb179e75134c"]
+
+  - id: f3
+    question: "Under the HIPAA Breach Notification Rule, what is the maximum timeframe for notifying affected individuals after discovery of a breach of unsecured protected health information?"
+    category: factual
+    expected:
+      answer: "Without unreasonable delay and no later than 60 calendar days after discovery of the breach."
+      citation_doc_ids: ["a87b2afe059745c5ddfeb1652c4c9e2c3d75d1fa30699f98d8470e889dc86936"]
+
+  - id: f4
+    question: "Under GDPR Article 83(4), what is the maximum administrative fine for infringements of a controller's or processor's obligations (the lower fine tier)?"
+    category: factual
+    expected:
+      answer: "Up to 10,000,000 EUR, or in the case of an undertaking up to 2% of total worldwide annual turnover of the preceding financial year, whichever is higher."
+      citation_doc_ids: ["55c74e72211c5520043bb3775fbc98b507fd38ad16e61828fa07eb179e75134c"]
+
+  # ---------- DEFINITION ----------
+  - id: d1
+    question: "What is the right to data portability under GDPR?"
+    category: definition
+    expected:
+      answer: "The right of a data subject to receive their personal data provided to a controller in a structured, commonly used and machine-readable format, and to transmit it to another controller without hindrance."
+      citation_doc_ids: ["55c74e72211c5520043bb3775fbc98b507fd38ad16e61828fa07eb179e75134c"]
+
+  - id: d2
+    question: "What is the HIPAA 'minimum necessary' standard?"
+    category: definition
+    expected:
+      answer: "A requirement that a covered entity limit uses, disclosures, and requests of protected health information to the minimum necessary to accomplish the intended purpose."
+      citation_doc_ids: ["a87b2afe059745c5ddfeb1652c4c9e2c3d75d1fa30699f98d8470e889dc86936"]
+
+  # ---------- COMPARATIVE ----------
+  - id: c1
+    question: "How does the GDPR Article 83(4) fine tier differ from the Article 83(5) fine tier?"
+    category: comparative
+    expected:
+      answer: "Article 83(4) caps fines at 10,000,000 EUR or 2% of worldwide annual turnover for infringements of controller/processor obligations, while Article 83(5) caps fines at the higher level of 20,000,000 EUR or 4% for infringements of basic principles, data subject rights, and similar core provisions."
+      citation_doc_ids: ["55c74e72211c5520043bb3775fbc98b507fd38ad16e61828fa07eb179e75134c"]
+
+  - id: c2
+    question: "How do GDPR and HIPAA differ in their breach notification timelines to the relevant authority or individuals?"
+    category: comparative
+    expected:
+      answer: "GDPR requires notifying the supervisory authority within 72 hours of becoming aware of a breach, whereas HIPAA requires notifying affected individuals without unreasonable delay and no later than 60 calendar days after discovery."
+      citation_doc_ids: ["55c74e72211c5520043bb3775fbc98b507fd38ad16e61828fa07eb179e75134c", "a87b2afe059745c5ddfeb1652c4c9e2c3d75d1fa30699f98d8470e889dc86936"]
+
+  # ---------- MULTI-HOP ----------
+  - id: m1
+    question: "What are the three categories of safeguards required by the HIPAA Security Rule?"
+    category: multi-hop
+    expected:
+      answer: "Administrative safeguards, physical safeguards, and technical safeguards."
+      citation_doc_ids: ["a87b2afe059745c5ddfeb1652c4c9e2c3d75d1fa30699f98d8470e889dc86936"]
+
+  - id: m2
+    question: "Under GDPR, on what lawful bases may personal data be processed without the data subject's consent?"
+    category: multi-hop
+    expected:
+      answer: "Processing is lawful without consent where it is necessary for performance of a contract, compliance with a legal obligation, protection of vital interests, performance of a task in the public interest or official authority, or the purposes of legitimate interests pursued by the controller or a third party."
+      citation_doc_ids: ["55c74e72211c5520043bb3775fbc98b507fd38ad16e61828fa07eb179e75134c"]
+
+  # ---------- SUMMARIZATION ----------
+  - id: s1
+    question: "Summarize the main rights that data subjects have under GDPR."
+    category: summarization
+    expected:
+      answer: "Data subjects have rights including the right to information/access, rectification, erasure ('right to be forgotten'), restriction of processing, data portability, to object to processing, and not to be subject to solely automated decision-making including profiling."
+      citation_doc_ids: ["55c74e72211c5520043bb3775fbc98b507fd38ad16e61828fa07eb179e75134c"]
+
+  - id: s2
+    question: "Summarize the purpose of the HIPAA Security Rule."
+    category: summarization
+    expected:
+      answer: "The HIPAA Security Rule requires covered entities and business associates to protect the confidentiality, integrity, and availability of electronic protected health information through administrative, physical, and technical safeguards."
+      citation_doc_ids: ["a87b2afe059745c5ddfeb1652c4c9e2c3d75d1fa30699f98d8470e889dc86936"]
+
+  # ---------- SCENARIO-BASED (realistic compliance situations) ----------
+  - id: sc1
+    question: "A SaaS company discovers on a Monday morning that a misconfigured database exposed the personal data of thousands of its EU customers. Under GDPR, by when must it notify the supervisory authority, and what is the guiding rule?"
+    category: scenario
+    expected:
+      answer: "It must notify the supervisory authority without undue delay and no later than 72 hours after becoming aware of the breach, unless the breach is unlikely to result in a risk to individuals' rights and freedoms."
+      citation_doc_ids: ["55c74e72211c5520043bb3775fbc98b507fd38ad16e61828fa07eb179e75134c"]
+
+  - id: sc2
+    question: "A hospital experiences a breach of unsecured electronic protected health information affecting 800 patients. Under HIPAA, what is the maximum time it has to notify the affected individuals?"
+    category: scenario
+    expected:
+      answer: "No later than 60 calendar days after discovery of the breach, and without unreasonable delay."
+      citation_doc_ids: ["a87b2afe059745c5ddfeb1652c4c9e2c3d75d1fa30699f98d8470e889dc86936"]
+
+  - id: sc3
+    question: "A marketing team wants to reuse customer email addresses that were originally collected only for order fulfillment to send unrelated promotional campaigns. Which GDPR principle most directly restricts this reuse?"
+    category: scenario
+    expected:
+      answer: "The purpose limitation principle: personal data collected for specified, explicit and legitimate purposes may not be further processed in a manner incompatible with those purposes."
+      citation_doc_ids: ["55c74e72211c5520043bb3775fbc98b507fd38ad16e61828fa07eb179e75134c"]
+
+  # ---------- NEGATIVES (per category, out-of-corpus / unanswerable) ----------
+  - id: neg_factual
+    question: "What is the maximum civil penalty per violation under the California Consumer Privacy Act (CCPA)?"
+    category: factual
+    expected:
+      answer: "This is not answerable from the ingested GDPR/HIPAA corpus; the CCPA is not among the source documents, so a correct system should decline rather than invent a figure."
+      citation_doc_ids: []
+
+  - id: neg_definition
+    question: "What is the capital city of Mars?"
+    category: definition
+    expected:
+      answer: "This has no answer grounded in the compliance corpus; a correct system should decline to answer rather than fabricate one."
+      citation_doc_ids: []
+
+  - id: neg_scenario
+    question: "Under GDPR, how many days of paid annual vacation leave is a full-time employee entitled to?"
+    category: scenario
+    expected:
+      answer: "GDPR governs personal data protection, not employment or vacation entitlements, so this is not answerable from the corpus; a correct system should decline rather than guess."
+      citation_doc_ids: []
