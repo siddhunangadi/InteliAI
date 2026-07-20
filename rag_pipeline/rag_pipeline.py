@@ -310,7 +310,7 @@ class RagPipeline:
 
     @traceable(name="rag_pipeline.answer", run_type="chain")
     def answer(
-        self, question: str, max_chunks: int = 8, verify: bool = True,
+        self, question: str, max_chunks: int = 5, verify: bool = True,
         dev_trace: RequestTrace | None = None,
     ) -> RagAnswer:
         dev_trace = dev_trace or RequestTrace(question, {
@@ -334,7 +334,7 @@ class RagPipeline:
             raw_output, gen_latency_ms, retrieved_chunks, context, verify, dev_trace,
         )
 
-    def answer_stream(self, question: str, max_chunks: int = 8, verify: bool = True):
+    def answer_stream(self, question: str, max_chunks: int = 5, verify: bool = True):
         """Stream the raw generation as text deltas, then yield the final verified RagAnswer.
 
         Citation verification and confidence scoring need the complete

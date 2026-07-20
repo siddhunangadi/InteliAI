@@ -37,18 +37,13 @@ class Settings(BaseSettings):
     rrf_dense_weight: float = 0.7
     rrf_sparse_weight: float = 0.3
     rrf_k: int = 60
-    # 8 was too tight once a metadata filter (compliance query router) is
-    # applied *after* rerank: of N reranked chunks, only those matching the
-    # regulation survive, so a small N leaves 1-2 chunks and often drops the
-    # exact clause. Return more reranked chunks so the post-filter (and
-    # neighbor expansion) have enough to work with.
-    rerank_top_n: int = 8
+    rerank_top_n: int = 5
     # Fused RRF output is truncated to this many top-scored candidates
     # before being sent to the reranker -- the reranker is the dominant
-    # latency cost. Kept wider than rerank_top_n so the reranker actually
-    # has candidates to reorder rather than just passing through the RRF
-    # order (must stay <= dense_k + sparse_k).
-    rerank_fused_top_n: int = 15
+    # latency cost, and most fused candidates never survive rerank_top_n
+    # anyway. dense_k/sparse_k stay wide for RRF diversity; only what
+    # reaches the expensive reranker call is trimmed.
+    rerank_fused_top_n: int = 8
     rerank_backend: Literal["passthrough", "cross_encoder", "nvidia"] = "passthrough"
     # After reranking, chunks scoring more than this fraction of the
     # top-to-bottom score *range* below the top chunk are dropped before

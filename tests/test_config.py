@@ -10,7 +10,7 @@ def test_defaults():
     assert settings.chunking_strategy == "recursive"
     assert settings.rrf_dense_weight == 0.7
     assert settings.rrf_sparse_weight == 0.3
-    assert settings.rerank_fused_top_n == 15
+    assert settings.rerank_fused_top_n == 8
 
 
 def test_rerank_fused_top_n_cannot_exceed_k_sum():
