@@ -1,4 +1,6 @@
 import logging
+import random
+import threading
 import time
 
 import httpx
@@ -30,8 +32,26 @@ class NvidiaProvider(EmbeddingProvider, GenerationProvider):
         self._client = httpx.Client(
             headers={"Authorization": f"Bearer {api_key}"}, timeout=timeout
         )
+        # Measured directly against this account: rapid-fire requests 429
+        # repeatedly, but 1s-spaced sequential requests succeeded 3/3 with
+        # zero 429s -- this is a burst-rate limiter, not an exhausted quota
+        # (retrying harder doesn't help; not bursting in the first place
+        # does). Shared across concurrent callers so N worker threads
+        # collectively pace themselves to one request in flight at a time,
+        # instead of each retrying independently into the same wall.
+        self._rate_lock = threading.Lock()
+        self._last_call_ts = 0.0
+        self._min_interval_s = 2.0
+
+    def _throttle(self) -> None:
+        with self._rate_lock:
+            wait = self._last_call_ts + self._min_interval_s - time.monotonic()
+            if wait > 0:
+                time.sleep(wait)
+            self._last_call_ts = time.monotonic()
 
     def embed(self, texts: list[str], input_type: str = "passage") -> list[list[float]]:
+        self._throttle()
         logger.info("embed: sending request for %d texts rss_mb=%.1f", len(texts), rss_mb())
         response = self._client.post(
             f"{_BASE_URL}/embeddings",
@@ -70,9 +90,15 @@ class NvidiaProvider(EmbeddingProvider, GenerationProvider):
         # at all: one rate-limited request failed the whole answer/judge
         # call. Exponential backoff, same pattern as the embed path.
         for attempt in range(max_attempts):
+            self._throttle()
             response = self._client.post(f"{_BASE_URL}/chat/completions", json=payload)
             if response.status_code == 429 and attempt < max_attempts - 1:
-                wait_s = 2 ** attempt
+                # Full jitter (not just exponential): concurrent workers
+                # computing the same 2**attempt all retry at the same
+                # instant and collide again -- observed directly (workers
+                # backing off "2.0s" simultaneously, then 429ing together
+                # on the next attempt too).
+                wait_s = random.uniform(0, 2 ** attempt)
                 retry_after = response.headers.get("retry-after")
                 if retry_after:
                     try:
