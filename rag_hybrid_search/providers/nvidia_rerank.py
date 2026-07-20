@@ -50,8 +50,8 @@ class NvidiaRerankProvider(RerankProvider):
         }
         max_attempts = 5
         for attempt in range(max_attempts):
-            _nvidia_throttle.throttle()
-            response = self._client.post(_RERANK_URL, json=payload)
+            with _nvidia_throttle.slot():
+                response = self._client.post(_RERANK_URL, json=payload)
             if response.status_code == 429 and attempt < max_attempts - 1:
                 wait_s = random.uniform(0, 2 ** attempt)
                 logger.warning("rerank: 429 rate-limited, backing off %.1fs (attempt %d/%d)", wait_s, attempt + 1, max_attempts)

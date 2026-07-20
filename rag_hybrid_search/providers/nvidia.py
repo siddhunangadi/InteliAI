@@ -34,16 +34,16 @@ class NvidiaProvider(EmbeddingProvider, GenerationProvider):
         )
 
     def embed(self, texts: list[str], input_type: str = "passage") -> list[list[float]]:
-        _nvidia_throttle.throttle()
         logger.info("embed: sending request for %d texts rss_mb=%.1f", len(texts), rss_mb())
-        response = self._client.post(
-            f"{_BASE_URL}/embeddings",
-            json={
-                "input": texts,
-                "model": self._embedding_model,
-                "input_type": input_type,
-            },
-        )
+        with _nvidia_throttle.slot():
+            response = self._client.post(
+                f"{_BASE_URL}/embeddings",
+                json={
+                    "input": texts,
+                    "model": self._embedding_model,
+                    "input_type": input_type,
+                },
+            )
         logger.info(
             "embed: response received status=%d content_length=%s rss_mb=%.1f",
             response.status_code, response.headers.get("content-length"), rss_mb(),
@@ -73,8 +73,8 @@ class NvidiaProvider(EmbeddingProvider, GenerationProvider):
         # at all: one rate-limited request failed the whole answer/judge
         # call. Exponential backoff, same pattern as the embed path.
         for attempt in range(max_attempts):
-            _nvidia_throttle.throttle()
-            response = self._client.post(f"{_BASE_URL}/chat/completions", json=payload)
+            with _nvidia_throttle.slot():
+                response = self._client.post(f"{_BASE_URL}/chat/completions", json=payload)
             if response.status_code == 429 and attempt < max_attempts - 1:
                 # Full jitter (not just exponential): concurrent workers
                 # computing the same 2**attempt all retry at the same
