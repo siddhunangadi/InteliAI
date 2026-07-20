@@ -16,6 +16,7 @@ all()/get_document_summaries/delete_by_document (delete_by_document is the
 one exception: Pinecone's delete endpoint does accept a metadata filter
 directly, unlike query/list).
 """
+import time
 from concurrent.futures import ThreadPoolExecutor
 from datetime import datetime, timezone
 from typing import Iterator
@@ -133,7 +134,11 @@ def _metadata_to_chunk(chunk_id: str, metadata: dict) -> Chunk:
 
 
 class PineconeChunkStore(ChunkStore):
+    _SCAN_CACHE_TTL_S = 300
+
     def __init__(self, client: PineconeConnection, embedding_dimension: int):
+        self._scan_cache = None
+        self._scan_cache_at = 0.0
         self._client = client
         # Needed only for put()'s placeholder-vector creation path below --
         # confirm this matches the real embedding provider's output
@@ -151,6 +156,7 @@ class PineconeChunkStore(ChunkStore):
         self._client.index.describe_index_stats()
 
     def put(self, chunk: Chunk, source_path: str | None = None) -> None:
+        self._invalidate_scan_cache()
         # upsert(), not update(): the real ingestion order
         # (rag_hybrid_search/ingestion/pipeline.py:101,104) always calls
         # chunk_store.put() BEFORE vector_store.upsert() for a given chunk,
@@ -176,6 +182,7 @@ class PineconeChunkStore(ChunkStore):
         }])
 
     def put_many(self, chunks: list[Chunk], source_path: str | None = None) -> None:
+        self._invalidate_scan_cache()
         # Same placeholder-vector write as put(), batched into as few
         # index.upsert() calls as possible instead of one call per chunk --
         # ingesting a document with a few hundred chunks used to mean a few
@@ -208,6 +215,7 @@ class PineconeChunkStore(ChunkStore):
     def put_many_with_embeddings(
         self, chunks: list[Chunk], embeddings: list[EmbeddingRecord], source_path: str | None = None,
     ) -> None:
+        self._invalidate_scan_cache()
         # Pinecone-only fast path: chunk_store and vector_store normally
         # write in two phases (placeholder upsert here, then a real-vector
         # update() per id in PineconeVectorStore) because they're separate
@@ -256,14 +264,32 @@ class PineconeChunkStore(ChunkStore):
         # per-page fetch() calls are independent -- running them serially
         # made a full corpus scan take minutes at real corpus size (~450
         # sequential round-trips for 45k vectors). Fetch pages concurrently.
+        # Metadata-only scans (get_by_legal_metadata, get_document_summaries,
+        # get_by_document, ...) run on the query path -- e.g. the compliance
+        # query router filters by legal metadata on every answer() -- so the
+        # scan result is cached for _SCAN_CACHE_TTL_S and invalidated by
+        # every write on this store. Embeddings are deliberately NOT cached
+        # (44k x 1024 floats is GBs as Python lists); all_with_embeddings()
+        # is ingestion-only and takes the uncached path.
+        if self._scan_cache is not None and time.monotonic() - self._scan_cache_at < self._SCAN_CACHE_TTL_S:
+            yield from self._scan_cache
+            return
+
         id_pages = [
             ids for page in self._client.index.list()
             if (ids := [item.id for item in page.vectors])
         ]
+        cache: list[tuple[str, dict, list[float]]] = []
         with ThreadPoolExecutor(max_workers=16) as pool:
             for fetched in pool.map(lambda ids: self._client.index.fetch(ids=ids), id_pages):
                 for chunk_id, vector in fetched.vectors.items():
+                    cache.append((chunk_id, vector.metadata, []))
                     yield chunk_id, vector.metadata, vector.values
+        self._scan_cache = cache
+        self._scan_cache_at = time.monotonic()
+
+    def _invalidate_scan_cache(self) -> None:
+        self._scan_cache = None
 
     def get_by_document(self, document_id: str) -> list[Chunk]:
         chunks = [
@@ -280,6 +306,7 @@ class PineconeChunkStore(ChunkStore):
         return None
 
     def delete_by_document(self, document_id: str) -> None:
+        self._invalidate_scan_cache()
         # Metadata-filter delete (index.delete(filter=...)) only works on
         # pod-based Pinecone indexes; serverless indexes (the default today,
         # and what this project provisions) silently drop it -- no error,
@@ -337,6 +364,7 @@ class PineconeChunkStore(ChunkStore):
         return sorted(matched, key=lambda c: (c.document_id, c.chunk_index))
 
     def update_legal_metadata(self, chunk_id: str, is_current: bool, superseded_by: str | None) -> None:
+        self._invalidate_scan_cache()
         """Metadata-only update -- does not touch the stored vector, so
         marking an existing chunk superseded doesn't require re-embedding
         or re-upserting its full payload."""
