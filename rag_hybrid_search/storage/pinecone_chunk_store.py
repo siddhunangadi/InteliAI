@@ -16,6 +16,7 @@ all()/get_document_summaries/delete_by_document (delete_by_document is the
 one exception: Pinecone's delete endpoint does accept a metadata filter
 directly, unlike query/list).
 """
+import time
 from concurrent.futures import ThreadPoolExecutor
 from datetime import datetime, timezone
 from typing import Iterator
@@ -35,6 +36,26 @@ _LEGAL_FILTER_KEYS = {
 # is_current flag, as_of_date (ISO date string) keeps only the
 # latest-effective-dated match at or before that date.
 _RESERVED_FILTER_KEYS = {"is_current", "as_of_date"}
+
+# regulation/authority are free-text descriptive names (e.g. ingested as
+# "EU GDPR (Regulation 2016/679)"), while callers -- notably
+# query_router.classify_query()'s _KNOWN_REGULATIONS set -- pass short
+# canonical names ("GDPR"). Exact-equality on these two fields made every
+# query naming a regulation by its short form match zero chunks, silently
+# emptying retrieval for any question that said e.g. "Under GDPR, ..."
+# (confirmed directly: filters={"regulation": "GDPR"} matched 0/44465
+# chunks, filters={"regulation": "EU GDPR (Regulation 2016/679)"} matched
+# 1572). article/section/clause/etc. stay exact-match: those are structured
+# identifiers where substring matching would be actively wrong (e.g. "8"
+# would wrongly match "83").
+_SUBSTRING_MATCH_KEYS = {"regulation", "authority"}
+
+
+def _legal_field_matches(key: str, value: str, metadata: dict) -> bool:
+    stored = metadata.get(f"legal_{key}") or ""
+    if key in _SUBSTRING_MATCH_KEYS:
+        return value.lower() in stored.lower()
+    return stored == value
 
 
 # Pinecone's per-vector metadata limit is 40KB (serialized). Chunk text is
@@ -133,7 +154,12 @@ def _metadata_to_chunk(chunk_id: str, metadata: dict) -> Chunk:
 
 
 class PineconeChunkStore(ChunkStore):
+    _SCAN_CACHE_TTL_S = 300
+
     def __init__(self, client: PineconeConnection, embedding_dimension: int):
+        self._scan_cache = None
+        self._scan_cache_at = 0.0
+        self._neighbor_index = None  # {document_id: {chunk_index: (chunk_id, metadata)}}
         self._client = client
         # Needed only for put()'s placeholder-vector creation path below --
         # confirm this matches the real embedding provider's output
@@ -151,6 +177,7 @@ class PineconeChunkStore(ChunkStore):
         self._client.index.describe_index_stats()
 
     def put(self, chunk: Chunk, source_path: str | None = None) -> None:
+        self._invalidate_scan_cache()
         # upsert(), not update(): the real ingestion order
         # (rag_hybrid_search/ingestion/pipeline.py:101,104) always calls
         # chunk_store.put() BEFORE vector_store.upsert() for a given chunk,
@@ -176,6 +203,7 @@ class PineconeChunkStore(ChunkStore):
         }])
 
     def put_many(self, chunks: list[Chunk], source_path: str | None = None) -> None:
+        self._invalidate_scan_cache()
         # Same placeholder-vector write as put(), batched into as few
         # index.upsert() calls as possible instead of one call per chunk --
         # ingesting a document with a few hundred chunks used to mean a few
@@ -208,6 +236,7 @@ class PineconeChunkStore(ChunkStore):
     def put_many_with_embeddings(
         self, chunks: list[Chunk], embeddings: list[EmbeddingRecord], source_path: str | None = None,
     ) -> None:
+        self._invalidate_scan_cache()
         # Pinecone-only fast path: chunk_store and vector_store normally
         # write in two phases (placeholder upsert here, then a real-vector
         # update() per id in PineconeVectorStore) because they're separate
@@ -252,13 +281,67 @@ class PineconeChunkStore(ChunkStore):
         # fetch() already returns each vector's .values (the embedding)
         # alongside .metadata in the same response -- yielding it here lets
         # all_with_embeddings() reuse it instead of a caller re-embedding.
-        for page in self._client.index.list():
-            ids = [item.id for item in page.vectors]
-            if not ids:
+        # Page listing is inherently serial (cursor pagination), but the
+        # per-page fetch() calls are independent -- running them serially
+        # made a full corpus scan take minutes at real corpus size (~450
+        # sequential round-trips for 45k vectors). Fetch pages concurrently.
+        # Metadata-only scans (get_by_legal_metadata, get_document_summaries,
+        # get_by_document, ...) run on the query path -- e.g. the compliance
+        # query router filters by legal metadata on every answer() -- so the
+        # scan result is cached for _SCAN_CACHE_TTL_S and invalidated by
+        # every write on this store. Embeddings are deliberately NOT cached
+        # (44k x 1024 floats is GBs as Python lists); all_with_embeddings()
+        # is ingestion-only and takes the uncached path.
+        if self._scan_cache is not None and time.monotonic() - self._scan_cache_at < self._SCAN_CACHE_TTL_S:
+            yield from self._scan_cache
+            return
+
+        id_pages = [
+            ids for page in self._client.index.list()
+            if (ids := [item.id for item in page.vectors])
+        ]
+        cache: list[tuple[str, dict, list[float]]] = []
+        with ThreadPoolExecutor(max_workers=16) as pool:
+            for fetched in pool.map(lambda ids: self._client.index.fetch(ids=ids), id_pages):
+                for chunk_id, vector in fetched.vectors.items():
+                    cache.append((chunk_id, vector.metadata, []))
+                    yield chunk_id, vector.metadata, vector.values
+        self._scan_cache = cache
+        self._scan_cache_at = time.monotonic()
+
+    def _invalidate_scan_cache(self) -> None:
+        self._scan_cache = None
+        self._neighbor_index = None
+
+    def get_adjacent_chunks(self, document_id: str, chunk_index: int, window: int = 1) -> list[Chunk]:
+        """Chunks from the same document within +/-window of chunk_index
+        (excluding chunk_index itself), for context/neighbor expansion.
+
+        Clause-aware chunking splits a clause's sub-points into separate
+        chunks -- e.g. GDPR Art 83(5)'s penalty amount ("up to 20 000 000
+        EUR") lands in one chunk and the list of violations it applies to
+        ("(a) the basic principles...") in the very next one. A query
+        matching the violation list retrieves that chunk but not the
+        adjacent one holding the actual number; pulling neighbors restores
+        the split-apart context. Served entirely from the in-memory scan
+        cache (built once, reused), so this adds no per-call network round
+        trips on the query path.
+        """
+        if self._neighbor_index is None:
+            index: dict[str, dict[int, tuple[str, dict]]] = {}
+            for chunk_id, metadata, _values in self._scan_all():
+                index.setdefault(metadata["document_id"], {})[metadata["chunk_index"]] = (chunk_id, metadata)
+            self._neighbor_index = index
+
+        by_index = self._neighbor_index.get(document_id, {})
+        neighbors = []
+        for offset in range(-window, window + 1):
+            if offset == 0:
                 continue
-            fetched = self._client.index.fetch(ids=ids)
-            for chunk_id, vector in fetched.vectors.items():
-                yield chunk_id, vector.metadata, vector.values
+            entry = by_index.get(chunk_index + offset)
+            if entry is not None:
+                neighbors.append(_metadata_to_chunk(entry[0], entry[1]))
+        return neighbors
 
     def get_by_document(self, document_id: str) -> list[Chunk]:
         chunks = [
@@ -275,6 +358,7 @@ class PineconeChunkStore(ChunkStore):
         return None
 
     def delete_by_document(self, document_id: str) -> None:
+        self._invalidate_scan_cache()
         # Metadata-filter delete (index.delete(filter=...)) only works on
         # pod-based Pinecone indexes; serverless indexes (the default today,
         # and what this project provisions) silently drop it -- no error,
@@ -308,7 +392,7 @@ class PineconeChunkStore(ChunkStore):
             raise ValueError(f"unknown legal metadata filter key: {next(iter(unknown))!r}")
         matched = []
         for chunk_id, metadata, _values in self._scan_all():
-            if all(metadata.get(f"legal_{key}") == value for key, value in equality_filters.items()):
+            if all(_legal_field_matches(key, value, metadata) for key, value in equality_filters.items()):
                 matched.append(_metadata_to_chunk(chunk_id, metadata))
 
         is_current = filters.get("is_current")
@@ -332,6 +416,7 @@ class PineconeChunkStore(ChunkStore):
         return sorted(matched, key=lambda c: (c.document_id, c.chunk_index))
 
     def update_legal_metadata(self, chunk_id: str, is_current: bool, superseded_by: str | None) -> None:
+        self._invalidate_scan_cache()
         """Metadata-only update -- does not touch the stored vector, so
         marking an existing chunk superseded doesn't require re-embedding
         or re-upserting its full payload."""

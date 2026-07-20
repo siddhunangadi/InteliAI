@@ -1,8 +1,11 @@
 import logging
+import random
+import time
 
 import httpx
 
 from rag_hybrid_search.diagnostics import rss_mb
+from rag_hybrid_search.providers import _nvidia_throttle
 from rag_hybrid_search.providers.base import EmbeddingProvider, GenerationProvider
 
 logger = logging.getLogger(__name__)
@@ -32,14 +35,15 @@ class NvidiaProvider(EmbeddingProvider, GenerationProvider):
 
     def embed(self, texts: list[str], input_type: str = "passage") -> list[list[float]]:
         logger.info("embed: sending request for %d texts rss_mb=%.1f", len(texts), rss_mb())
-        response = self._client.post(
-            f"{_BASE_URL}/embeddings",
-            json={
-                "input": texts,
-                "model": self._embedding_model,
-                "input_type": input_type,
-            },
-        )
+        with _nvidia_throttle.slot():
+            response = self._client.post(
+                f"{_BASE_URL}/embeddings",
+                json={
+                    "input": texts,
+                    "model": self._embedding_model,
+                    "input_type": input_type,
+                },
+            )
         logger.info(
             "embed: response received status=%d content_length=%s rss_mb=%.1f",
             response.status_code, response.headers.get("content-length"), rss_mb(),
@@ -52,7 +56,7 @@ class NvidiaProvider(EmbeddingProvider, GenerationProvider):
         logger.info("embed: built %d embedding lists rss_mb=%.1f", len(result), rss_mb())
         return result
 
-    def generate(self, prompt: str, **kwargs) -> str:
+    def generate(self, prompt: str, max_attempts: int = 5, **kwargs) -> str:
         payload = {
             "model": self._generation_model,
             "messages": [{"role": "user", "content": prompt}],
@@ -63,8 +67,33 @@ class NvidiaProvider(EmbeddingProvider, GenerationProvider):
             "max_tokens": 2048,
         }
         payload.update(kwargs)
-        response = self._client.post(f"{_BASE_URL}/chat/completions", json=payload)
-        response.raise_for_status()
+        # Concurrent callers (parallel eval runs, concurrent RAG requests)
+        # all hit this endpoint at once -- 429 is the expected case under
+        # real concurrency, not an edge case, and previously had no retry
+        # at all: one rate-limited request failed the whole answer/judge
+        # call. Exponential backoff, same pattern as the embed path.
+        for attempt in range(max_attempts):
+            with _nvidia_throttle.slot():
+                response = self._client.post(f"{_BASE_URL}/chat/completions", json=payload)
+            if response.status_code == 429 and attempt < max_attempts - 1:
+                # Full jitter (not just exponential): concurrent workers
+                # computing the same 2**attempt all retry at the same
+                # instant and collide again -- observed directly (workers
+                # backing off "2.0s" simultaneously, then 429ing together
+                # on the next attempt too).
+                wait_s = random.uniform(0, 2 ** attempt)
+                retry_after = response.headers.get("retry-after")
+                if retry_after:
+                    try:
+                        wait_s = max(wait_s, float(retry_after))
+                    except ValueError:
+                        pass
+                logger.warning("generate: 429 rate-limited, backing off %.1fs (attempt %d/%d)", wait_s, attempt + 1, max_attempts)
+                time.sleep(wait_s)
+                continue
+            response.raise_for_status()
+            return response.json()["choices"][0]["message"]["content"]
+        response.raise_for_status()  # last attempt: surface the real error rather than looping forever
         return response.json()["choices"][0]["message"]["content"]
 
     @property

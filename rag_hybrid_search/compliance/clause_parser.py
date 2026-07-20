@@ -28,15 +28,21 @@ def _tag_sub_clauses(
     current_article: str | None,
     current_section: str | None,
 ) -> list[ClauseSpan]:
-    """Tag nested numbered/lettered sub-clauses within one top-level block.
+    """Split a top-level block into one span per *numbered* clause, keeping
+    each numbered clause's lettered sub-items (a)/(b)/(c) inline with it.
 
-    Returns one span per sub-clause, or a single span for the whole block
-    when no sub-clause markers are found.
+    Splitting out every lettered sub-clause into its own span
+    over-fragments the text: a clause like GDPR Art 83(5) -- "Infringements
+    ... shall be subject to administrative fines up to 20 000 000 EUR ...:
+    (a) the basic principles ...; (b) ..." -- would put the penalty amount
+    in one chunk and each violation it applies to in separate sibling
+    chunks, so a query matching "(a) basic principles" retrieves the item
+    without the fine. Grouping keeps the number and its list together in one
+    retrievable unit. A numbered clause with no lettered sub-items is
+    unaffected; a block with no numbered markers at all stays whole.
     """
-    numbered = [(sc.start(), "num", sc.group(1)) for sc in _CLAUSE_RE.finditer(block)]
-    lettered = [(sc.start(), "letter", sc.group(1)) for sc in _LETTER_CLAUSE_RE.finditer(block)]
-    sub_clauses = sorted(numbered + lettered, key=lambda t: t[0])
-    if not sub_clauses:
+    numbered = [(sc.start(), sc.group(1)) for sc in _CLAUSE_RE.finditer(block)]
+    if not numbered:
         return [
             ClauseSpan(
                 text=block,
@@ -50,25 +56,15 @@ def _tag_sub_clauses(
         ]
 
     spans: list[ClauseSpan] = []
-    sub_boundaries = [sc[0] for sc in sub_clauses] + [len(block)]
-    last_number: str | None = None
-    for j, (sc_start, kind, sc_value) in enumerate(sub_clauses):
-        sub_text = block[sc_start : sub_boundaries[j + 1]].strip()
-        if kind == "num":
-            last_number = sc_value
-            full_clause = (
-                f"{current_article}.{sc_value}" if current_article else sc_value
-            )
-        else:
-            letter = sc_value
-            if last_number is not None:
-                full_clause = (
-                    f"{current_article}.{last_number}({letter})"
-                    if current_article
-                    else f"{last_number}({letter})"
-                )
-            else:
-                full_clause = f"({letter})"
+    boundaries = [start for start, _ in numbered] + [len(block)]
+    # Text before the first numbered clause (block heading / preamble) is
+    # prepended to the first clause so nothing is dropped.
+    lead = block[: boundaries[0]].strip()
+    for j, (start, number) in enumerate(numbered):
+        sub_text = block[start : boundaries[j + 1]].strip()
+        if j == 0 and lead:
+            sub_text = f"{lead}\n{sub_text}"
+        full_clause = f"{current_article}.{number}" if current_article else number
         spans.append(
             ClauseSpan(
                 text=sub_text,

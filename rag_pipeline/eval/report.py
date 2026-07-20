@@ -2,10 +2,19 @@ import json
 from pathlib import Path
 
 _OBJECTIVE_FIELDS = ("citation_precision", "citation_recall", "citation_f1", "coverage")
+# Retrieval-stage metrics can be None per-question (out-of-corpus negatives
+# have no relevant doc to rank), so they're averaged over only the questions
+# where they're defined, not all successes.
+_RETRIEVAL_FIELDS = ("recall@1", "recall@3", "recall@5", "precision@1", "precision@3", "precision@5", "mrr")
 
 
 def _mean(values: list[float]) -> float:
     return sum(values) / len(values) if values else 0.0
+
+
+def _mean_defined(metrics: list[dict], field: str):
+    vals = [m[field] for m in metrics if m.get(field) is not None]
+    return _mean(vals) if vals else None
 
 
 def _objective_aggregate(records: list[dict]) -> dict:
@@ -14,10 +23,14 @@ def _objective_aggregate(records: list[dict]) -> dict:
     if not metrics:
         return {
             field: None for field in _OBJECTIVE_FIELDS
-        } | {"latency_ms": None, "verification_pass_rate": None}
+        } | {"latency_ms": None, "verification_pass_rate": None} | {
+            field: None for field in _RETRIEVAL_FIELDS
+        }
     result = {field: _mean([m[field] for m in metrics]) for field in _OBJECTIVE_FIELDS}
     result["latency_ms"] = _mean([m["latency_ms"] for m in metrics])
     result["verification_pass_rate"] = _mean([1.0 if m["verification_pass"] else 0.0 for m in metrics])
+    for field in _RETRIEVAL_FIELDS:
+        result[field] = _mean_defined(metrics, field)
     return result
 
 

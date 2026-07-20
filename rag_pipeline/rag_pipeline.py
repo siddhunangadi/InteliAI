@@ -9,6 +9,12 @@ from pathlib import Path
 
 from pydantic import ValidationError
 
+try:
+    from langsmith import traceable
+except ImportError:  # pragma: no cover - langsmith is optional at runtime
+    def traceable(*args, **kwargs):
+        return (lambda fn: fn) if not (args and callable(args[0])) else args[0]
+
 from rag_hybrid_search.compliance.citation_mapper import build_citations
 from rag_hybrid_search.compliance.query_router import route_query
 from rag_hybrid_search.trace import RequestTrace
@@ -18,7 +24,7 @@ from rag_pipeline.context_pruning import prune_by_score_margin
 from rag_pipeline.context_builder import ContextLayout, build_context
 from rag_pipeline.generation_provider import GenerationProvider
 from rag_pipeline.citation_verifier import verify_citations
-from rag_hybrid_search.models import ChunkProvenance, ContextChunk
+from rag_hybrid_search.models import ChunkProvenance, ContextChunk, RetrievedChunk
 from rag_pipeline.models import (
     Claim,
     CitationStatus,
@@ -272,6 +278,7 @@ class RagPipeline:
         self, retriever, generation_provider: GenerationProvider, chunk_store=None,
         prompt_version: str = "v2", context_prune_margin: float = 0.3,
         context_layout: ContextLayout = ContextLayout.FLAT,
+        neighbor_window: int = 1,
     ):
         self._retriever = retriever
         self._generation_provider = generation_provider
@@ -279,6 +286,11 @@ class RagPipeline:
         self._prompt_version = prompt_version
         self._context_prune_margin = context_prune_margin
         self._context_layout = context_layout
+        # Adjacent-chunk expansion: clause-aware chunking separates a
+        # clause's penalty/preamble from its sub-point list into neighboring
+        # chunks, so a query matching one half retrieves it without the
+        # other. 0 disables. Requires chunk_store (get_adjacent_chunks).
+        self._neighbor_window = neighbor_window
 
     @property
     def retriever(self):
@@ -296,6 +308,7 @@ class RagPipeline:
     def context_layout(self) -> ContextLayout:
         return self._context_layout
 
+    @traceable(name="rag_pipeline.answer", run_type="chain")
     def answer(
         self, question: str, max_chunks: int = 5, verify: bool = True,
         dev_trace: RequestTrace | None = None,
@@ -362,6 +375,40 @@ class RagPipeline:
             ),
         )
 
+    def _expand_with_neighbors(self, chunks, provenance_map):
+        """Append each retrieved chunk's adjacent same-document chunks, so a
+        clause split across chunk boundaries (see
+        PineconeChunkStore.get_adjacent_chunks) reaches the generator whole.
+
+        Neighbors are inserted right after their parent and inherit its
+        provenance; deduped against chunks already present so an overlap
+        between two retrieved chunks' neighbor windows isn't added twice."""
+        if self._neighbor_window <= 0 or self._chunk_store is None:
+            return chunks
+        get_adjacent = getattr(self._chunk_store, "get_adjacent_chunks", None)
+        if get_adjacent is None:
+            return chunks
+
+        seen = {r.chunk.chunk_id for r in chunks}
+        expanded = []
+        for r in chunks:
+            expanded.append(r)
+            for neighbor in get_adjacent(r.chunk.document_id, r.chunk.chunk_index, self._neighbor_window):
+                if neighbor.chunk_id in seen:
+                    continue
+                seen.add(neighbor.chunk_id)
+                # rerank_score=None marks it as context-expansion, not an
+                # independently-scored retrieval hit; final_rank mirrors the
+                # parent so it stays adjacent in the built context.
+                expanded.append(RetrievedChunk(
+                    chunk=neighbor, dense_score=None, bm25_score=None,
+                    rrf_score=r.rrf_score, rerank_score=None, final_rank=r.final_rank,
+                ))
+                provenance_map[neighbor.chunk_id] = provenance_map.get(
+                    r.chunk.chunk_id, ChunkProvenance(primary_subquery=0, all_subqueries=[0])
+                )
+        return expanded
+
     def _prepare_context(self, question: str, max_chunks: int, dev_trace: RequestTrace):
         """Shared pre-generation stage: decompose, retrieve, merge, prune, build prompt.
 
@@ -397,7 +444,7 @@ class RagPipeline:
             retrieved_chunks, self._context_prune_margin, min_keep=required_chunks,
         )
         dev_trace.log_pruning(retrieved_chunks, pruned_chunks)
-        retrieved_chunks = pruned_chunks
+        retrieved_chunks = self._expand_with_neighbors(pruned_chunks, provenance_map)
 
         context_chunks = [
             ContextChunk(
@@ -471,20 +518,51 @@ class RagPipeline:
         dev_trace.log_summary(draft.answer, chunks_used=len(retrieved_chunks), documents_used=documents_used)
         dev_trace.finish()
 
+        # `citations` above (and inline_ids/citation_status) are prompt-local
+        # labels ("d1", matching context.doc_id_map / the model's [d1] tags)
+        # -- meaningful only within this one request's prompt. Anything
+        # outside that scope (eval scoring against a golden citation_doc_ids
+        # list, a UI linking to a real document) needs the actual
+        # document_id, not the label. Translate label -> chunk_id (via
+        # context.doc_id_map) -> document_id (via retrieved_chunks) for the
+        # answer's public citations field.
+        doc_id_by_chunk_id = {r.chunk.chunk_id: r.chunk.document_id for r in retrieved_chunks}
+        document_citations = sorted({
+            doc_id_by_chunk_id[chunk_id]
+            for label in citations
+            if (chunk_id := context.doc_id_map.get(label)) is not None and chunk_id in doc_id_by_chunk_id
+        })
+
         return RagAnswer(
-            answer=draft.answer, citations=citations, structured_citations=structured_citations,
+            answer=draft.answer, citations=document_citations, structured_citations=structured_citations,
             confidence=confidence, verification=verification, citation_status=citation_status,
             error=parse_error,
         )
 
+    _FILENAME_CACHE_TTL_S = 300
+
     def _filename_by_doc_id(self) -> dict[str, str]:
         if self._chunk_store is None:
             return {}
-        return {
+        # get_document_summaries() is a full paginated scan of the entire
+        # Pinecone index (hundreds of serial fetches at real corpus size) --
+        # doing that once per answer() made a single question take minutes.
+        # The doc_id -> filename map only changes on ingest, so cache it.
+        # ponytail: TTL cache; newly ingested docs' filenames can lag up to
+        # 5 min in citations. Wire an ingest-side invalidation hook if that
+        # ever matters.
+        now = time.monotonic()
+        cached = getattr(self, "_filename_cache", None)
+        if cached is not None and now - self._filename_cache_at < self._FILENAME_CACHE_TTL_S:
+            return cached
+        mapping = {
             s["document_id"]: Path(s["source_path"]).name
             for s in self._chunk_store.get_document_summaries()
             if s["source_path"]
         }
+        self._filename_cache = mapping
+        self._filename_cache_at = now
+        return mapping
 
     def _parse_draft(self, raw_output: str) -> tuple[RagAnswerDraft, str | None]:
         metadata = GenerationMetadata(

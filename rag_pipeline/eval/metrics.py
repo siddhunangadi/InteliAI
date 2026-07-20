@@ -9,6 +9,46 @@ def verdict_score(verdict: str) -> float:
     return _VERDICT_SCORES[verdict]
 
 
+_RETRIEVAL_KS = (1, 3, 5)
+
+
+def retrieval_metrics(ranked_doc_ids: list[str], expected_doc_ids: list[str]) -> dict:
+    """Retrieval-stage recall@k, precision@k, and MRR over the *ranked* list
+    of documents the retriever surfaced (deduped, best rank kept), scored
+    against the golden expected documents.
+
+    Isolates retrieval quality from generation quality: citation_* metrics
+    only see what the model chose to cite, so a right-doc-retrieved-but-
+    not-cited case is invisible there but caught here. Empty-expected
+    (out-of-corpus negatives) returns 1.0s only when nothing was retrieved
+    as relevant -- there's no relevant doc to rank, so a non-empty
+    retrieval isn't penalized on recall (undefined) but MRR stays 0.0.
+    """
+    expected = set(expected_doc_ids)
+    # dedup preserving first (best) rank
+    seen: set[str] = set()
+    ranked = [d for d in ranked_doc_ids if not (d in seen or seen.add(d))]
+
+    if not expected:
+        return {f"recall@{k}": None for k in _RETRIEVAL_KS} | {
+            f"precision@{k}": None for k in _RETRIEVAL_KS
+        } | {"mrr": None}
+
+    out: dict = {}
+    for k in _RETRIEVAL_KS:
+        topk = ranked[:k]
+        hits = sum(1 for d in topk if d in expected)
+        out[f"recall@{k}"] = hits / len(expected)
+        out[f"precision@{k}"] = hits / k
+    mrr = 0.0
+    for rank, d in enumerate(ranked, start=1):
+        if d in expected:
+            mrr = 1.0 / rank
+            break
+    out["mrr"] = mrr
+    return out
+
+
 def citation_precision_recall_f1(predicted: list[str], expected: list[str]) -> tuple[float, float, float]:
     if not predicted and not expected:
         return 1.0, 1.0, 1.0
@@ -52,6 +92,12 @@ def evaluate_question(
     expected_citations = question.expected.citation_doc_ids
     precision, recall, f1 = citation_precision_recall_f1(predicted_citations, expected_citations)
 
+    # Retrieval-stage metrics over the ranked documents the retriever
+    # surfaced (structured_citations are ordered by final_rank), not just
+    # what the model cited.
+    ranked_doc_ids = [c.document_id for c in rag_answer.structured_citations]
+    ret_metrics = retrieval_metrics(ranked_doc_ids, expected_citations)
+
     claim_results = rag_answer.verification.claim_results
     verification_pass = bool(claim_results) and all(cr.passed for cr in claim_results)
 
@@ -79,6 +125,7 @@ def evaluate_question(
             "citation_f1": f1,
             "verification_pass": verification_pass,
             "coverage": rag_answer.confidence.coverage,
+            **ret_metrics,
         },
         "judge": {
             "verdict": judge_result.verdict,

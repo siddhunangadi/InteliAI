@@ -3,7 +3,7 @@ from pathlib import Path
 
 import yaml
 
-_VALID_CATEGORIES = {"factual", "comparative", "multi-hop", "summarization", "definition"}
+_VALID_CATEGORIES = {"factual", "comparative", "multi-hop", "summarization", "definition", "scenario"}
 _REQUIRED_QUESTION_FIELDS = ("id", "question", "category", "expected")
 _REQUIRED_EXPECTED_FIELDS = ("answer", "citation_doc_ids")
 

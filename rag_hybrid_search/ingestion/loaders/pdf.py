@@ -12,6 +12,71 @@ def _table_to_text(table: list[list[str | None]]) -> str:
     return "\n".join(rows)
 
 
+def _detect_gutter_x(page) -> float | None:
+    """Return the x of a vertical gutter separating two text columns, or
+    None when the page isn't cleanly two-column.
+
+    Two-column legal/Federal-Register PDFs (HIPAA and most CFR parts) are
+    otherwise read across BOTH columns line-by-line, interleaving unrelated
+    passages into garbled text -- e.g. HIPAA's "60 calendar days" clause got
+    spliced with an adjacent column's list, making it unretrievable. Detect
+    a vertical band in the middle of the page that almost no word crosses,
+    with substantial text on both sides, and treat that as the column split.
+
+    Conservative by design: any ambiguity returns None so genuinely
+    single-column pages fall through to the existing extraction unchanged.
+    """
+    try:
+        words = page.extract_words(x_tolerance=1)
+    except Exception:
+        return None
+    if len(words) < 20:
+        return None
+
+    width = page.width or 0
+    if width <= 0:
+        return None
+    intervals = [(float(w["x0"]), float(w["x1"])) for w in words]
+    n = len(intervals)
+
+    best_x = None
+    best_cross = None
+    lo, hi = width * 0.35, width * 0.65
+    steps = 25
+    for i in range(steps + 1):
+        x = lo + (hi - lo) * i / steps
+        crossing = sum(1 for a, b in intervals if a < x < b)
+        left = sum(1 for _, b in intervals if b <= x)
+        right = sum(1 for a, _ in intervals if a >= x)
+        # need a real column of text on each side, not a stray margin note
+        if left < n * 0.25 or right < n * 0.25:
+            continue
+        if best_cross is None or crossing < best_cross:
+            best_cross, best_x = crossing, x
+
+    if best_x is None:
+        return None
+    # a true gutter has almost nothing spanning it
+    if best_cross <= max(2, int(n * 0.02)):
+        return best_x
+    return None
+
+
+def _extract_page_text(page) -> str:
+    """Extract a page's prose in human reading order, column-aware.
+
+    Single-column (gutter not detected): the existing full-page extraction.
+    Two-column: extract the left column top-to-bottom, then the right,
+    so each column's sentences stay intact instead of being interleaved.
+    """
+    gutter = _detect_gutter_x(page)
+    if gutter is None:
+        return page.extract_text(x_tolerance=1) or ""
+    left = page.crop((0, 0, gutter, page.height)).extract_text(x_tolerance=1) or ""
+    right = page.crop((gutter, 0, page.width, page.height)).extract_text(x_tolerance=1) or ""
+    return "\n".join(part for part in (left.strip(), right.strip()) if part)
+
+
 def _extract_with_pdfplumber(path: str) -> str | None:
     """Try pdfplumber (table-aware). Returns None if it can't parse the file at all.
 
@@ -29,7 +94,7 @@ def _extract_with_pdfplumber(path: str) -> str | None:
             return None
         pages_text = []
         for page in pdf.pages:
-            text = page.extract_text(x_tolerance=1) or ""
+            text = _extract_page_text(page)
             tables = page.extract_tables(table_settings={"text_x_tolerance": 1})
             table_blocks = [_table_to_text(table) for table in tables if table]
             pages_text.append("\n\n".join([text, *table_blocks]).strip())

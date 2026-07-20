@@ -1,6 +1,12 @@
 import json
 from dataclasses import dataclass
 
+try:
+    from langsmith import traceable
+except ImportError:  # pragma: no cover - langsmith is optional at runtime
+    def traceable(*args, **kwargs):
+        return (lambda fn: fn) if not (args and callable(args[0])) else args[0]
+
 from rag_pipeline.generation_provider import GenerationProvider
 
 _VALID_VERDICTS = {"CORRECT", "PARTIAL", "INCORRECT", "UNSUPPORTED"}
@@ -33,6 +39,7 @@ class JudgeVerdict:
     raw_response: str
 
 
+@traceable(name="eval.judge_answer", run_type="llm")
 def judge_answer(
     question: str, expected_answer: str, model_answer: str,
     judge_provider: GenerationProvider, prompt_version: str = "v1",

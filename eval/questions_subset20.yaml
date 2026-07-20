@@ -1,0 +1,141 @@
+dataset:
+  name: compliance-corpus-v1
+  version: 1.0.0
+questions:
+- id: q001
+  question: Under GDPR, what is the maximum administrative fine for infringements of the basic principles for processing, including conditions for consent?
+  category: factual
+  expected:
+    answer: Up to 20,000,000 EUR, or up to 4% of total worldwide annual turnover of the preceding financial year, whichever is higher.
+    citation_doc_ids:
+    - 55c74e72211c5520043bb3775fbc98b507fd38ad16e61828fa07eb179e75134c
+- id: q004
+  question: What obligations does the EU AI Act place on providers of high-risk AI systems?
+  category: factual
+  expected:
+    answer: Providers of high-risk AI systems must implement a risk management system, ensure data governance and quality, maintain technical documentation, enable record-keeping/logging, provide transparency and instructions for use, ensure human oversight, and meet accuracy, robustness, and cybersecurity requirements.
+    citation_doc_ids:
+    - a0f990772507d97095753a7765529c139542bb9e2020d716c517b51e06e3f5d3
+- id: q007
+  question: What are the three pillars of the Basel Framework?
+  category: factual
+  expected:
+    answer: Pillar 1 (minimum capital requirements), Pillar 2 (supervisory review process), and Pillar 3 (market discipline/disclosure requirements).
+    citation_doc_ids:
+    - 5a5bda25e54a33b34872be13cdc61d4b4b4702fd44199b0c0da4da0a665594a3
+- id: q010
+  question: What does Regulation B (12 CFR Part 1002) prohibit under the Equal Credit Opportunity Act?
+  category: factual
+  expected:
+    answer: It prohibits creditors from discriminating against credit applicants on the basis of race, color, religion, national origin, sex, marital status, age, receipt of public assistance income, or exercise of rights under the Consumer Credit Protection Act.
+    citation_doc_ids:
+    - 455f8b54df73381362a794e34d70b68ec5b0bfdec1f13144714143eb391290d2
+- id: q002
+  question: What is a data subject's right under GDPR to receive their personal data in a structured, commonly used, machine-readable format?
+  category: definition
+  expected:
+    answer: The right to data portability.
+    citation_doc_ids:
+    - 55c74e72211c5520043bb3775fbc98b507fd38ad16e61828fa07eb179e75134c
+- id: q040
+  question: What is Zero Trust Architecture as described in NIST SP 800-207?
+  category: definition
+  expected:
+    answer: Zero Trust Architecture is a security model that assumes no implicit trust based on network location, instead requiring continuous verification of every access request regardless of whether it originates inside or outside the network perimeter.
+    citation_doc_ids:
+    - 6f0b96bdcfe33625afef5596e654937b127da5f3d9fa38b00fcacd8825ffe12e
+- id: q003
+  question: How does the EU AI Act categorize risk for AI systems, and what are the main risk tiers?
+  category: summarization
+  expected:
+    answer: 'The EU AI Act uses a risk-based tiered approach: unacceptable risk (prohibited practices), high-risk AI systems (subject to strict obligations), limited risk (transparency obligations), and minimal risk (largely unregulated).'
+    citation_doc_ids:
+    - a0f990772507d97095753a7765529c139542bb9e2020d716c517b51e06e3f5d3
+- id: q015
+  question: What are the three main rules established under 45 CFR Part 164?
+  category: summarization
+  expected:
+    answer: The Privacy Rule, the Security Rule, and the Breach Notification Rule.
+    citation_doc_ids:
+    - a87b2afe059745c5ddfeb1652c4c9e2c3d75d1fa30699f98d8470e889dc86936
+- id: q020
+  question: What are the major titles/areas of reform covered by the Dodd-Frank Wall Street Reform Act?
+  category: summarization
+  expected:
+    answer: Dodd-Frank covers areas including financial stability oversight, orderly liquidation authority, the Volcker Rule, derivatives regulation, creation of the CFPB, credit rating agency reform, and executive compensation/corporate governance reforms, among many other titles.
+    citation_doc_ids:
+    - 9f391f20bfdd4d1e60c3d7b0759917e03f05fa614a31aa599a938484791d420d
+- id: q026
+  question: What is the SR 12-17 Consolidated Supervision Framework primarily about?
+  category: summarization
+  expected:
+    answer: SR 12-17 describes the Federal Reserve's framework for consolidated supervision of large financial institutions, emphasizing a firm-wide view of risk across the entire organization rather than only its individual legal entities.
+    citation_doc_ids:
+    - 08ac92421ebd0177da049c7852a2fa7df103132a1ba3f2a33e7efd8105e417a2
+- id: q005
+  question: How does the 5th Anti-Money Laundering Directive (AMLD5) amend the 4th AML Directive (AMLD4) regarding virtual currencies?
+  category: comparative
+  expected:
+    answer: AMLD5 extends AML obligations to providers engaged in exchange services between virtual currencies and fiat currencies, and to custodian wallet providers, which were not covered under AMLD4.
+    citation_doc_ids:
+    - 6b816640fc114dddf1ee4298143a971e04d37aae2af3897b7fa4417be013f0e8
+    - d34f58f45400f5915224d11ca5731910ccc820d178648c8a294af7c9c59ef621
+- id: q006
+  question: What is the key structural difference between AMLD4 and AMLD5 in terms of beneficial ownership registers?
+  category: comparative
+  expected:
+    answer: AMLD5 requires broader public access to beneficial ownership registers for companies and introduces registers for trusts, going beyond AMLD4's more limited access provisions.
+    citation_doc_ids:
+    - 6b816640fc114dddf1ee4298143a971e04d37aae2af3897b7fa4417be013f0e8
+    - d34f58f45400f5915224d11ca5731910ccc820d178648c8a294af7c9c59ef621
+- id: q009
+  question: What changed in the structure of the consolidated Basel Framework between the 2019 and 2024 editions?
+  category: comparative
+  expected:
+    answer: The structure map documents evolved to reflect newly added or reorganized chapters as the Basel Committee published new standards over time; the 2024 structure reflects a more current and expanded chapter set than the 2019 version.
+    citation_doc_ids:
+    - 09554073b6fb42ab32e6f90714fa94c2c3e434369005dea31a0ccfd0abbbe2f1
+    - 8eb193306e83027138b9e56dd1e4a1644f5d528841bce362cddae5074fbedcc4
+- id: q016
+  question: How does the Consumer Credit Directive II (2023/2225) differ from the original Consumer Credit Directive (2008/48/EC)?
+  category: comparative
+  expected:
+    answer: CCD II (2023/2225) explicitly repeals and replaces CCD I (2008/48/EC), broadening scope to cover additional credit products (e.g. certain low-value and buy-now-pay-later type agreements) and strengthening creditworthiness assessment and pre-contractual information requirements.
+    citation_doc_ids:
+    - 9f72bb2b0f77a5bf3e78a684280911ffb4808fee74c1afd189ef34c3aca836b3
+    - e2ee0b03450588c09c0347ee68b22ff8bcd4346861425ace6a9bb618ec3950f4
+- id: q008
+  question: How do climate-related risk drivers, per the Basel Committee's guidance, transmit into traditional financial risk categories?
+  category: multi-hop
+  expected:
+    answer: Climate-related risk drivers (physical and transition risks) transmit into traditional risk categories such as credit risk, market risk, operational risk, and liquidity risk, as described in the Basel Committee's climate risk transmission channels document, which cross-references the Basel Framework's chapters on those risk categories.
+    citation_doc_ids:
+    - 91808df6c1b6473b6b651a32b0d57c5867b9ef82ed42bce9921c9cc7f145abdb
+    - 0ff411f6b5bc9362b9a5ba07a7d6168fc0cea547e0bfb44dad437dbd801f8685
+- id: q014
+  question: What is the purpose of the general definitions in 45 CFR Part 160 relative to HIPAA's Part 164 rules?
+  category: multi-hop
+  expected:
+    answer: 45 CFR Part 160 establishes the general administrative requirements and definitions (e.g. covered entity, business associate) that are referenced throughout Part 164's Privacy, Security, and Breach Notification Rules.
+    citation_doc_ids:
+    - a957fbf8584e885eb7db0afde5896f8a14400feeba892edd4640044ff0829fa8
+    - a87b2afe059745c5ddfeb1652c4c9e2c3d75d1fa30699f98d8470e889dc86936
+- id: q036
+  question: How do FIPS 199 and FIPS 200 relate to each other and to NIST SP 800-53?
+  category: multi-hop
+  expected:
+    answer: FIPS 199 establishes standards for categorizing information and information systems by security impact level; FIPS 200 defines minimum security requirements based on those categorizations; both feed into NIST SP 800-53, which provides the detailed security and privacy control catalog referenced by FIPS 200's minimum requirements.
+    citation_doc_ids:
+    - da00c908c378a32d424f9d0ed911a29b96596f8a52e3031725e2a53dfa65367c
+    - fc2de4faed8e9626915f9e3aa3d17c43e9def332abffd7b75c2261e8629051f4
+    - 3cab929a32634ca81409b458979cb37fe2ef83491ff5e90395c2612024b38920
+- id: q038
+  question: How did NIST SP 800-171 evolve from its original version through Revision 3?
+  category: multi-hop
+  expected:
+    answer: SP 800-171 was first published to define requirements for protecting Controlled Unclassified Information (CUI) in nonfederal systems; Revision 1 made moderate updates; Revision 2 was later withdrawn in 2024; Revision 3 is the current version, superseding Revision 2.
+    citation_doc_ids:
+    - 3bd71b1b5ba72a2e7c918b2714a0ed23dcbb9c68059c81bb88324f8976626297
+    - 15d6beb1194a51d5ab406751c78517247c0ec5278ca038b1741a20748e115b9b
+    - 42cdb4f2f6b1096600ef9ab2dda26c3bb2f942862fc41ac0f85ab903eaddd54e
+    - 2b71853a04ccb00a8b4384ca231116bf52471557fce7d21a9793eefe450adb9b

@@ -26,6 +26,14 @@ class ClauseChunker(Chunker):
 
     version = "clause-v1"
 
+    # ponytail: parse_clauses() has no upper bound on a span's length -- an
+    # unrecognized document (or one giant annex/article) produces a single
+    # clause spanning the whole document, which blows past Pinecone's 40KB
+    # per-vector metadata limit (chunk text is almost all of that payload).
+    # Sub-split any oversized span on paragraph boundaries so every stored
+    # chunk stays well under that limit, rather than storing one giant chunk.
+    _MAX_CHUNK_CHARS = 6000
+
     def __init__(
         self,
         document_title: str,
@@ -53,7 +61,8 @@ class ClauseChunker(Chunker):
         )
 
         chunks: list[Chunk] = []
-        for index, clause_span in enumerate(parse_result.clauses):
+        index = 0
+        for clause_span in parse_result.clauses:
             legal_metadata = LegalMetadata(
                 document_id=clause_span.metadata.document_id,
                 document_title=clause_span.metadata.document_title,
@@ -67,17 +76,46 @@ class ClauseChunker(Chunker):
                 document_type=self._document_type,
                 page=clause_span.metadata.page,
             )
-            chunks.append(
-                Chunk(
-                    chunk_id=uuid7(),
-                    document_id=document.document_id,
-                    chunk_index=index,
-                    text=clause_span.text,
-                    strategy_version=self.version,
-                    heading=legal_metadata.article or legal_metadata.section,
-                    page=legal_metadata.page,
-                    char_count=len(clause_span.text),
-                    legal_metadata=legal_metadata,
+            for piece in self._split_oversized(clause_span.text):
+                chunks.append(
+                    Chunk(
+                        chunk_id=uuid7(),
+                        document_id=document.document_id,
+                        chunk_index=index,
+                        text=piece,
+                        strategy_version=self.version,
+                        heading=legal_metadata.article or legal_metadata.section,
+                        page=legal_metadata.page,
+                        char_count=len(piece),
+                        legal_metadata=legal_metadata,
+                    )
                 )
-            )
+                index += 1
         return chunks
+
+    @classmethod
+    def _split_oversized(cls, text: str) -> list[str]:
+        """Split ``text`` into pieces <= ``_MAX_CHUNK_CHARS``, on paragraph
+        boundaries where possible, hard-slicing any single paragraph that's
+        still too long on its own."""
+        if len(text) <= cls._MAX_CHUNK_CHARS:
+            return [text]
+
+        pieces: list[str] = []
+        current = ""
+        for paragraph in text.split("\n\n"):
+            candidate = f"{current}\n\n{paragraph}" if current else paragraph
+            if len(candidate) <= cls._MAX_CHUNK_CHARS:
+                current = candidate
+                continue
+            if current:
+                pieces.append(current)
+                current = ""
+            if len(paragraph) <= cls._MAX_CHUNK_CHARS:
+                current = paragraph
+            else:
+                for start in range(0, len(paragraph), cls._MAX_CHUNK_CHARS):
+                    pieces.append(paragraph[start : start + cls._MAX_CHUNK_CHARS])
+        if current:
+            pieces.append(current)
+        return pieces
