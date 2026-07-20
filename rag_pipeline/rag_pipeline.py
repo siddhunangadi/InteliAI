@@ -484,14 +484,30 @@ class RagPipeline:
             error=parse_error,
         )
 
+    _FILENAME_CACHE_TTL_S = 300
+
     def _filename_by_doc_id(self) -> dict[str, str]:
         if self._chunk_store is None:
             return {}
-        return {
+        # get_document_summaries() is a full paginated scan of the entire
+        # Pinecone index (hundreds of serial fetches at real corpus size) --
+        # doing that once per answer() made a single question take minutes.
+        # The doc_id -> filename map only changes on ingest, so cache it.
+        # ponytail: TTL cache; newly ingested docs' filenames can lag up to
+        # 5 min in citations. Wire an ingest-side invalidation hook if that
+        # ever matters.
+        now = time.monotonic()
+        cached = getattr(self, "_filename_cache", None)
+        if cached is not None and now - self._filename_cache_at < self._FILENAME_CACHE_TTL_S:
+            return cached
+        mapping = {
             s["document_id"]: Path(s["source_path"]).name
             for s in self._chunk_store.get_document_summaries()
             if s["source_path"]
         }
+        self._filename_cache = mapping
+        self._filename_cache_at = now
+        return mapping
 
     def _parse_draft(self, raw_output: str) -> tuple[RagAnswerDraft, str | None]:
         metadata = GenerationMetadata(

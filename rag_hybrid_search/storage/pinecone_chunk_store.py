@@ -252,13 +252,18 @@ class PineconeChunkStore(ChunkStore):
         # fetch() already returns each vector's .values (the embedding)
         # alongside .metadata in the same response -- yielding it here lets
         # all_with_embeddings() reuse it instead of a caller re-embedding.
-        for page in self._client.index.list():
-            ids = [item.id for item in page.vectors]
-            if not ids:
-                continue
-            fetched = self._client.index.fetch(ids=ids)
-            for chunk_id, vector in fetched.vectors.items():
-                yield chunk_id, vector.metadata, vector.values
+        # Page listing is inherently serial (cursor pagination), but the
+        # per-page fetch() calls are independent -- running them serially
+        # made a full corpus scan take minutes at real corpus size (~450
+        # sequential round-trips for 45k vectors). Fetch pages concurrently.
+        id_pages = [
+            ids for page in self._client.index.list()
+            if (ids := [item.id for item in page.vectors])
+        ]
+        with ThreadPoolExecutor(max_workers=16) as pool:
+            for fetched in pool.map(lambda ids: self._client.index.fetch(ids=ids), id_pages):
+                for chunk_id, vector in fetched.vectors.items():
+                    yield chunk_id, vector.metadata, vector.values
 
     def get_by_document(self, document_id: str) -> list[Chunk]:
         chunks = [
