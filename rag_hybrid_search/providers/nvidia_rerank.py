@@ -1,7 +1,14 @@
+import logging
+import random
+import time
+
 import httpx
 
 from rag_hybrid_search.models import RetrievedChunk
+from rag_hybrid_search.providers import _nvidia_throttle
 from rag_hybrid_search.providers.base import RerankProvider
+
+logger = logging.getLogger(__name__)
 
 # NVIDIA's hosted NeMo Retriever reranking API. Verified against a live key
 # (2026-07-10): reranking measurably changes candidate order and pulls in
@@ -35,16 +42,23 @@ class NvidiaRerankProvider(RerankProvider):
         if not candidates:
             return []
 
-        response = self._client.post(
-            _RERANK_URL,
-            json={
-                "model": self._model,
-                "query": {"text": query},
-                "passages": [{"text": c.chunk.text} for c in candidates],
-                "truncate": "END",
-            },
-        )
-        response.raise_for_status()
+        payload = {
+            "model": self._model,
+            "query": {"text": query},
+            "passages": [{"text": c.chunk.text} for c in candidates],
+            "truncate": "END",
+        }
+        max_attempts = 5
+        for attempt in range(max_attempts):
+            _nvidia_throttle.throttle()
+            response = self._client.post(_RERANK_URL, json=payload)
+            if response.status_code == 429 and attempt < max_attempts - 1:
+                wait_s = random.uniform(0, 2 ** attempt)
+                logger.warning("rerank: 429 rate-limited, backing off %.1fs (attempt %d/%d)", wait_s, attempt + 1, max_attempts)
+                time.sleep(wait_s)
+                continue
+            response.raise_for_status()
+            break
         rankings = response.json()["rankings"]
 
         ranked = sorted(rankings, key=lambda r: r["logit"], reverse=True)[:top_n]
