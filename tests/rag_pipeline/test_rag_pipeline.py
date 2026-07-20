@@ -27,9 +27,14 @@ class RaisingGenerationProvider:
         raise RuntimeError("network down")
 
 
-def make_retrieved_chunk(chunk_id, text, rerank_score=0.9, final_rank=1):
+def make_retrieved_chunk(chunk_id, text, rerank_score=0.9, final_rank=1, document_id=None):
+    # document_id defaults to chunk_id (distinct per chunk) rather than a
+    # shared "d1" -- RagAnswer.citations is now real document_ids, not
+    # prompt labels (see rag_pipeline.py's _finalize_answer), so tests
+    # asserting citations span multiple documents need fixtures whose
+    # chunks actually belong to different documents.
     chunk = Chunk(
-        chunk_id=chunk_id, document_id="d1", chunk_index=0, text=text,
+        chunk_id=chunk_id, document_id=document_id or chunk_id, chunk_index=0, text=text,
         strategy_version="fixed-v1", heading=None, page=None, char_count=len(text),
     )
     return RetrievedChunk(
@@ -53,7 +58,7 @@ def test_answer_end_to_end_with_mock_provider():
     result = pipeline.answer("How many days of paid leave?")
 
     assert result.answer == "Employees get 20 days of paid leave [d1]."
-    assert result.citations == ["d1"]
+    assert result.citations == ["c1"]
     assert result.error is None
     assert result.verification.verified_claims == 1
     assert result.confidence.overall > 0.0
@@ -400,7 +405,7 @@ def test_comparative_question_retrieves_once_per_subquery():
     # isn't guaranteed -- assert membership, not sequence.
     assert set(retriever.queries_seen) == {"RQ1 findings", "RQ2 findings"}
     assert result.error is None
-    assert {c for c in result.citations} == {"d1", "d2"}
+    assert {c for c in result.citations} == {"rq1", "rq2"}
 
 
 def test_non_comparative_question_retrieves_once_with_original_question():
@@ -455,7 +460,7 @@ def test_one_failing_subquery_does_not_abort_the_others():
     result = pipeline.answer("Compare RQ1, RQ2, and RQ3 findings.")
 
     assert result.error is None
-    assert {c for c in result.citations} == {"d1", "d2"}
+    assert {c for c in result.citations} == {"rq1", "rq3"}
 
 
 def test_retrieve_subqueries_concurrently_caps_worker_count(monkeypatch):
@@ -522,7 +527,7 @@ def test_comparative_question_keeps_multiple_chunks_after_pruning():
     result = pipeline.answer("How do RQ1, RQ2, and RQ3 findings differ?")
 
     assert result.error is None
-    assert {c for c in result.citations} == {"d1", "d2", "d3"}
+    assert {c for c in result.citations} == {"rq1", "rq2", "rq3"}
 
 
 def test_answer_accepts_injected_dev_trace_and_exposes_its_data():
@@ -637,4 +642,4 @@ def test_comparative_question_min_keep_floors_at_subquery_count():
     result = pipeline.answer("How do RQ1, RQ2, RQ3, and RQ4 findings differ?")
 
     assert result.error is None
-    assert {c for c in result.citations} == {"d1", "d2", "d3", "d4"}
+    assert {c for c in result.citations} == {"rq1", "rq2", "rq3", "rq4"}

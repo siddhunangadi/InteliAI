@@ -478,8 +478,23 @@ class RagPipeline:
         dev_trace.log_summary(draft.answer, chunks_used=len(retrieved_chunks), documents_used=documents_used)
         dev_trace.finish()
 
+        # `citations` above (and inline_ids/citation_status) are prompt-local
+        # labels ("d1", matching context.doc_id_map / the model's [d1] tags)
+        # -- meaningful only within this one request's prompt. Anything
+        # outside that scope (eval scoring against a golden citation_doc_ids
+        # list, a UI linking to a real document) needs the actual
+        # document_id, not the label. Translate label -> chunk_id (via
+        # context.doc_id_map) -> document_id (via retrieved_chunks) for the
+        # answer's public citations field.
+        doc_id_by_chunk_id = {r.chunk.chunk_id: r.chunk.document_id for r in retrieved_chunks}
+        document_citations = sorted({
+            doc_id_by_chunk_id[chunk_id]
+            for label in citations
+            if (chunk_id := context.doc_id_map.get(label)) is not None and chunk_id in doc_id_by_chunk_id
+        })
+
         return RagAnswer(
-            answer=draft.answer, citations=citations, structured_citations=structured_citations,
+            answer=draft.answer, citations=document_citations, structured_citations=structured_citations,
             confidence=confidence, verification=verification, citation_status=citation_status,
             error=parse_error,
         )
