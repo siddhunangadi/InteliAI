@@ -1,5 +1,6 @@
 import logging
 import time
+from concurrent.futures import ThreadPoolExecutor
 from datetime import datetime, timezone
 
 import httpx
@@ -8,7 +9,7 @@ from rag_hybrid_search.diagnostics import rss_mb
 from rag_hybrid_search.ingestion.chunkers.base import Chunker
 from rag_hybrid_search.ingestion.dedup import find_duplicates, find_within_batch_duplicates
 from rag_hybrid_search.ingestion.loaders.base import Loader
-from rag_hybrid_search.models import Chunk, EmbeddingRecord, IndexStatus
+from rag_hybrid_search.models import Chunk, Document, EmbeddingRecord, IndexStatus
 from rag_hybrid_search.providers.base import EmbeddingProvider
 from rag_hybrid_search.storage.base import ChunkStore
 from rag_hybrid_search.storage.index_manager import IndexManager
@@ -41,8 +42,14 @@ class IngestionPipeline:
         existing_pairs: list[tuple[Chunk, list[float]]] | None = None,
         rebuild_bm25: bool = True,
         known_hashes: dict[str, str] | None = None,
+        document: Document | None = None,
     ) -> IndexStatus:
         """Ingest one document.
+
+        ``document``, if given, skips ``loader.load(path)`` -- callers that
+        already extracted the document (e.g. a batch script extracting PDFs
+        in a process pool, since pdfplumber extraction is CPU-bound Python
+        that the GIL serializes across threads) pass it in directly.
 
         ``existing_pairs``, if given, is the caller's shared dedup cache: it's
         used instead of re-fetching the whole corpus from ``chunk_store``, and
@@ -62,7 +69,8 @@ class IngestionPipeline:
         empty for a fresh index) and this method mutates it in place.
         """
         logger.info("ingest: start path=%s rss_mb=%.1f", path, rss_mb())
-        document = self.loader.load(path)
+        if document is None:
+            document = self.loader.load(path)
         logger.info(
             "ingest: loaded document_id=%s format=%s chars=%d rss_mb=%.1f",
             document.document_id, document.format, len(document.content), rss_mb(),
@@ -112,9 +120,16 @@ class IngestionPipeline:
         # text (citations/context still need the full text).
         _EMBED_CHAR_LIMIT = 1200
         texts = [c.text[:_EMBED_CHAR_LIMIT] for c in new_chunks]
-        embeddings = []
-        for start in range(0, len(texts), _EMBED_BATCH_SIZE):
-            embeddings.extend(self._embed_batch_with_shrink(texts[start : start + _EMBED_BATCH_SIZE]))
+        batches = [texts[s : s + _EMBED_BATCH_SIZE] for s in range(0, len(texts), _EMBED_BATCH_SIZE)]
+        if len(batches) == 1:
+            embeddings = self._embed_batch_with_shrink(batches[0])
+        else:
+            # Embedding calls are pure network wait -- a 4000-chunk document
+            # is ~45 batch round-trips, and running them one at a time makes
+            # the API's latency the whole ingest time. executor.map preserves
+            # batch order, so the chunk<->embedding zip below stays correct.
+            with ThreadPoolExecutor(max_workers=min(8, len(batches))) as pool:
+                embeddings = [e for batch_out in pool.map(self._embed_batch_with_shrink, batches) for e in batch_out]
         logger.info(
             "ingest: embedded %d chunks with provider=%s model=%s dim=%d rss_mb=%.1f",
             len(embeddings), type(self.embedding_provider).__name__,

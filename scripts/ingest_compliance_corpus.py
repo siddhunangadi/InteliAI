@@ -22,7 +22,7 @@ import argparse
 import asyncio
 import json
 import sys
-from concurrent.futures import ThreadPoolExecutor
+from concurrent.futures import ProcessPoolExecutor, ThreadPoolExecutor
 from pathlib import Path
 
 _REPO_ROOT = str(Path(__file__).resolve().parent.parent)
@@ -32,6 +32,13 @@ if _REPO_ROOT not in sys.path:
 from api.dependencies import build_container  # noqa: E402
 from rag_hybrid_search.compliance.clause_chunker import ClauseChunker  # noqa: E402
 from rag_hybrid_search.ingestion.loaders.pdf import PdfLoader  # noqa: E402
+
+
+def _extract_pdf(path_str: str):
+    """Module-level so ProcessPoolExecutor can pickle it. PDF text
+    extraction (pdfplumber) is CPU-bound pure Python -- under the GIL,
+    N threads extract no faster than 1, so it runs in worker processes."""
+    return PdfLoader().load(path_str)
 
 _CORPUS_DIR = Path(_REPO_ROOT).parent.parent.parent / "data" / "compliance_corpus"
 _MANIFEST_PATH = _CORPUS_DIR / "manifest.json"
@@ -54,12 +61,8 @@ def _save_checkpoint(checkpoint: dict) -> None:
     tmp.replace(_CHECKPOINT_PATH)
 
 
-def _ingest_one_sync(doc, container, loader, known_hashes, index, total):
+def _ingest_one_sync(doc, document, container, loader, known_hashes, index, total):
     pdf_path = _CORPUS_DIR / doc["filename"]
-    if not pdf_path.exists():
-        print(f"[{index}/{total}] SKIP missing file {doc['filename']}", flush=True)
-        return None
-
     chunker = ClauseChunker(
         document_title=doc["regulation_authority"],
         regulation=doc["regulation_authority"],
@@ -73,12 +76,11 @@ def _ingest_one_sync(doc, container, loader, known_hashes, index, total):
         # whole network-bound ingest() call for -- see module docstring.
         status = pipeline.ingest(
             str(pdf_path), existing_pairs=[],
-            rebuild_bm25=False, known_hashes=known_hashes,
+            rebuild_bm25=False, known_hashes=known_hashes, document=document,
         )
-        document_id = loader.load(str(pdf_path)).document_id
-        print(f"[{index}/{total}] {status.value} {doc['filename']} -> {document_id[:12]}...", flush=True)
+        print(f"[{index}/{total}] {status.value} {doc['filename']} -> {document.document_id[:12]}...", flush=True)
         return {
-            "document_id": document_id,
+            "document_id": document.document_id,
             "regulation_authority": doc["regulation_authority"],
             "status": status.value,
         }
@@ -113,11 +115,19 @@ async def main() -> None:
     # sizing so --workers actually controls real concurrency instead of
     # silently capping below whatever's requested.
     executor = ThreadPoolExecutor(max_workers=args.workers)
+    # Extraction is CPU-bound (GIL-serialized in threads) -- its own
+    # process pool, sized to physical cores.
+    extract_pool = ProcessPoolExecutor()
 
     async def worker(index: int, doc: dict) -> None:
+        pdf_path = _CORPUS_DIR / doc["filename"]
+        if not pdf_path.exists():
+            print(f"[{index}/{total}] SKIP missing file {doc['filename']}", flush=True)
+            return
+        document = await loop.run_in_executor(extract_pool, _extract_pdf, str(pdf_path))
         async with semaphore:
             result = await loop.run_in_executor(
-                executor, _ingest_one_sync, doc, container, loader, known_hashes, index, total,
+                executor, _ingest_one_sync, doc, document, container, loader, known_hashes, index, total,
             )
         if result is not None:
             async with checkpoint_lock:
@@ -126,6 +136,7 @@ async def main() -> None:
 
     await asyncio.gather(*(worker(i, doc) for i, doc in remaining))
     executor.shutdown(wait=True)
+    extract_pool.shutdown(wait=True)
 
     print("\nRebuilding BM25 index over the full corpus...", flush=True)
     container.index_manager.rebuild_bm25_index()
