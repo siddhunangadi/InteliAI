@@ -169,3 +169,26 @@ def test_evaluate_question_verification_pass_false_when_no_claims():
     record = evaluate_question(question, rag_answer, trace_data, latency_ms=10.0, judge_provider=judge_provider)
 
     assert record["objective_metrics"]["verification_pass"] is False
+
+
+def test_retrieval_metrics_recall_precision_mrr():
+    from rag_pipeline.eval.metrics import retrieval_metrics
+    # relevant doc X at rank 2
+    m = retrieval_metrics(["A", "X", "B"], ["X"])
+    assert m["recall@1"] == 0.0 and m["recall@3"] == 1.0
+    assert m["precision@1"] == 0.0 and m["precision@3"] == 1 / 3
+    assert m["mrr"] == 0.5
+
+
+def test_retrieval_metrics_dedups_preserving_best_rank():
+    from rag_pipeline.eval.metrics import retrieval_metrics
+    # duplicate A shouldn't push X's effective rank; X is 2nd distinct doc
+    m = retrieval_metrics(["A", "A", "X"], ["X"])
+    assert m["mrr"] == 0.5
+    assert m["recall@3"] == 1.0
+
+
+def test_retrieval_metrics_out_of_corpus_negative_is_none():
+    from rag_pipeline.eval.metrics import retrieval_metrics
+    m = retrieval_metrics(["A", "B"], [])
+    assert m["recall@1"] is None and m["mrr"] is None
