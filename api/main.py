@@ -4,40 +4,16 @@ import logging
 import os
 import uuid
 from contextlib import asynccontextmanager
-from pathlib import Path
 from typing import AsyncIterator
 
 from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import FileResponse
-from fastapi.staticfiles import StaticFiles
 
 import time
 
 from api.dependencies import build_container, check_readiness
 from api.routes import router
 from rag_hybrid_search.config import Settings
-
-_FRONTEND_DIR = Path(__file__).resolve().parent.parent / "frontend" / "dist"
-
-
-def _is_frontend_asset(request: Request) -> bool:
-    """True for requests this same container serves as the built React app
-    (JS/CSS under /assets, or the index.html SPA-fallback catch-all) rather
-    than a real API call.
-
-    This process serves both the API and the frontend's static build (see
-    the /assets mount and spa_fallback route below), so without this check
-    every page load's index.html + JS/CSS chunk fetches inflated the
-    "API requests" diagnostics counter right alongside genuine /answer,
-    /documents, etc. calls -- a single browser refresh looked like ~10 API
-    requests instead of the 2-3 the page actually made.
-    """
-    if request.url.path.startswith("/assets/"):
-        return True
-    route = request.scope.get("route")
-    return route is not None and getattr(route, "name", None) == "spa_fallback"
-
 
 logging.basicConfig(
     level=os.environ.get("LOG_LEVEL", "INFO").upper(),
@@ -101,7 +77,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
         response.headers["X-Request-ID"] = request_id
 
         container = getattr(request.app.state, "container", None)
-        if container is not None and not _is_frontend_asset(request):
+        if container is not None:
             container.metrics.increment("total_requests")
             container.metrics.record_latency(duration_ms)
             if response.status_code >= 500:
@@ -129,35 +105,6 @@ def create_app(settings: Settings | None = None) -> FastAPI:
         )
 
     app.include_router(router)
-
-    @app.get("/debug/frontend-path")
-    def debug_frontend_path():
-        """Debug endpoint: prove what frontend directory FastAPI is using."""
-        import os
-        frontend_index = _FRONTEND_DIR / "index.html"
-        return {
-            "cwd": os.getcwd(),
-            "frontend_dir_configured": str(_FRONTEND_DIR),
-            "frontend_dir_resolved": str(_FRONTEND_DIR.resolve()),
-            "frontend_dir_exists": _FRONTEND_DIR.exists(),
-            "frontend_dir_is_dir": _FRONTEND_DIR.is_dir(),
-            "index_html_exists": frontend_index.exists(),
-            "index_html_path": str(frontend_index.resolve()),
-            "index_html_content_first_300_chars": frontend_index.read_text()[:300] if frontend_index.exists() else "FILE NOT FOUND",
-        }
-
-    if _FRONTEND_DIR.is_dir():
-        app.mount("/assets", StaticFiles(directory=str(_FRONTEND_DIR / "assets")), name="frontend-assets")
-
-        @app.get("/{full_path:path}", include_in_schema=False)
-        def spa_fallback(full_path: str):
-            """Serve index.html for any non-API path so React Router can
-            handle client-side routes (/admin, /chat, ...) on hard refresh
-            instead of hitting FastAPI's default 404."""
-            requested = _FRONTEND_DIR / full_path
-            if requested.is_file():
-                return FileResponse(requested)
-            return FileResponse(_FRONTEND_DIR / "index.html")
 
     return app
 

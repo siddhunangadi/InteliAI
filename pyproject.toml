@@ -18,6 +18,8 @@ dependencies = [
     "uvicorn[standard]>=0.30",
     "pinecone>=5.0",
     "langsmith>=0.3",
+    "streamlit>=1.38",
+    "requests>=2.31",
 ]
 
 [project.optional-dependencies]
