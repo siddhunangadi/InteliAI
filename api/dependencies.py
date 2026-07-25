@@ -61,6 +61,7 @@ from rag_hybrid_search.storage.index_manager import IndexManager
 from rag_hybrid_search.storage.pinecone_connection import PineconeConnection
 from rag_hybrid_search.storage.pinecone_vector_store import PineconeVectorStore
 from rag_hybrid_search.storage.pinecone_chunk_store import PineconeChunkStore
+from rag_hybrid_search.storage.postgres_dedup import PostgresDedupIndex
 from rag_pipeline.generation_provider import MockProvider
 from rag_pipeline.rag_pipeline import RagPipeline
 from tests.fakes import FakeEmbeddingProvider
@@ -150,6 +151,7 @@ class Container:
     rate_limiter: RateLimiter
     audit_log: AuditLog
     metrics: Metrics
+    postgres_dedup: PostgresDedupIndex | None
 
     def build_ingestion_pipeline(self, loader: Loader, chunker: Chunker | None = None) -> IngestionPipeline:
         """Build an ``IngestionPipeline`` for a specific loader, reusing shared singletons.
@@ -172,6 +174,7 @@ class Container:
             index_manager=self.index_manager,
             dedup_cosine_threshold=self.settings.dedup_cosine_threshold,
             dedup_text_threshold=self.settings.dedup_text_similarity_threshold,
+            postgres_dedup=self.postgres_dedup,
         )
 
 
@@ -260,6 +263,12 @@ def build_container(settings: Settings | None = None) -> Container:
 
     chunker = RecursiveChunker(chunk_size=settings.chunk_size, chunk_overlap=settings.chunk_overlap)
 
+    postgres_dedup = (
+        PostgresDedupIndex(settings.supabase_db_url, settings.default_organization_id)
+        if settings.supabase_db_url
+        else None
+    )
+
     retriever = HybridRetriever(
         dense_retriever=DenseRetriever(embedding_provider, vector_store, chunk_store),
         sparse_retriever=SparseRetriever(chunk_store, bm25_index),
@@ -292,6 +301,7 @@ def build_container(settings: Settings | None = None) -> Container:
         rate_limiter=RateLimiter(settings.rate_limit_per_minute),
         audit_log=audit_log,
         metrics=Metrics(),
+        postgres_dedup=postgres_dedup,
     )
 
 

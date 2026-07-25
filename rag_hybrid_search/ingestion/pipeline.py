@@ -13,6 +13,7 @@ from rag_hybrid_search.models import Chunk, Document, EmbeddingRecord, IndexStat
 from rag_hybrid_search.providers.base import EmbeddingProvider
 from rag_hybrid_search.storage.base import ChunkStore
 from rag_hybrid_search.storage.index_manager import IndexManager
+from rag_hybrid_search.storage.postgres_dedup import PostgresDedupIndex, chunk_hash
 
 logger = logging.getLogger(__name__)
 
@@ -27,6 +28,7 @@ class IngestionPipeline:
         index_manager: IndexManager,
         dedup_cosine_threshold: float,
         dedup_text_threshold: float,
+        postgres_dedup: PostgresDedupIndex | None = None,
     ):
         self.loader = loader
         self.chunker = chunker
@@ -35,6 +37,10 @@ class IngestionPipeline:
         self.index_manager = index_manager
         self._dedup_cosine_threshold = dedup_cosine_threshold
         self._dedup_text_threshold = dedup_text_threshold
+        # Optional: O(1) indexed dedup lookups against Supabase/Postgres,
+        # replacing chunk_store.get_document_hash()'s full-corpus scan. None
+        # (the default) preserves the old full-scan behavior unchanged.
+        self._postgres_dedup = postgres_dedup
 
     def ingest(
         self,
@@ -78,6 +84,8 @@ class IngestionPipeline:
 
         if known_hashes is not None:
             existing_hash = known_hashes.get(path)
+        elif self._postgres_dedup is not None:
+            existing_hash = self._postgres_dedup.get_document_hash(path)
         else:
             existing_hash = self.chunk_store.get_document_hash(path)
         if existing_hash == document.document_id:
@@ -139,26 +147,42 @@ class IngestionPipeline:
             existing_pairs = self._existing_chunk_embeddings()
         logger.debug("ingest: comparing against %d existing chunks for dedup", len(existing_pairs))
 
+        # Exact-duplicate pre-filter: an O(1) indexed hash lookup against
+        # Postgres catches identical chunk text (e.g. a boilerplate clause
+        # repeated across regulations) before it ever reaches the O(new x
+        # existing) vectorized near-dup check below, shrinking that pass's
+        # input. No-op (every chunk passes through) when postgres_dedup
+        # isn't configured -- same behavior as before this existed.
+        chunk_hashes = [chunk_hash(c.text) for c in new_chunks]
+        if self._postgres_dedup is not None:
+            new_hashes = self._postgres_dedup.filter_new_chunk_hashes(chunk_hashes)
+            exact_dup_mask = [h not in new_hashes for h in chunk_hashes]
+        else:
+            exact_dup_mask = [False] * len(new_chunks)
+        near_dup_idx = [i for i, is_exact in enumerate(exact_dup_mask) if not is_exact]
+        near_dup_chunks = [new_chunks[i] for i in near_dup_idx]
+        near_dup_embeddings = [embeddings[i] for i in near_dup_idx]
+
         # Two vectorized passes instead of an O(existing_count * new_count)
         # pure-Python loop: one against the corpus ingested before this
         # document, one for this document's own chunks against each other
         # (a single large document can itself have thousands of chunks --
         # see find_duplicates()'s docstring for why that matters).
         dup_vs_existing = find_duplicates(
-            new_chunks, embeddings, existing_pairs,
+            near_dup_chunks, near_dup_embeddings, existing_pairs,
             self._dedup_cosine_threshold, self._dedup_text_threshold,
         )
         dup_within_doc = find_within_batch_duplicates(
-            new_chunks, embeddings, self._dedup_cosine_threshold, self._dedup_text_threshold,
+            near_dup_chunks, near_dup_embeddings, self._dedup_cosine_threshold, self._dedup_text_threshold,
         )
+        near_dup_result = dict(zip(near_dup_idx, (a or b for a, b in zip(dup_vs_existing, dup_within_doc))))
 
         surviving_chunks: list[Chunk] = []
         surviving_records: list[EmbeddingRecord] = []
+        surviving_hashes: list[str] = []
         dropped = 0
-        for chunk, embedding, is_dup_existing, is_dup_within in zip(
-            new_chunks, embeddings, dup_vs_existing, dup_within_doc
-        ):
-            if is_dup_existing or is_dup_within:
+        for i, (chunk, embedding, chash) in enumerate(zip(new_chunks, embeddings, chunk_hashes)):
+            if exact_dup_mask[i] or near_dup_result.get(i, False):
                 dropped += 1
                 logger.debug("ingest: dropped duplicate chunk_id=%s index=%d", chunk.chunk_id, chunk.chunk_index)
                 continue
@@ -172,6 +196,7 @@ class IngestionPipeline:
             )
             surviving_chunks.append(chunk)
             surviving_records.append(record)
+            surviving_hashes.append(chash)
             existing_pairs.append((chunk, embedding))
 
         logger.info("ingest: dedup dropped %d/%d chunks, %d survive", dropped, len(new_chunks), len(surviving_chunks))
@@ -184,6 +209,16 @@ class IngestionPipeline:
             "ingest: stored %d chunks in chunk_store rss_mb=%.1f",
             len(surviving_chunks), rss_mb(),
         )
+
+        if self._postgres_dedup is not None:
+            self._postgres_dedup.record_document(document.document_id, path, document.format)
+            self._postgres_dedup.record_chunks(
+                document.document_id,
+                [
+                    (c.chunk_id, chash, c.text, c.chunk_index)
+                    for c, chash in zip(surviving_chunks, surviving_hashes)
+                ],
+            )
 
         status = self.index_manager.index(surviving_chunks, surviving_records, rebuild_bm25=rebuild_bm25)
         logger.info("ingest: index_manager.index() returned rss_mb=%.1f", rss_mb())

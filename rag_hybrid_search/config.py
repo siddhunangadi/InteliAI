@@ -67,6 +67,14 @@ class Settings(BaseSettings):
     pinecone_environment: str | None = None
     pinecone_sparse_index_name: str | None = None
 
+    # Postgres-backed dedup index (Supabase). Optional: when unset,
+    # IngestionPipeline falls back to chunk_store.get_document_hash()'s
+    # full-corpus scan, same as before this existed.
+    supabase_db_url: str | None = None
+    # No auth/org model exists yet (see audit) -- single fixed tenant until
+    # multi-tenancy is built out.
+    default_organization_id: str = "00000000-0000-0000-0000-000000000001"
+
     max_upload_size_bytes: int = 20 * 1024 * 1024
     cors_allow_origins: str = ""
     api_keys: str = ""

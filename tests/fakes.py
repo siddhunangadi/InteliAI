@@ -140,6 +140,7 @@ def fake_pinecone_stores(embedding_dimension: int = 8) -> tuple[PineconeChunkSto
     operate against one Pinecone index underneath (see
     ``pinecone_connection.py``), without needing a live index or API key."""
     connection = PineconeConnection.__new__(PineconeConnection)
+    connection._client = object()  # truthy sentinel: __new__ skips __init__, so this is unset otherwise
     connection.index = FakePineconeIndex()
     chunk_store = PineconeChunkStore(connection, embedding_dimension=embedding_dimension)
     vector_store = PineconeVectorStore(connection)

@@ -18,6 +18,7 @@ dependencies = [
     "uvicorn[standard]>=0.30",
     "pinecone>=5.0",
     "langsmith>=0.3",
+    "psycopg[binary]>=3.1",
 ]
 
 [project.optional-dependencies]
