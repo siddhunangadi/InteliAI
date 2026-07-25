@@ -5,9 +5,13 @@ import hashlib
 from types import SimpleNamespace
 
 from rag_hybrid_search.providers.base import EmbeddingProvider, GenerationProvider
+from rag_hybrid_search.storage.base import ChunkStore
 from rag_hybrid_search.storage.pinecone_chunk_store import PineconeChunkStore
 from rag_hybrid_search.storage.pinecone_connection import PineconeConnection
 from rag_hybrid_search.storage.pinecone_vector_store import PineconeVectorStore
+from rag_hybrid_search.storage.repositories.scanning.chunk_repository import ScanningChunkRepository
+from rag_hybrid_search.storage.repositories.scanning.document_repository import ScanningDocumentRepository
+from rag_hybrid_search.storage.repositories.scanning.unit_of_work import ScanningIngestionUnitOfWork
 
 
 class FakeEmbeddingProvider(EmbeddingProvider):
@@ -145,3 +149,16 @@ def fake_pinecone_stores(embedding_dimension: int = 8) -> tuple[PineconeChunkSto
     chunk_store = PineconeChunkStore(connection, embedding_dimension=embedding_dimension)
     vector_store = PineconeVectorStore(connection)
     return chunk_store, vector_store
+
+
+def scanning_repositories(chunk_store: ChunkStore) -> tuple[
+    ScanningDocumentRepository, ScanningChunkRepository, ScanningIngestionUnitOfWork
+]:
+    """IngestionPipeline's default (no-Postgres) repository set for tests --
+    same construction api/dependencies.py uses when RAG_SUPABASE_DB_URL is
+    unset. Reproduces the original chunk_store.get_document_hash() full-scan
+    dedup behavior, no exact-hash pre-filter."""
+    documents = ScanningDocumentRepository(chunk_store)
+    chunks = ScanningChunkRepository()
+    uow = ScanningIngestionUnitOfWork(documents, chunks)
+    return documents, chunks, uow

@@ -61,7 +61,18 @@ from rag_hybrid_search.storage.index_manager import IndexManager
 from rag_hybrid_search.storage.pinecone_connection import PineconeConnection
 from rag_hybrid_search.storage.pinecone_vector_store import PineconeVectorStore
 from rag_hybrid_search.storage.pinecone_chunk_store import PineconeChunkStore
-from rag_hybrid_search.storage.postgres_dedup import PostgresDedupIndex
+from rag_hybrid_search.storage.repositories.base import (
+    ChunkRepository,
+    DocumentRepository,
+    IngestionUnitOfWork,
+)
+from rag_hybrid_search.storage.repositories.postgres.chunk_repository import PostgresChunkRepository
+from rag_hybrid_search.storage.repositories.postgres.connection import PostgresConnectionPool
+from rag_hybrid_search.storage.repositories.postgres.document_repository import PostgresDocumentRepository
+from rag_hybrid_search.storage.repositories.postgres.unit_of_work import PostgresIngestionUnitOfWork
+from rag_hybrid_search.storage.repositories.scanning.chunk_repository import ScanningChunkRepository
+from rag_hybrid_search.storage.repositories.scanning.document_repository import ScanningDocumentRepository
+from rag_hybrid_search.storage.repositories.scanning.unit_of_work import ScanningIngestionUnitOfWork
 from rag_pipeline.generation_provider import MockProvider
 from rag_pipeline.rag_pipeline import RagPipeline
 from tests.fakes import FakeEmbeddingProvider
@@ -151,7 +162,9 @@ class Container:
     rate_limiter: RateLimiter
     audit_log: AuditLog
     metrics: Metrics
-    postgres_dedup: PostgresDedupIndex | None
+    document_repository: DocumentRepository
+    chunk_repository: ChunkRepository
+    ingestion_uow: IngestionUnitOfWork
 
     def build_ingestion_pipeline(self, loader: Loader, chunker: Chunker | None = None) -> IngestionPipeline:
         """Build an ``IngestionPipeline`` for a specific loader, reusing shared singletons.
@@ -174,7 +187,9 @@ class Container:
             index_manager=self.index_manager,
             dedup_cosine_threshold=self.settings.dedup_cosine_threshold,
             dedup_text_threshold=self.settings.dedup_text_similarity_threshold,
-            postgres_dedup=self.postgres_dedup,
+            document_repository=self.document_repository,
+            chunk_repository=self.chunk_repository,
+            ingestion_uow=self.ingestion_uow,
         )
 
 
@@ -263,11 +278,25 @@ def build_container(settings: Settings | None = None) -> Container:
 
     chunker = RecursiveChunker(chunk_size=settings.chunk_size, chunk_overlap=settings.chunk_overlap)
 
-    postgres_dedup = (
-        PostgresDedupIndex(settings.supabase_db_url, settings.default_organization_id)
-        if settings.supabase_db_url
-        else None
-    )
+    # Dedup repositories: Postgres-backed (O(1) indexed lookups) when
+    # configured, otherwise the scanning fallback (chunk_store.get_document_hash()'s
+    # full-corpus scan, no exact-hash pre-filter) -- same interface either
+    # way, IngestionPipeline never knows which it got.
+    if settings.supabase_db_url:
+        postgres_pool = PostgresConnectionPool(settings.supabase_db_url)
+        document_repository: DocumentRepository = PostgresDocumentRepository(
+            postgres_pool, settings.default_organization_id
+        )
+        chunk_repository: ChunkRepository = PostgresChunkRepository(
+            postgres_pool, settings.default_organization_id
+        )
+        ingestion_uow: IngestionUnitOfWork = PostgresIngestionUnitOfWork(
+            postgres_pool, settings.default_organization_id
+        )
+    else:
+        document_repository = ScanningDocumentRepository(chunk_store)
+        chunk_repository = ScanningChunkRepository()
+        ingestion_uow = ScanningIngestionUnitOfWork(document_repository, chunk_repository)
 
     retriever = HybridRetriever(
         dense_retriever=DenseRetriever(embedding_provider, vector_store, chunk_store),
@@ -301,7 +330,9 @@ def build_container(settings: Settings | None = None) -> Container:
         rate_limiter=RateLimiter(settings.rate_limit_per_minute),
         audit_log=audit_log,
         metrics=Metrics(),
-        postgres_dedup=postgres_dedup,
+        document_repository=document_repository,
+        chunk_repository=chunk_repository,
+        ingestion_uow=ingestion_uow,
     )
 
 

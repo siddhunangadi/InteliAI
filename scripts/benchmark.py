@@ -23,7 +23,7 @@ from rag_hybrid_search.retrieval.sparse import SparseRetriever
 from rag_hybrid_search.storage.bm25_index import BM25Index
 from rag_hybrid_search.storage.index_manager import IndexManager
 
-from tests.fakes import FakeEmbeddingProvider, fake_pinecone_stores
+from tests.fakes import FakeEmbeddingProvider, fake_pinecone_stores, scanning_repositories
 from tests.fixtures.benchmark_queries import BENCHMARK_QUERIES
 
 _SAMPLE_DOCS_DIR = Path(__file__).resolve().parent.parent / "tests/fixtures/sample_docs"
@@ -41,6 +41,7 @@ def build_benchmark_corpus(tmp_path) -> BenchmarkCorpus:
     index_manager = IndexManager(chunk_store, vector_store, bm25_index)
     embedding_provider = FakeEmbeddingProvider()
     loader = MarkdownLoader()
+    documents, chunks, uow = scanning_repositories(chunk_store)
 
     ingestion = IngestionPipeline(
         loader=loader,
@@ -50,6 +51,9 @@ def build_benchmark_corpus(tmp_path) -> BenchmarkCorpus:
         index_manager=index_manager,
         dedup_cosine_threshold=0.95,
         dedup_text_threshold=0.9,
+        document_repository=documents,
+        chunk_repository=chunks,
+        ingestion_uow=uow,
     )
 
     doc_id_by_filename = {}

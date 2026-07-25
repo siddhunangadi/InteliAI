@@ -13,7 +13,12 @@ from rag_hybrid_search.models import Chunk, Document, EmbeddingRecord, IndexStat
 from rag_hybrid_search.providers.base import EmbeddingProvider
 from rag_hybrid_search.storage.base import ChunkStore
 from rag_hybrid_search.storage.index_manager import IndexManager
-from rag_hybrid_search.storage.postgres_dedup import PostgresDedupIndex, chunk_hash
+from rag_hybrid_search.storage.repositories.base import (
+    ChunkRepository,
+    DocumentRepository,
+    IngestionUnitOfWork,
+)
+from rag_hybrid_search.storage.repositories.hashing import chunk_hash
 
 logger = logging.getLogger(__name__)
 
@@ -28,7 +33,9 @@ class IngestionPipeline:
         index_manager: IndexManager,
         dedup_cosine_threshold: float,
         dedup_text_threshold: float,
-        postgres_dedup: PostgresDedupIndex | None = None,
+        document_repository: DocumentRepository,
+        chunk_repository: ChunkRepository,
+        ingestion_uow: IngestionUnitOfWork,
     ):
         self.loader = loader
         self.chunker = chunker
@@ -37,10 +44,13 @@ class IngestionPipeline:
         self.index_manager = index_manager
         self._dedup_cosine_threshold = dedup_cosine_threshold
         self._dedup_text_threshold = dedup_text_threshold
-        # Optional: O(1) indexed dedup lookups against Supabase/Postgres,
-        # replacing chunk_store.get_document_hash()'s full-corpus scan. None
-        # (the default) preserves the old full-scan behavior unchanged.
-        self._postgres_dedup = postgres_dedup
+        # O(1) indexed dedup lookups (see storage/repositories/). The
+        # pipeline never knows whether these are Postgres-backed or the
+        # full-scan fallback (storage/repositories/scanning) -- the
+        # composition root (api/dependencies.py) decides that.
+        self._document_repository = document_repository
+        self._chunk_repository = chunk_repository
+        self._ingestion_uow = ingestion_uow
 
     def ingest(
         self,
@@ -84,10 +94,8 @@ class IngestionPipeline:
 
         if known_hashes is not None:
             existing_hash = known_hashes.get(path)
-        elif self._postgres_dedup is not None:
-            existing_hash = self._postgres_dedup.get_document_hash(path)
         else:
-            existing_hash = self.chunk_store.get_document_hash(path)
+            existing_hash = self._document_repository.get_hash_for_path(path)
         if existing_hash == document.document_id:
             logger.info("ingest: unchanged, skipping path=%s", path)
             return IndexStatus.READY
@@ -147,18 +155,16 @@ class IngestionPipeline:
             existing_pairs = self._existing_chunk_embeddings()
         logger.debug("ingest: comparing against %d existing chunks for dedup", len(existing_pairs))
 
-        # Exact-duplicate pre-filter: an O(1) indexed hash lookup against
-        # Postgres catches identical chunk text (e.g. a boilerplate clause
-        # repeated across regulations) before it ever reaches the O(new x
-        # existing) vectorized near-dup check below, shrinking that pass's
-        # input. No-op (every chunk passes through) when postgres_dedup
-        # isn't configured -- same behavior as before this existed.
+        # Exact-duplicate pre-filter: an O(1) indexed hash lookup catches
+        # identical chunk text (e.g. a boilerplate clause repeated across
+        # regulations) before it ever reaches the O(new x existing)
+        # vectorized near-dup check below, shrinking that pass's input.
+        # The scanning fallback's ChunkRepository reports every hash "new"
+        # (see storage/repositories/scanning/chunk_repository.py), which
+        # reproduces the original no-pre-filter behavior identically.
         chunk_hashes = [chunk_hash(c.text) for c in new_chunks]
-        if self._postgres_dedup is not None:
-            new_hashes = self._postgres_dedup.filter_new_chunk_hashes(chunk_hashes)
-            exact_dup_mask = [h not in new_hashes for h in chunk_hashes]
-        else:
-            exact_dup_mask = [False] * len(new_chunks)
+        new_hashes = self._chunk_repository.filter_new_hashes(chunk_hashes)
+        exact_dup_mask = [h not in new_hashes for h in chunk_hashes]
         near_dup_idx = [i for i, is_exact in enumerate(exact_dup_mask) if not is_exact]
         near_dup_chunks = [new_chunks[i] for i in near_dup_idx]
         near_dup_embeddings = [embeddings[i] for i in near_dup_idx]
@@ -210,9 +216,13 @@ class IngestionPipeline:
             len(surviving_chunks), rss_mb(),
         )
 
-        if self._postgres_dedup is not None:
-            self._postgres_dedup.record_document(document.document_id, path, document.format)
-            self._postgres_dedup.record_chunks(
+        # One transaction for both writes -- a crash between them can't
+        # leave a document row with no matching chunk rows. The scanning
+        # fallback's unit-of-work is a no-op (nothing to persist without
+        # Postgres), so this runs unconditionally either way.
+        with self._ingestion_uow as uow:
+            uow.documents.record(document.document_id, path, document.format)
+            uow.chunks.record_many(
                 document.document_id,
                 [
                     (c.chunk_id, chash, c.text, c.chunk_index)

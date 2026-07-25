@@ -38,7 +38,7 @@ from rag_hybrid_search.storage.index_manager import IndexManager
 from rag_hybrid_search.models import ChunkProvenance, ContextChunk
 from rag_pipeline.context_builder import ContextLayout, build_context
 from rag_pipeline.prompt_builder import build_prompt
-from tests.fakes import fake_pinecone_stores
+from tests.fakes import fake_pinecone_stores, scanning_repositories
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 from api.dependencies import _select_embedding_provider, _select_generation_provider  # noqa: E402
@@ -107,11 +107,13 @@ def run_local(doc_path: str, query: str) -> None:
 
         loader = PdfLoader()
         chunker = RecursiveChunker(chunk_size=settings.chunk_size, chunk_overlap=settings.chunk_overlap)
+        doc_repo, chunk_repo, ingestion_uow = scanning_repositories(chunk_store)
         ingestion = IngestionPipeline(
             loader=loader, chunker=chunker, embedding_provider=embedding_provider,
             chunk_store=chunk_store, index_manager=index_manager,
             dedup_cosine_threshold=settings.dedup_cosine_threshold,
             dedup_text_threshold=settings.dedup_text_similarity_threshold,
+            document_repository=doc_repo, chunk_repository=chunk_repo, ingestion_uow=ingestion_uow,
         )
         ingestion.ingest(doc_path)
 
