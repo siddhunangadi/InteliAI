@@ -240,12 +240,10 @@ class PineconeChunkStore(ChunkStore):
         # Pinecone-only fast path: chunk_store and vector_store normally
         # write in two phases (placeholder upsert here, then a real-vector
         # update() per id in PineconeVectorStore) because they're separate
-        # ChunkStore/VectorStore backends in the general case. When both
-        # happen to share the same Pinecone index (checked by the caller --
-        # see IndexManager.supports_combined_write()), the real embedding is
-        # already known at metadata-write time, so this writes both in one
-        # upsert -- same batching as put_many(), no placeholder, no
-        # per-id update() call at all.
+        # ChunkStore/VectorStore backends in the general case. When the
+        # caller already has the real embedding at metadata-write time, this
+        # writes both in one upsert -- same batching as put_many(), no
+        # placeholder, no per-id update() call at all.
         vectors = [
             {
                 "id": chunk.chunk_id,

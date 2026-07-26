@@ -5,8 +5,6 @@ from rag_hybrid_search.audit import AuditEvent, AuditLog, now_utc
 from rag_hybrid_search.models import Chunk, EmbeddingRecord, IndexStatus
 from rag_hybrid_search.storage.base import ChunkStore, VectorStore
 from rag_hybrid_search.storage.bm25_index import BM25Index
-from rag_hybrid_search.storage.pinecone_chunk_store import PineconeChunkStore
-from rag_hybrid_search.storage.pinecone_vector_store import PineconeVectorStore
 from rag_hybrid_search.storage.repositories.base import BM25Repository, ComplianceRepository
 
 logger = logging.getLogger(__name__)
@@ -51,40 +49,6 @@ class IndexManager:
             # otherwise) produced zero trace of what went wrong, only the
             # generic FAILED status the caller sees.
             logger.exception("IndexManager.index() failed")
-            return IndexStatus.FAILED
-        self._detect_and_mark_superseded(chunks)
-        return IndexStatus.READY
-
-    def supports_combined_write(self) -> bool:
-        # True only when chunk_store and vector_store are the Pinecone
-        # classes AND both point at the same underlying Pinecone index --
-        # the same in-memory fake index in tests (see tests/fakes.py's
-        # fake_pinecone_stores()), a real shared index in production. Any
-        # other pairing (a non-Pinecone backend, or two separate indexes)
-        # falls back to the existing two-stage index()/put_many() path.
-        return (
-            isinstance(self.chunk_store, PineconeChunkStore)
-            and isinstance(self.vector_store, PineconeVectorStore)
-            and self.chunk_store._index is self.vector_store._index
-        )
-
-    def index_combined(
-        self, chunks: list[Chunk], embeddings: list[EmbeddingRecord],
-        source_path: str | None = None, rebuild_bm25: bool = True,
-    ) -> IndexStatus:
-        """Pinecone fast path: writes metadata + real vectors in one upsert
-        per batch instead of chunk_store.put_many() (placeholder upsert)
-        followed by vector_store.upsert_many() (per-id update(), no batch
-        form). Caller (IngestionPipeline) is responsible for checking
-        supports_combined_write() first and skipping its own
-        chunk_store.put_many() call when using this method instead."""
-        try:
-            self.chunk_store.put_many_with_embeddings(chunks, embeddings, source_path=source_path)
-            self.bm25_repository.record_many(chunks)
-            if rebuild_bm25:
-                self.rebuild_bm25_index()
-        except Exception:
-            logger.exception("IndexManager.index_combined() failed")
             return IndexStatus.FAILED
         self._detect_and_mark_superseded(chunks)
         return IndexStatus.READY
