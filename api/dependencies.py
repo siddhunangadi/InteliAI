@@ -2,9 +2,12 @@
 
 Provider selection (kept intentionally simple, no config DSL):
 
-Generation provider (NVIDIA-only for production):
-    1. ``settings.nvidia_api_key`` set -> ``NvidiaProvider``
-    2. otherwise -> ``MockProvider`` (dev/demo fallback: ``/answer`` will not
+Generation provider, chosen via ``settings.provider``:
+    1. ``settings.provider == "nvidia"`` and ``settings.nvidia_api_key`` set
+       -> ``NvidiaProvider``
+    2. ``settings.provider == "gemini"`` and ``settings.gemini_api_key`` set
+       -> ``GeminiProvider``
+    3. otherwise -> ``MockProvider`` (dev/demo fallback: ``/answer`` will not
        produce a grounded, real answer without a configured API key; it just
        echoes a canned response so the pipeline plumbing can be exercised).
 
@@ -45,10 +48,13 @@ from api.jobs import JobStore, WorkerPool, process_ingestion_payload
 from rag_hybrid_search.audit import AuditLog
 from rag_hybrid_search.config import Settings
 from rag_hybrid_search.ingestion.chunkers.base import Chunker
+from rag_hybrid_search.ingestion.chunkers.fixed import FixedChunker
 from rag_hybrid_search.ingestion.chunkers.recursive import RecursiveChunker
+from rag_hybrid_search.ingestion.chunkers.semantic import SemanticChunker
 from rag_hybrid_search.ingestion.loaders.base import Loader
 from rag_hybrid_search.ingestion.pipeline import IngestionPipeline
 from rag_hybrid_search.providers.base import EmbeddingProvider, GenerationProvider
+from rag_hybrid_search.providers.gemini import GeminiProvider
 from rag_hybrid_search.providers.nvidia import NvidiaProvider
 from rag_hybrid_search.providers.base import RerankProvider
 from rag_hybrid_search.retrieval.dense import DenseRetriever
@@ -219,9 +225,11 @@ def _nvidia_kwargs(settings: Settings) -> dict:
 def _select_generation_provider(
     settings: Settings, nvidia_provider: NvidiaProvider | None
 ) -> tuple[GenerationProvider, str]:
-    """Pick a generation provider per the fallback order documented above."""
-    if settings.nvidia_api_key:
+    """Pick a generation provider per ``settings.provider``, documented above."""
+    if settings.provider == "nvidia" and settings.nvidia_api_key:
         return nvidia_provider or NvidiaProvider(**_nvidia_kwargs(settings)), "nvidia"
+    if settings.provider == "gemini" and settings.gemini_api_key:
+        return GeminiProvider(api_key=settings.gemini_api_key), "gemini"
     return MockProvider(), "mock"
 
 
@@ -231,6 +239,15 @@ def _select_embedding_provider(settings: Settings) -> tuple[EmbeddingProvider, s
         provider = NvidiaProvider(**_nvidia_kwargs(settings))
         return provider, "nvidia", provider
     return FakeEmbeddingProvider(), "fake", None
+
+
+def _select_chunker(settings: Settings, embedding_provider: EmbeddingProvider) -> Chunker:
+    """Pick a chunker per ``settings.chunking_strategy``."""
+    if settings.chunking_strategy == "fixed":
+        return FixedChunker(chunk_size=settings.chunk_size, chunk_overlap=settings.chunk_overlap)
+    if settings.chunking_strategy == "semantic":
+        return SemanticChunker(embedding_provider)
+    return RecursiveChunker(chunk_size=settings.chunk_size, chunk_overlap=settings.chunk_overlap)
 
 
 def _select_rerank_provider(settings: Settings) -> RerankProvider:
@@ -289,7 +306,7 @@ def build_container(settings: Settings | None = None) -> Container:
     bm25_index.load()
     audit_log = AuditLog(data_dir / _AUDIT_LOG_FILENAME)
 
-    chunker = RecursiveChunker(chunk_size=settings.chunk_size, chunk_overlap=settings.chunk_overlap)
+    chunker = _select_chunker(settings, embedding_provider)
 
     # Repositories: Postgres-backed (O(1) indexed dedup, incremental BM25,
     # indexed compliance lookups) when configured, otherwise the scanning
