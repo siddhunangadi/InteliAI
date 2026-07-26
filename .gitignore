@@ -9,5 +9,6 @@ data/
 .claude/
 .DS_Store
 .env
+*.log
 traces/
 eval/reports/
