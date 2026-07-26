@@ -2,8 +2,9 @@ import re
 from dataclasses import dataclass
 from typing import Literal
 
-from rag_hybrid_search.models import RetrievalTrace, RetrievedChunk
+from rag_hybrid_search.models import Chunk, RetrievalTrace, RetrievedChunk
 from rag_hybrid_search.storage.base import ChunkStore
+from rag_hybrid_search.storage.repositories.base import ComplianceRepository
 from rag_hybrid_search.retrieval.retriever import HybridRetriever
 
 QueryKind = Literal["structured", "metadata", "semantic", "mixed"]
@@ -64,8 +65,31 @@ def classify_query(question: str) -> QueryIntent:
     return QueryIntent(kind="semantic", filters={})
 
 
+def _matched_chunks(
+    chunk_store: ChunkStore, compliance_repository: ComplianceRepository | None, filters: dict[str, str]
+) -> list[Chunk]:
+    """Resolve a legal-metadata filter to full Chunk objects.
+
+    When a ``ComplianceRepository`` is available (always true in production
+    -- api/dependencies.py builds either the Postgres-backed or the scanning
+    variant unconditionally), this is an indexed lookup (bounded by clause
+    cardinality, not corpus size) followed by one batched Pinecone fetch by
+    id -- not the full-corpus ``chunk_store.get_by_legal_metadata()`` scan.
+    Falls back to that scan only when no repository is passed (e.g. a
+    caller/test constructing route_query() directly against a bare
+    ChunkStore), matching every other repository's existing
+    Postgres-vs-scanning selection pattern.
+    """
+    if compliance_repository is None:
+        return chunk_store.get_by_legal_metadata(filters)
+    candidates = compliance_repository.find_matching(filters)
+    chunk_ids = [c.chunk_id for c in candidates]
+    return [item.chunk for item in chunk_store.get_many_with_embeddings(chunk_ids)]
+
+
 def route_query(
-    question: str, chunk_store: ChunkStore, retriever: HybridRetriever, dev_trace=None
+    question: str, chunk_store: ChunkStore, retriever: HybridRetriever, dev_trace=None,
+    compliance_repository: ComplianceRepository | None = None,
 ) -> tuple[list[RetrievedChunk], RetrievalTrace]:
     """Route a question to the retrieval path matching its classified intent.
 
@@ -84,7 +108,7 @@ def route_query(
     trace = RetrievalTrace()
 
     if intent.kind == "structured":
-        matched = chunk_store.get_by_legal_metadata(intent.filters)
+        matched = _matched_chunks(chunk_store, compliance_repository, intent.filters)
         results = [
             RetrievedChunk(chunk=chunk, rrf_score=1.0, final_rank=i)
             for i, chunk in enumerate(matched)
@@ -92,7 +116,7 @@ def route_query(
         return results, trace
 
     if intent.kind in ("metadata", "mixed"):
-        matched_ids = {c.chunk_id for c in chunk_store.get_by_legal_metadata(intent.filters)}
+        matched_ids = {c.chunk_id for c in _matched_chunks(chunk_store, compliance_repository, intent.filters)}
         results, trace = retriever.retrieve(question, dev_trace=dev_trace)
         results = [r for r in results if r.chunk.chunk_id in matched_ids]
         return results, trace

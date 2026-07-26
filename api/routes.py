@@ -18,7 +18,7 @@ from pathlib import Path
 from fastapi import APIRouter, Depends, File, Form, Header, HTTPException, Query, Request, UploadFile
 from fastapi.responses import StreamingResponse
 
-from api.auth import Identity, get_identity
+from api.auth import Identity, get_identity, require_admin
 from api.dependencies import Container, check_readiness, get_container
 from api.schemas import (
     AnswerRequest,
@@ -859,7 +859,7 @@ async def delete_document(
 @router.get("/audit/events", response_model=AuditEventsResponse)
 async def list_audit_events(
     container: Container = Depends(get_container),
-    _identity: Identity = Depends(get_identity),
+    _identity: Identity = Depends(require_admin),
     event_type: EventType | None = Query(default=None),
     key_id: str | None = Query(default=None),
     role: str | None = Query(default=None),
@@ -882,7 +882,7 @@ async def list_audit_events(
 @router.get("/diagnostics", response_model=DiagnosticsResponse)
 async def diagnostics(
     container: Container = Depends(get_container),
-    _identity: Identity = Depends(get_identity),
+    _identity: Identity = Depends(require_admin),
 ) -> DiagnosticsResponse:
     """Aggregate operational state for on-call debugging. Admin-only: this
     exposes internal provider/config details that shouldn't be public, even

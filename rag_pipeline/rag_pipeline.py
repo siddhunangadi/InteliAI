@@ -278,11 +278,12 @@ class RagPipeline:
         self, retriever, generation_provider: GenerationProvider, chunk_store=None,
         prompt_version: str = "v2", context_prune_margin: float = 0.3,
         context_layout: ContextLayout = ContextLayout.FLAT,
-        neighbor_window: int = 1,
+        neighbor_window: int = 1, compliance_repository=None,
     ):
         self._retriever = retriever
         self._generation_provider = generation_provider
         self._chunk_store = chunk_store
+        self._compliance_repository = compliance_repository
         self._prompt_version = prompt_version
         self._context_prune_margin = context_prune_margin
         self._context_layout = context_layout
@@ -425,7 +426,10 @@ class RagPipeline:
 
         def _retrieve_one(q: str, trace_for_call):
             if self._chunk_store is not None:
-                return route_query(q, self._chunk_store, self._retriever, dev_trace=trace_for_call)[0]
+                return route_query(
+                    q, self._chunk_store, self._retriever, dev_trace=trace_for_call,
+                    compliance_repository=self._compliance_repository,
+                )[0]
             return self._retriever.retrieve(q, dev_trace=trace_for_call)[0]
 
         if len(subqueries) == 1:
@@ -506,11 +510,23 @@ class RagPipeline:
         citations = sorted({cid for c in draft.claims for cid in c.citation_ids})
         inline_ids, citations_ok = _inline_citation_drift(draft.answer, set(citations))
 
-        citation_status = CitationStatus.OK
-        if any(not cr.passed for cr in verification.claim_results):
+        if parse_error is not None:
+            # No claims were ever parsed out of the model's output, so there
+            # is nothing for inline citation tags to have "drifted" from --
+            # labeling this INLINE_DRIFT would claim a comparison that never
+            # happened. citations/structured_citations below are still
+            # populated from the real retrieved chunks (unaffected by
+            # whether the model's own JSON parsed), so the caller always
+            # gets a consistent, non-empty citation list when chunks were
+            # actually retrieved -- it just can't be verified against claims
+            # that don't exist.
+            citation_status = CitationStatus.PARSE_FAILED
+        elif any(not cr.passed for cr in verification.claim_results):
             citation_status = CitationStatus.VERIFICATION_FAILED
         elif not citations_ok:
             citation_status = CitationStatus.INLINE_DRIFT
+        else:
+            citation_status = CitationStatus.OK
         dev_trace.log_citation_check(inline_ids, citations, citation_status.value)
 
         structured_citations = build_citations(retrieved_chunks, self._filename_by_doc_id())

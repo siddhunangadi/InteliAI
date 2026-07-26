@@ -54,6 +54,12 @@ class CitationStatus(str, Enum):
     OK = "ok"
     INLINE_DRIFT = "inline_drift"
     VERIFICATION_FAILED = "verification_failed"
+    # The model's output couldn't be parsed as structured JSON at all --
+    # distinct from INLINE_DRIFT, which means structured claims/citations
+    # *did* parse but disagreed with the prose. Here there were never any
+    # claims to check, so calling it "drift" would imply a comparison that
+    # never happened.
+    PARSE_FAILED = "parse_failed"
 
 
 class RagAnswer(BaseModel):

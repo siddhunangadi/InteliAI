@@ -1,4 +1,4 @@
-from typing import Literal, Optional
+from typing import Literal
 
 from pydantic import model_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
@@ -102,9 +102,28 @@ class Settings(BaseSettings):
         return [o.strip() for o in self.cors_allow_origins.split(",") if o.strip()]
 
     @property
+    def api_keys_roles(self) -> dict[str, str]:
+        """Parse ``api_keys`` ("key1:admin,key2:reader") into key -> role.
+
+        A key with no ":role" suffix defaults to "reader" (least privilege).
+        Previously the ":role" suffix was never split off anywhere -- the
+        literal string "key1:admin" had to appear in the X-API-Key header
+        for that entry to match at all, so role-gating was silently
+        unenforceable. This is the parse step that makes it real.
+        """
+        roles: dict[str, str] = {}
+        for entry in self.api_keys.split(","):
+            entry = entry.strip()
+            if not entry:
+                continue
+            key, _, role = entry.partition(":")
+            roles[key] = role or "reader"
+        return roles
+
+    @property
     def api_keys_set(self) -> set[str]:
-        """Parse ``api_keys`` into a set of valid keys (no roles -- any valid key is fully authorized)."""
-        return {entry.strip() for entry in self.api_keys.split(",") if entry.strip()}
+        """Valid bare API keys (role suffix stripped -- see ``api_keys_roles``)."""
+        return set(self.api_keys_roles)
 
     @model_validator(mode="after")
     def _validate_production_requirements(self) -> "Settings":

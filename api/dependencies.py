@@ -345,6 +345,7 @@ def build_container(settings: Settings | None = None) -> Container:
     rag_pipeline = RagPipeline(
         retriever, generation_provider, chunk_store=chunk_store,
         context_prune_margin=settings.context_prune_margin,
+        compliance_repository=compliance_repository,
     )
 
     container = Container(

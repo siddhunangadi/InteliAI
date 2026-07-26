@@ -74,6 +74,31 @@ def test_diagnostics_reports_operational_state(client):
     assert body["metrics"]["request_count"] >= 0
 
 
+def test_admin_only_endpoints_reject_a_non_admin_api_key(tmp_path, monkeypatch):
+    """require_admin must actually 403 a real reader-role key -- not just
+    document "Admin-only" in a docstring."""
+    monkeypatch.delenv("RAG_NVIDIA_API_KEY", raising=False)
+    monkeypatch.delenv("RAG_GEMINI_API_KEY", raising=False)
+    monkeypatch.setenv("RAG_DATA_DIR", str(tmp_path / "data"))
+    monkeypatch.setenv("RAG_PINECONE_API_KEY", "fake-key")
+    monkeypatch.setenv("RAG_PINECONE_INDEX_NAME", "fake-index")
+    monkeypatch.setenv("RAG_API_KEYS", "admin-key:admin,reader-key:reader")
+
+    with patch("rag_hybrid_search.storage.pinecone_connection.Pinecone") as mock_pc_cls:
+        mock_pc_cls.return_value.Index = MagicMock(return_value=FakePineconeIndex())
+        app = create_app()
+        with TestClient(app) as test_client:
+            reader_headers = {"X-API-Key": "reader-key"}
+            admin_headers = {"X-API-Key": "admin-key"}
+
+            assert test_client.get("/audit/events", headers=reader_headers).status_code == 403
+            assert test_client.get("/diagnostics", headers=reader_headers).status_code == 403
+            assert test_client.get("/audit/events", headers=admin_headers).status_code == 200
+            assert test_client.get("/diagnostics", headers=admin_headers).status_code == 200
+            # a non-admin-gated endpoint stays reachable by any valid key
+            assert test_client.get("/health", headers=reader_headers).status_code == 200
+
+
 def test_version_reads_installed_package_metadata(client):
     response = client.get("/version")
 
