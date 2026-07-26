@@ -248,6 +248,35 @@ def test_all_with_embeddings_returns_chunk_and_stored_vector(mock_client):
     assert items[0].embedding == [0.1, 0.2, 0.3]
 
 
+def test_all_with_embeddings_ignores_a_metadata_only_scan_cached_moments_earlier(mock_client):
+    """Reproduces a real crash: get_document_hash() (metadata-only, called
+    at the start of every ingest()) runs to completion and warms the scan
+    cache with placeholder ([]) embeddings; all_with_embeddings() (called
+    later in the same ingest() for near-dup dedup) must not reuse that
+    cache and get [] back for every chunk's embedding -- which crashed
+    find_duplicates()'s numpy matmul with a dimension mismatch when this
+    was reproduced live against a real Pinecone index."""
+    client, mock_index = mock_client
+    # side_effect (not return_value): each call to index.list() needs its
+    # own fresh iterator -- this test drives two full scans, and a real
+    # Pinecone client's list() returns a new page iterator per call too.
+    mock_index.list.side_effect = lambda **_: iter([_list_page("c1")])
+    mock_index.fetch.return_value = MagicMock(
+        vectors={
+            "c1": MagicMock(metadata=_metadata("d1", 0, "hello"), values=[0.1, 0.2, 0.3]),
+        }
+    )
+    store = PineconeChunkStore(client, embedding_dimension=3)
+
+    # Metadata-only scan, run to completion -- this is what warms
+    # _scan_cache with a [] placeholder embedding for c1.
+    store.get_document_hash("no/such/path")
+
+    items = list(store.all_with_embeddings())
+    assert len(items) == 1
+    assert items[0].embedding == [0.1, 0.2, 0.3]  # not []
+
+
 def test_get_document_hash_scans_and_filters_client_side(mock_client):
     client, mock_index = mock_client
     mock_index.list.return_value = iter([_list_page("c1")])

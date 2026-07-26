@@ -1,4 +1,4 @@
-from typing import Literal, Optional
+from typing import Literal
 
 from pydantic import model_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
@@ -67,19 +67,63 @@ class Settings(BaseSettings):
     pinecone_environment: str | None = None
     pinecone_sparse_index_name: str | None = None
 
+    # Postgres-backed dedup index (Supabase). Optional: when unset,
+    # IngestionPipeline falls back to chunk_store.get_document_hash()'s
+    # full-corpus scan, same as before this existed.
+    supabase_db_url: str | None = None
+    # No auth/org model exists yet (see audit) -- single fixed tenant until
+    # multi-tenancy is built out.
+    default_organization_id: str = "00000000-0000-0000-0000-000000000001"
+
     max_upload_size_bytes: int = 20 * 1024 * 1024
     cors_allow_origins: str = ""
     api_keys: str = ""
     rate_limit_per_minute: int = 60
+
+    # Worker queue (async ingestion). Only used when supabase_db_url is set
+    # -- the claim-based multi-worker queue needs Postgres's SKIP LOCKED;
+    # without it, /upload/async falls back to the single in-process worker
+    # (unchanged behavior for the no-Postgres deployment case).
+    #
+    # worker_concurrency > 1 is only safe when BM25 writes are incremental
+    # (Postgres-backed) -- the scanning fallback's full local-pickle rebuild
+    # is not safe for concurrent workers, so the container forces
+    # concurrency to 1 whenever supabase_db_url is unset, regardless of this
+    # setting (see api/dependencies.py).
+    worker_concurrency: int = 4
+    worker_job_max_retries: int = 5
+    # A claimed job with no heartbeat update in this long is assumed to
+    # belong to a crashed/killed worker and is reclaimed by the reaper.
+    worker_heartbeat_timeout_s: int = 120
+    worker_heartbeat_interval_s: int = 30
 
     @property
     def cors_allow_origins_list(self) -> list[str]:
         return [o.strip() for o in self.cors_allow_origins.split(",") if o.strip()]
 
     @property
+    def api_keys_roles(self) -> dict[str, str]:
+        """Parse ``api_keys`` ("key1:admin,key2:reader") into key -> role.
+
+        A key with no ":role" suffix defaults to "reader" (least privilege).
+        Previously the ":role" suffix was never split off anywhere -- the
+        literal string "key1:admin" had to appear in the X-API-Key header
+        for that entry to match at all, so role-gating was silently
+        unenforceable. This is the parse step that makes it real.
+        """
+        roles: dict[str, str] = {}
+        for entry in self.api_keys.split(","):
+            entry = entry.strip()
+            if not entry:
+                continue
+            key, _, role = entry.partition(":")
+            roles[key] = role or "reader"
+        return roles
+
+    @property
     def api_keys_set(self) -> set[str]:
-        """Parse ``api_keys`` into a set of valid keys (no roles -- any valid key is fully authorized)."""
-        return {entry.strip() for entry in self.api_keys.split(",") if entry.strip()}
+        """Valid bare API keys (role suffix stripped -- see ``api_keys_roles``)."""
+        return set(self.api_keys_roles)
 
     @model_validator(mode="after")
     def _validate_production_requirements(self) -> "Settings":

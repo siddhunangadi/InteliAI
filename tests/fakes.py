@@ -5,9 +5,17 @@ import hashlib
 from types import SimpleNamespace
 
 from rag_hybrid_search.providers.base import EmbeddingProvider, GenerationProvider
+from rag_hybrid_search.storage.base import ChunkStore, VectorStore
+from rag_hybrid_search.storage.bm25_index import BM25Index
+from rag_hybrid_search.storage.index_manager import IndexManager
 from rag_hybrid_search.storage.pinecone_chunk_store import PineconeChunkStore
 from rag_hybrid_search.storage.pinecone_connection import PineconeConnection
 from rag_hybrid_search.storage.pinecone_vector_store import PineconeVectorStore
+from rag_hybrid_search.storage.repositories.scanning.bm25_repository import ScanningBM25Repository
+from rag_hybrid_search.storage.repositories.scanning.chunk_repository import ScanningChunkRepository
+from rag_hybrid_search.storage.repositories.scanning.compliance_repository import ScanningComplianceRepository
+from rag_hybrid_search.storage.repositories.scanning.document_repository import ScanningDocumentRepository
+from rag_hybrid_search.storage.repositories.scanning.unit_of_work import ScanningIngestionUnitOfWork
 
 
 class FakeEmbeddingProvider(EmbeddingProvider):
@@ -140,7 +148,36 @@ def fake_pinecone_stores(embedding_dimension: int = 8) -> tuple[PineconeChunkSto
     operate against one Pinecone index underneath (see
     ``pinecone_connection.py``), without needing a live index or API key."""
     connection = PineconeConnection.__new__(PineconeConnection)
+    connection._client = object()  # truthy sentinel: __new__ skips __init__, so this is unset otherwise
     connection.index = FakePineconeIndex()
     chunk_store = PineconeChunkStore(connection, embedding_dimension=embedding_dimension)
     vector_store = PineconeVectorStore(connection)
     return chunk_store, vector_store
+
+
+def scanning_repositories(chunk_store: ChunkStore) -> tuple[
+    ScanningDocumentRepository, ScanningChunkRepository, ScanningIngestionUnitOfWork
+]:
+    """IngestionPipeline's default (no-Postgres) repository set for tests --
+    same construction api/dependencies.py uses when RAG_SUPABASE_DB_URL is
+    unset. Reproduces the original chunk_store.get_document_hash() full-scan
+    dedup behavior, no exact-hash pre-filter."""
+    documents = ScanningDocumentRepository(chunk_store)
+    chunks = ScanningChunkRepository()
+    uow = ScanningIngestionUnitOfWork(documents, chunks)
+    return documents, chunks, uow
+
+
+def build_index_manager(
+    chunk_store: ChunkStore, vector_store: VectorStore, bm25_index: BM25Index, audit_log=None,
+) -> IndexManager:
+    """IndexManager wired against the scanning fallback repositories --
+    same construction api/dependencies.py uses when RAG_SUPABASE_DB_URL is
+    unset. Reproduces the original chunk_store.get_by_legal_metadata()/
+    bm25_index.build() full-scan/full-rebuild behavior."""
+    return IndexManager(
+        chunk_store, vector_store, bm25_index,
+        bm25_repository=ScanningBM25Repository(bm25_index),
+        compliance_repository=ScanningComplianceRepository(chunk_store),
+        audit_log=audit_log,
+    )

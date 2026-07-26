@@ -269,7 +269,23 @@ class PineconeChunkStore(ChunkStore):
             return None
         return _metadata_to_chunk(chunk_id, result.vectors[chunk_id].metadata)
 
-    def _scan_all(self) -> Iterator[tuple[str, dict, list[float]]]:
+    def get_many_with_embeddings(self, chunk_ids: list[str]) -> list[ChunkEmbedding]:
+        """Targeted multi-get by known id -- O(len(chunk_ids)), a single
+        Pinecone fetch() call, not a corpus scan. Used by the near-duplicate
+        check to fetch embeddings for a small LSH-narrowed candidate set
+        instead of every existing chunk (see ingestion/pipeline.py)."""
+        if not chunk_ids:
+            return []
+        result = self._client.index.fetch(ids=chunk_ids)
+        return [
+            ChunkEmbedding(
+                chunk=_metadata_to_chunk(chunk_id, vector.metadata),
+                embedding=list(vector.values),
+            )
+            for chunk_id, vector in result.vectors.items()
+        ]
+
+    def _scan_all(self, force_refresh: bool = False) -> Iterator[tuple[str, dict, list[float]]]:
         # index.list() yields ListResponse pages (page.vectors is a list of
         # ListItem objects with .id), not plain id strings -- fetch() needs
         # the extracted ids, not the page object itself. Found running the
@@ -290,9 +306,25 @@ class PineconeChunkStore(ChunkStore):
         # query router filters by legal metadata on every answer() -- so the
         # scan result is cached for _SCAN_CACHE_TTL_S and invalidated by
         # every write on this store. Embeddings are deliberately NOT cached
-        # (44k x 1024 floats is GBs as Python lists); all_with_embeddings()
-        # is ingestion-only and takes the uncached path.
-        if self._scan_cache is not None and time.monotonic() - self._scan_cache_at < self._SCAN_CACHE_TTL_S:
+        # (44k x 1024 floats is GBs as Python lists) -- every cached tuple's
+        # embedding slot is a placeholder ``[]``, not the real vector.
+        # all_with_embeddings() needs the real embeddings, so it passes
+        # force_refresh=True to always take this uncached branch. Bug fixed
+        # here: force_refresh didn't exist before, so a metadata-only scan
+        # (e.g. get_document_hash(), called at the start of every ingest())
+        # that ran to completion within the TTL window would warm this
+        # cache with placeholder embeddings, and a same-request
+        # all_with_embeddings() call moments later (e.g. dedup's near-dup
+        # candidate fetch) would silently get back a `[]` embedding per
+        # chunk instead of the real vector -- crashing find_duplicates()'s
+        # numpy matmul with a dimension mismatch (0 vs the real embedding
+        # dimension). Reproduced live: ingesting a second document into a
+        # non-empty scanning-fallback corpus crashes on this exact path.
+        if (
+            not force_refresh
+            and self._scan_cache is not None
+            and time.monotonic() - self._scan_cache_at < self._SCAN_CACHE_TTL_S
+        ):
             yield from self._scan_cache
             return
 
@@ -377,7 +409,7 @@ class PineconeChunkStore(ChunkStore):
             yield _metadata_to_chunk(chunk_id, metadata)
 
     def all_with_embeddings(self) -> Iterator[ChunkEmbedding]:
-        for chunk_id, metadata, values in self._scan_all():
+        for chunk_id, metadata, values in self._scan_all(force_refresh=True):
             yield ChunkEmbedding(
                 chunk=_metadata_to_chunk(chunk_id, metadata),
                 embedding=list(values),

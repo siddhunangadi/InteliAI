@@ -9,12 +9,8 @@ services:
         value: "3.11"
       - key: RAG_ENVIRONMENT
         value: production
-      - key: RAG_PROVIDER
-        value: nvidia
       - key: RAG_RERANK_BACKEND
         value: nvidia
-      - key: RAG_STORAGE_BACKEND
-        value: pinecone
       - key: RAG_DEBUG_TOKEN
         sync: false
       - key: RAG_PINECONE_API_KEY
@@ -24,4 +20,14 @@ services:
       - key: RAG_NVIDIA_API_KEY
         sync: false
       - key: RAG_API_KEYS
+        sync: false
+      # Without this, the deployment silently runs in scanning-fallback
+      # mode: no WorkerPool (uploads serialize on one in-process worker),
+      # no incremental BM25/dedup (full-corpus scans on every ingest --
+      # confirmed the dominant ingestion cost at real load, see
+      # docs/validation-report.md). Get the connection string from the
+      # Supabase project's Session Pooler URI (the direct-connection host
+      # is IPv6-only; confirm your environment can reach whichever
+      # endpoint you use).
+      - key: RAG_SUPABASE_DB_URL
         sync: false

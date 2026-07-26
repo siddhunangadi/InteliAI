@@ -1,10 +1,20 @@
+from typing import Protocol
+
 from rag_hybrid_search.models import RetrievedChunk
 from rag_hybrid_search.storage.base import ChunkStore
-from rag_hybrid_search.storage.bm25_index import BM25Index
+
+
+class _SearchableBM25(Protocol):
+    """Either BM25Index (local rank_bm25) or a BM25Repository implementation
+    (rag_hybrid_search/storage/repositories/base.py) -- both expose the same
+    search(query, k) -> [(chunk_id, score)] shape, so SparseRetriever
+    doesn't need to know which it got."""
+
+    def search(self, query: str, k: int) -> list[tuple[str, float]]: ...
 
 
 class SparseRetriever:
-    def __init__(self, chunk_store: ChunkStore, bm25_index: BM25Index):
+    def __init__(self, chunk_store: ChunkStore, bm25_index: _SearchableBM25):
         self._chunk_store = chunk_store
         self._bm25_index = bm25_index
 

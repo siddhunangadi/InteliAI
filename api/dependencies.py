@@ -41,7 +41,7 @@ from pathlib import Path
 
 from fastapi import HTTPException, Request
 
-from api.jobs import JobStore
+from api.jobs import JobStore, WorkerPool, process_ingestion_payload
 from rag_hybrid_search.audit import AuditLog
 from rag_hybrid_search.config import Settings
 from rag_hybrid_search.ingestion.chunkers.base import Chunker
@@ -61,6 +61,26 @@ from rag_hybrid_search.storage.index_manager import IndexManager
 from rag_hybrid_search.storage.pinecone_connection import PineconeConnection
 from rag_hybrid_search.storage.pinecone_vector_store import PineconeVectorStore
 from rag_hybrid_search.storage.pinecone_chunk_store import PineconeChunkStore
+from rag_hybrid_search.storage.repositories.base import (
+    BM25Repository,
+    ChunkRepository,
+    ComplianceRepository,
+    DocumentRepository,
+    IngestionUnitOfWork,
+    JobRepository,
+)
+from rag_hybrid_search.storage.repositories.postgres.bm25_repository import PostgresBM25Repository
+from rag_hybrid_search.storage.repositories.postgres.chunk_repository import PostgresChunkRepository
+from rag_hybrid_search.storage.repositories.postgres.compliance_repository import PostgresComplianceRepository
+from rag_hybrid_search.storage.repositories.postgres.connection import PostgresConnectionPool
+from rag_hybrid_search.storage.repositories.postgres.document_repository import PostgresDocumentRepository
+from rag_hybrid_search.storage.repositories.postgres.job_repository import PostgresJobRepository
+from rag_hybrid_search.storage.repositories.postgres.unit_of_work import PostgresIngestionUnitOfWork
+from rag_hybrid_search.storage.repositories.scanning.bm25_repository import ScanningBM25Repository
+from rag_hybrid_search.storage.repositories.scanning.chunk_repository import ScanningChunkRepository
+from rag_hybrid_search.storage.repositories.scanning.compliance_repository import ScanningComplianceRepository
+from rag_hybrid_search.storage.repositories.scanning.document_repository import ScanningDocumentRepository
+from rag_hybrid_search.storage.repositories.scanning.unit_of_work import ScanningIngestionUnitOfWork
 from rag_pipeline.generation_provider import MockProvider
 from rag_pipeline.rag_pipeline import RagPipeline
 from tests.fakes import FakeEmbeddingProvider
@@ -150,6 +170,14 @@ class Container:
     rate_limiter: RateLimiter
     audit_log: AuditLog
     metrics: Metrics
+    document_repository: DocumentRepository
+    chunk_repository: ChunkRepository
+    ingestion_uow: IngestionUnitOfWork
+    # Both None unless supabase_db_url is set -- the claim-based queue needs
+    # Postgres's FOR UPDATE SKIP LOCKED; without it, routes.py falls back to
+    # job_store (unchanged single-worker in-memory behavior).
+    job_repository: JobRepository | None = None
+    worker_pool: WorkerPool | None = None
 
     def build_ingestion_pipeline(self, loader: Loader, chunker: Chunker | None = None) -> IngestionPipeline:
         """Build an ``IngestionPipeline`` for a specific loader, reusing shared singletons.
@@ -172,6 +200,9 @@ class Container:
             index_manager=self.index_manager,
             dedup_cosine_threshold=self.settings.dedup_cosine_threshold,
             dedup_text_threshold=self.settings.dedup_text_similarity_threshold,
+            document_repository=self.document_repository,
+            chunk_repository=self.chunk_repository,
+            ingestion_uow=self.ingestion_uow,
         )
 
 
@@ -252,17 +283,56 @@ def build_container(settings: Settings | None = None) -> Container:
     # BM25Index.__init__ starts empty (no disk read) -- without this, every
     # process restart silently wipes sparse/keyword retrieval to zero
     # results until the next document upload rebuilds it, even though
-    # bm25.pkl on disk still has the full corpus indexed. Sparse index stays
-    # local even on the pinecone backend (Task 5 of the migration migrates it).
+    # bm25.pkl on disk still has the full corpus indexed. Only relevant to
+    # the scanning fallback (no Postgres configured); the Postgres-backed
+    # BM25Repository has no local file, nothing to load.
     bm25_index.load()
     audit_log = AuditLog(data_dir / _AUDIT_LOG_FILENAME)
-    index_manager = IndexManager(chunk_store, vector_store, bm25_index, audit_log=audit_log)
 
     chunker = RecursiveChunker(chunk_size=settings.chunk_size, chunk_overlap=settings.chunk_overlap)
 
+    # Repositories: Postgres-backed (O(1) indexed dedup, incremental BM25,
+    # indexed compliance lookups) when configured, otherwise the scanning
+    # fallback (chunk_store's/bm25_index's original full-scan/full-rebuild
+    # behavior) -- same interfaces either way, IngestionPipeline and
+    # IndexManager never know which they got.
+    if settings.supabase_db_url:
+        postgres_pool = PostgresConnectionPool(settings.supabase_db_url)
+        document_repository: DocumentRepository = PostgresDocumentRepository(
+            postgres_pool, settings.default_organization_id
+        )
+        chunk_repository: ChunkRepository = PostgresChunkRepository(
+            postgres_pool, settings.default_organization_id
+        )
+        ingestion_uow: IngestionUnitOfWork = PostgresIngestionUnitOfWork(
+            postgres_pool, settings.default_organization_id
+        )
+        bm25_repository: BM25Repository = PostgresBM25Repository(
+            postgres_pool, settings.default_organization_id
+        )
+        compliance_repository: ComplianceRepository = PostgresComplianceRepository(
+            postgres_pool, settings.default_organization_id
+        )
+        job_repository: JobRepository | None = PostgresJobRepository(
+            postgres_pool, settings.default_organization_id
+        )
+    else:
+        job_repository = None
+        document_repository = ScanningDocumentRepository(chunk_store)
+        chunk_repository = ScanningChunkRepository()
+        ingestion_uow = ScanningIngestionUnitOfWork(document_repository, chunk_repository)
+        bm25_repository = ScanningBM25Repository(bm25_index)
+        compliance_repository = ScanningComplianceRepository(chunk_store)
+
+    index_manager = IndexManager(
+        chunk_store, vector_store, bm25_index,
+        bm25_repository=bm25_repository, compliance_repository=compliance_repository,
+        audit_log=audit_log,
+    )
+
     retriever = HybridRetriever(
         dense_retriever=DenseRetriever(embedding_provider, vector_store, chunk_store),
-        sparse_retriever=SparseRetriever(chunk_store, bm25_index),
+        sparse_retriever=SparseRetriever(chunk_store, bm25_repository),
         rerank_provider=_select_rerank_provider(settings),
         dense_weight=settings.rrf_dense_weight,
         sparse_weight=settings.rrf_sparse_weight,
@@ -275,9 +345,10 @@ def build_container(settings: Settings | None = None) -> Container:
     rag_pipeline = RagPipeline(
         retriever, generation_provider, chunk_store=chunk_store,
         context_prune_margin=settings.context_prune_margin,
+        compliance_repository=compliance_repository,
     )
 
-    return Container(
+    container = Container(
         settings=settings,
         embedding_provider=embedding_provider,
         generation_provider=generation_provider,
@@ -292,7 +363,27 @@ def build_container(settings: Settings | None = None) -> Container:
         rate_limiter=RateLimiter(settings.rate_limit_per_minute),
         audit_log=audit_log,
         metrics=Metrics(),
+        document_repository=document_repository,
+        chunk_repository=chunk_repository,
+        ingestion_uow=ingestion_uow,
+        job_repository=job_repository,
     )
+
+    if job_repository is not None:
+        # worker_concurrency > 1 is only safe against the incremental
+        # Postgres-backed BM25/dedup repositories (job_repository is None
+        # otherwise) -- the scanning fallback's full local-pickle BM25
+        # rebuild isn't safe for concurrent workers, which is exactly the
+        # case this branch excludes.
+        container.worker_pool = WorkerPool(
+            job_repository,
+            lambda payload: process_ingestion_payload(payload, container),
+            concurrency=settings.worker_concurrency,
+            heartbeat_interval_s=settings.worker_heartbeat_interval_s,
+            heartbeat_timeout_s=settings.worker_heartbeat_timeout_s,
+        )
+
+    return container
 
 
 def get_container(request: Request) -> Container:

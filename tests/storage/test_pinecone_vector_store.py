@@ -80,9 +80,17 @@ def test_delete(mock_client):
 def test_shares_one_client_across_two_stores(mock_client):
     """Both PineconeVectorStore and PineconeChunkStore, constructed from the
     same PineconeConnection, must issue calls against the same underlying index
-    object -- not open a second connection."""
+    object -- not open a second connection.
+
+    ``client.index`` is a RetryingProxy wrapping the real Pinecone index
+    (see PineconeConnection/resilience.RetryingProxy) -- both stores get the
+    same cached proxy instance, not the raw mock_index directly, but calls
+    made through it still reach mock_index underneath (asserted via the
+    other tests in this file)."""
     client, mock_index = mock_client
     from rag_hybrid_search.storage.pinecone_chunk_store import PineconeChunkStore
     vector_store = PineconeVectorStore(client)
     chunk_store = PineconeChunkStore(client, embedding_dimension=3)
-    assert vector_store._client.index is chunk_store._client.index is mock_index
+    assert vector_store._client.index is chunk_store._client.index
+    vector_store._client.index.query(vector=[0.1], top_k=1)
+    mock_index.query.assert_called_once_with(vector=[0.1], top_k=1)

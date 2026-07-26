@@ -35,6 +35,12 @@ class ChunkStore(ABC):
         ...
 
     @abstractmethod
+    def get_many_with_embeddings(self, chunk_ids: list[str]) -> list[ChunkEmbedding]:
+        """Targeted multi-get by known id -- O(len(chunk_ids)), not a
+        corpus scan. Used by near-duplicate candidate narrowing."""
+        ...
+
+    @abstractmethod
     def get_document_hash(self, source_path: str) -> str | None:
         ...
 

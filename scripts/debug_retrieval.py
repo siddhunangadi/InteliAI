@@ -34,11 +34,10 @@ from rag_hybrid_search.retrieval.passthrough_rerank import PassthroughReranker
 from rag_hybrid_search.retrieval.retriever import HybridRetriever
 from rag_hybrid_search.retrieval.sparse import SparseRetriever
 from rag_hybrid_search.storage.bm25_index import BM25Index
-from rag_hybrid_search.storage.index_manager import IndexManager
 from rag_hybrid_search.models import ChunkProvenance, ContextChunk
 from rag_pipeline.context_builder import ContextLayout, build_context
 from rag_pipeline.prompt_builder import build_prompt
-from tests.fakes import fake_pinecone_stores
+from tests.fakes import build_index_manager, fake_pinecone_stores, scanning_repositories
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 from api.dependencies import _select_embedding_provider, _select_generation_provider  # noqa: E402
@@ -103,15 +102,17 @@ def run_local(doc_path: str, query: str) -> None:
     try:
         chunk_store, vector_store = fake_pinecone_stores(embedding_dimension=embedding_provider.dimension)
         bm25_index = BM25Index(index_path=str(tmp_dir / "bm25.pkl"))
-        index_manager = IndexManager(chunk_store, vector_store, bm25_index)
+        index_manager = build_index_manager(chunk_store, vector_store, bm25_index)
 
         loader = PdfLoader()
         chunker = RecursiveChunker(chunk_size=settings.chunk_size, chunk_overlap=settings.chunk_overlap)
+        doc_repo, chunk_repo, ingestion_uow = scanning_repositories(chunk_store)
         ingestion = IngestionPipeline(
             loader=loader, chunker=chunker, embedding_provider=embedding_provider,
             chunk_store=chunk_store, index_manager=index_manager,
             dedup_cosine_threshold=settings.dedup_cosine_threshold,
             dedup_text_threshold=settings.dedup_text_similarity_threshold,
+            document_repository=doc_repo, chunk_repository=chunk_repo, ingestion_uow=ingestion_uow,
         )
         ingestion.ingest(doc_path)
 

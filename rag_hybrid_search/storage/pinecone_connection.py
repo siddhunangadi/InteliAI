@@ -8,6 +8,8 @@ aren't merged into a single class despite sharing storage).
 import logging
 from pinecone import Pinecone
 
+from rag_hybrid_search.resilience import RetryingProxy
+
 logger = logging.getLogger(__name__)
 
 
@@ -29,7 +31,13 @@ class PineconeConnection:
         if self._client is None:
             raise RuntimeError(f"Pinecone client not initialized: {self._init_error}")
         if self._index_instance is None:
-            self._index_instance = self._client.Index(self._index_name)
+            # Wrapped only on this lazy-creation path, not in the setter --
+            # tests inject a fake index via the setter to assert on calls
+            # made against it directly (identity checks, call counts); those
+            # must see the raw fake, unretried. Only the real Pinecone SDK
+            # client (which has no retry/backoff of its own, unlike
+            # providers/nvidia.py's httpx calls) needs this.
+            self._index_instance = RetryingProxy(self._client.Index(self._index_name))
         return self._index_instance
 
     @index.setter

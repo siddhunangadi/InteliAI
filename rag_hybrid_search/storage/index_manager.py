@@ -7,6 +7,7 @@ from rag_hybrid_search.storage.base import ChunkStore, VectorStore
 from rag_hybrid_search.storage.bm25_index import BM25Index
 from rag_hybrid_search.storage.pinecone_chunk_store import PineconeChunkStore
 from rag_hybrid_search.storage.pinecone_vector_store import PineconeVectorStore
+from rag_hybrid_search.storage.repositories.base import BM25Repository, ComplianceRepository
 
 logger = logging.getLogger(__name__)
 
@@ -17,11 +18,19 @@ class IndexManager:
         chunk_store: ChunkStore,
         vector_store: VectorStore,
         bm25_index: BM25Index,
+        bm25_repository: BM25Repository,
+        compliance_repository: ComplianceRepository,
         audit_log: AuditLog | None = None,
     ):
         self.chunk_store = chunk_store
         self.vector_store = vector_store
         self.bm25_index = bm25_index
+        # Incremental BM25 postings + indexed compliance lookups (see
+        # storage/repositories/). Postgres-backed or the scanning fallback
+        # wrapping bm25_index/chunk_store's original full-scan behavior --
+        # IndexManager never knows which.
+        self.bm25_repository = bm25_repository
+        self.compliance_repository = compliance_repository
         self.audit_log = audit_log
 
     def index(
@@ -29,6 +38,11 @@ class IndexManager:
     ) -> IndexStatus:
         try:
             self.vector_store.upsert_many([c.chunk_id for c in chunks], embeddings)
+            # Incremental postings for these chunks specifically -- O(new
+            # chunks), always current after this call regardless of
+            # rebuild_bm25 (which now only controls whether the scanning
+            # fallback's local pickle gets rebuilt; see rebuild_bm25_index()).
+            self.bm25_repository.record_many(chunks)
             if rebuild_bm25:
                 self.rebuild_bm25_index()
         except Exception:
@@ -66,6 +80,7 @@ class IndexManager:
         chunk_store.put_many() call when using this method instead."""
         try:
             self.chunk_store.put_many_with_embeddings(chunks, embeddings, source_path=source_path)
+            self.bm25_repository.record_many(chunks)
             if rebuild_bm25:
                 self.rebuild_bm25_index()
         except Exception:
@@ -80,13 +95,19 @@ class IndexManager:
         self.chunk_store.delete_by_document(document_id)
         if chunk_ids:
             self.vector_store.delete(chunk_ids)
+            self.bm25_repository.remove_chunks(chunk_ids)
         if rebuild_bm25:
             self.rebuild_bm25_index()
 
     def rebuild_bm25_index(self) -> None:
-        all_chunks = list(self.chunk_store.all())
-        self.bm25_index.build(all_chunks)
-        self.bm25_index.save()
+        # Lazy provider, not a materialized list: the Postgres-backed
+        # repository's rebuild_full() is a documented no-op that never
+        # calls this, so no full-corpus Pinecone scan happens here for that
+        # backend. The scanning fallback (no incremental API in rank_bm25)
+        # does call it -- that's what actually makes newly-ingested chunks
+        # searchable for that backend, same full-corpus cost as before this
+        # repository layer existed.
+        self.bm25_repository.rebuild_full(self.chunk_store.all)
 
     def rebuild_all(self) -> None:
         self.rebuild_bm25_index()
@@ -113,13 +134,17 @@ class IndexManager:
 
             field_names = ("regulation", "authority", "jurisdiction", "article", "section", "clause")
             filters = {name: value for name, value in zip(field_names, key) if value is not None}
-            candidates = self.chunk_store.get_by_legal_metadata(filters)
-            dated = [c for c in candidates if c.legal_metadata and c.legal_metadata.effective_date]
+            # Indexed lookup against the composite index on
+            # chunks(organization_id, legal_regulation, ..., legal_clause) --
+            # bounded by how many versions of this one clause exist, not
+            # corpus size (see storage/repositories/postgres/compliance_repository.py).
+            candidates = self.compliance_repository.find_matching(filters)
+            dated = [c for c in candidates if c.effective_date is not None]
             if len(dated) < 2:
                 continue
 
-            latest_date = max(c.legal_metadata.effective_date for c in dated)
-            latest_doc_ids = {c.document_id for c in dated if c.legal_metadata.effective_date == latest_date}
+            latest_date = max(c.effective_date for c in dated)
+            latest_doc_ids = {c.document_id for c in dated if c.effective_date == latest_date}
             # Ambiguous (two docs share the latest date): leave is_current as-is
             # rather than guessing which one wins.
             winner_doc_id = next(iter(latest_doc_ids)) if len(latest_doc_ids) == 1 else None
@@ -128,14 +153,13 @@ class IndexManager:
 
             for candidate in dated:
                 should_be_current = candidate.document_id == winner_doc_id
-                if candidate.legal_metadata.is_current != should_be_current:
-                    self.chunk_store.update_legal_metadata(
+                if candidate.is_current != should_be_current:
+                    self.compliance_repository.mark_superseded(
                         candidate.chunk_id,
                         is_current=should_be_current,
                         superseded_by=None if should_be_current else winner_doc_id,
                     )
                     if self.audit_log is not None and not should_be_current:
-                        lm = candidate.legal_metadata
                         self.audit_log.record(
                             AuditEvent(
                                 event_id=str(uuid.uuid4()),
@@ -147,15 +171,7 @@ class IndexManager:
                                 action="mark_superseded",
                                 status="success",
                                 document_id=candidate.document_id,
-                                regulation_metadata={
-                                    "regulation": lm.regulation,
-                                    "authority": lm.authority,
-                                    "jurisdiction": lm.jurisdiction,
-                                    "article": lm.article,
-                                    "section": lm.section,
-                                    "clause": lm.clause,
-                                    "superseded_by": winner_doc_id,
-                                },
+                                regulation_metadata={**filters, "superseded_by": winner_doc_id},
                             )
                         )
 

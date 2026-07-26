@@ -42,6 +42,7 @@ def _record_auth_failure(
 class Identity:
     key_id: str
     request_id: str
+    role: str = "admin"
 
 
 def get_identity(
@@ -53,28 +54,42 @@ def get_identity(
 
     No keys configured (``Settings.api_keys`` empty) -> every request is
     allowed, rate-limited per client IP, matching this project's existing
-    "unset config = open dev default" convention.
+    "unset config = open dev default" convention -- role defaults to
+    "admin" in that case too (nothing to distinguish callers by), same as
+    before roles existed. Once RAG_API_KEYS is set, each key's role (see
+    ``Settings.api_keys_roles``) is actually enforced by ``require_admin``.
     """
     request_id = getattr(request.state, "request_id", "unknown")
 
-    api_keys = container.settings.api_keys_set
-    if not api_keys:
+    api_keys_roles = container.settings.api_keys_roles
+    if not api_keys_roles:
         identifier = request.client.host if request.client else _ANONYMOUS_KEY_ID
         container.rate_limiter.check(identifier)
-        identity = Identity(key_id=_ANONYMOUS_KEY_ID, request_id=request_id)
+        identity = Identity(key_id=_ANONYMOUS_KEY_ID, request_id=request_id, role="admin")
         request.state.identity = identity
         return identity
 
     if not x_api_key:
         _record_auth_failure(container, request, request_id, _ANONYMOUS_KEY_ID, "missing_api_key")
         raise HTTPException(status_code=401, detail="missing X-API-Key header")
-    if x_api_key not in api_keys:
+    if x_api_key not in api_keys_roles:
         key_id = hashlib.sha256(x_api_key.encode()).hexdigest()[:12]
         _record_auth_failure(container, request, request_id, key_id, "invalid_api_key")
         raise HTTPException(status_code=401, detail="invalid X-API-Key")
 
     key_id = hashlib.sha256(x_api_key.encode()).hexdigest()[:12]
     container.rate_limiter.check(key_id)
-    identity = Identity(key_id=key_id, request_id=request_id)
+    identity = Identity(key_id=key_id, request_id=request_id, role=api_keys_roles[x_api_key])
     request.state.identity = identity
+    return identity
+
+
+def require_admin(identity: Identity = Depends(get_identity)) -> Identity:
+    """Gate for endpoints docstring'd as admin-only (``/audit/events``,
+    ``/diagnostics``) -- enforced in code, not just documented. 403s any
+    identity whose role isn't "admin" (only reachable when RAG_API_KEYS is
+    set with non-admin entries; the no-keys-configured dev default is
+    always "admin", unchanged)."""
+    if identity.role != "admin":
+        raise HTTPException(status_code=403, detail="admin role required")
     return identity

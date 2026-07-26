@@ -9,7 +9,7 @@ from rag_hybrid_search.models import Chunk
 _TOKEN_RE = re.compile(r"[A-Za-z0-9_]+")
 
 
-def _tokenize(text: str) -> list[str]:
+def tokenize(text: str) -> list[str]:
     return _TOKEN_RE.findall(text.lower())
 
 
@@ -21,13 +21,13 @@ class BM25Index:
 
     def build(self, chunks: list[Chunk]) -> None:
         self._chunk_ids = [c.chunk_id for c in chunks]
-        tokenized = [_tokenize(c.text) for c in chunks]
+        tokenized = [tokenize(c.text) for c in chunks]
         self._bm25 = BM25Okapi(tokenized) if tokenized else None
 
     def search(self, query: str, k: int) -> list[tuple[str, float]]:
         if self._bm25 is None or not self._chunk_ids:
             return []
-        scores = self._bm25.get_scores(_tokenize(query))
+        scores = self._bm25.get_scores(tokenize(query))
         ranked = sorted(
             zip(self._chunk_ids, scores), key=lambda pair: pair[1], reverse=True
         )

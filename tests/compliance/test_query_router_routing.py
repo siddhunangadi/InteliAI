@@ -1,7 +1,8 @@
 from unittest.mock import MagicMock
 
 from rag_hybrid_search.compliance.query_router import route_query
-from rag_hybrid_search.models import Chunk, RetrievalTrace, RetrievedChunk
+from rag_hybrid_search.models import Chunk, ChunkEmbedding, RetrievalTrace, RetrievedChunk
+from rag_hybrid_search.storage.repositories.base import ComplianceCandidate
 
 
 def _retrieved(chunk_id: str) -> RetrievedChunk:
@@ -80,3 +81,29 @@ def test_mixed_query_with_no_matching_chunks_returns_empty_not_unfiltered():
     chunk_store.get_by_legal_metadata.assert_called_once_with({"article": "17"})
     retriever.retrieve.assert_called_once_with("Explain Article 17 in plain terms", dev_trace=None)
     assert results == []
+
+
+def test_structured_query_with_compliance_repository_never_scans_chunk_store():
+    """F4: when a ComplianceRepository is provided, structured/metadata/mixed
+    intent must resolve via its indexed find_matching(), not the full-corpus
+    chunk_store.get_by_legal_metadata() scan."""
+    chunk_store = MagicMock()
+    chunk = Chunk(chunk_id="c1", document_id="doc-1", chunk_index=0, text="Article 17 text",
+                  strategy_version="clause-v1", char_count=10)
+    chunk_store.get_many_with_embeddings.return_value = [ChunkEmbedding(chunk=chunk, embedding=[0.0])]
+    compliance_repository = MagicMock()
+    compliance_repository.find_matching.return_value = [
+        ComplianceCandidate(chunk_id="c1", document_id="doc-1", effective_date=None, is_current=True)
+    ]
+    retriever = MagicMock()
+
+    results, trace = route_query(
+        "Show Article 17", chunk_store, retriever, compliance_repository=compliance_repository,
+    )
+
+    compliance_repository.find_matching.assert_called_once_with({"article": "17"})
+    chunk_store.get_by_legal_metadata.assert_not_called()
+    chunk_store.get_many_with_embeddings.assert_called_once_with(["c1"])
+    retriever.retrieve.assert_not_called()
+    assert len(results) == 1
+    assert results[0].chunk.chunk_id == "c1"

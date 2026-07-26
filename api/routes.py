@@ -5,6 +5,7 @@ Handlers only translate HTTP <-> pipeline calls; business logic lives in
 """
 
 import asyncio
+import hashlib
 import json
 import logging
 import mimetypes
@@ -17,7 +18,7 @@ from pathlib import Path
 from fastapi import APIRouter, Depends, File, Form, Header, HTTPException, Query, Request, UploadFile
 from fastapi.responses import StreamingResponse
 
-from api.auth import Identity, get_identity
+from api.auth import Identity, get_identity, require_admin
 from api.dependencies import Container, check_readiness, get_container
 from api.schemas import (
     AnswerRequest,
@@ -580,19 +581,63 @@ async def upload_documents_async(
 ) -> UploadAcceptedResponse:
     """Accept file uploads without blocking on ingestion; poll GET /jobs/{job_id} for the result.
 
-    File bytes are read here (on the request thread, before responding) since
-    ``UploadFile`` isn't safe to hand across threads; parsing, chunking,
-    embedding, and indexing then run on the background ingestion worker so a
-    large or slow upload can't tie up the request thread or time out the
-    client (see api/jobs.py -- JobStore serializes ingestion on one worker
-    thread to avoid racing the shared BM25 rebuild).
+    Two paths, matching whichever job backend api/dependencies.py wired up:
 
-    Shares one dedup cache and defers the BM25 rebuild to once after the
-    whole batch instead of once per file, avoiding the full-corpus rescan
-    that's the dominant cost at the 1000-file scale this endpoint exists for
-    (see IngestionPipeline.ingest docstring).
+    - Postgres configured (``container.job_repository`` set): file bytes are
+      written to ``container.uploads_dir`` here on the request thread (a
+      stored path, not the bytes, is what gets persisted in the job row --
+      jsonb is no place for file contents), then a job row is inserted and
+      picked up by one of ``WorkerPool``'s worker threads -- possibly a
+      different process/restart than the one that accepted the request,
+      since the job survives in Postgres either way. Idempotent: retrying
+      the same request (same files + same metadata) after a timeout returns
+      the existing job instead of double-enqueueing.
+    - No Postgres: unchanged behavior, the single in-memory ``JobStore``
+      worker thread (serialized, since the scanning fallback's local-pickle
+      BM25 rebuild isn't safe for concurrent workers).
+
+    Either way, ingestion (parse/chunk/embed/index) never runs on the
+    request thread, so a large or slow upload can't tie up the client
+    connection or time it out.
     """
     payloads = [((file.filename or "upload"), await file.read()) for file in files]
+
+    if container.job_repository is not None:
+        stored = []
+        for filename, contents in payloads:
+            safe_name = _safe_filename(filename)
+            dest_path = container.uploads_dir / safe_name
+            dest_path.write_bytes(contents)
+            stored.append({"filename": filename, "stored_path": str(dest_path)})
+        job_payload = {
+            "files": stored,
+            "document_type": document_type,
+            "regulation": regulation,
+            "authority": authority,
+            "jurisdiction": jurisdiction,
+            "effective_date": effective_date.isoformat() if effective_date else None,
+            "risk_category": risk_category,
+        }
+        # Idempotency key: same organization + same set of file content
+        # hashes + same metadata -> same key, so a client retrying an
+        # /upload/async call after a network timeout (having never seen the
+        # 202) doesn't create a second ingestion job for files already
+        # queued/ingested.
+        idempotency_key = hashlib.sha256(
+            json.dumps(
+                {
+                    "files": sorted(hashlib.sha256(c).hexdigest() for _, c in payloads),
+                    "document_type": document_type, "regulation": regulation, "authority": authority,
+                    "jurisdiction": jurisdiction,
+                    "effective_date": job_payload["effective_date"], "risk_category": risk_category,
+                },
+                sort_keys=True,
+            ).encode("utf-8")
+        ).hexdigest()
+        job_id, _created = container.job_repository.enqueue(
+            job_payload, idempotency_key=idempotency_key,
+        )
+        return UploadAcceptedResponse(job_id=job_id, status="queued")
 
     def work() -> dict:
         existing_pairs = [
@@ -628,7 +673,7 @@ async def upload_documents_async(
         return IndexResponse(results=results).model_dump()
 
     job_id = container.job_store.submit(work)
-    return UploadAcceptedResponse(job_id=job_id)
+    return UploadAcceptedResponse(job_id=job_id, status="processing")
 
 
 @router.get("/jobs/{job_id}", response_model=JobStatusResponse)
@@ -638,10 +683,59 @@ async def get_job(
     _identity=Depends(get_identity),
 ) -> JobStatusResponse:
     """Poll the status of a background ingestion job started via POST /upload/async."""
+    if container.job_repository is not None:
+        job = container.job_repository.get(job_id)
+        if job is None:
+            raise HTTPException(status_code=404, detail=f"job not found: {job_id}")
+        return JobStatusResponse(
+            job_id=job.job_id, status=job.status, result=job.result, error=job.error,
+            progress_current=job.progress_current, progress_total=job.progress_total,
+            retry_count=job.retry_count,
+        )
     job = container.job_store.get(job_id)
     if job is None:
         raise HTTPException(status_code=404, detail=f"job not found: {job_id}")
     return JobStatusResponse(job_id=job.job_id, status=job.state, result=job.result, error=job.error)
+
+
+@router.delete("/jobs/{job_id}", status_code=204)
+async def cancel_job(
+    job_id: str,
+    container: Container = Depends(get_container),
+    _identity=Depends(get_identity),
+) -> None:
+    """Cancel a queued (not yet claimed) ingestion job.
+
+    A no-op (still 204) if the job is already processing/finished --
+    ingestion isn't cheaply interruptible mid-embedding-call, so
+    cancellation only covers the queued window. Only available when the
+    persistent job queue is configured (Postgres); the in-memory JobStore
+    fallback has no cancellation support.
+    """
+    if container.job_repository is None:
+        raise HTTPException(status_code=404, detail="job cancellation requires the persistent job queue")
+    container.job_repository.cancel(job_id)
+
+
+@router.get("/jobs/dead-letter/list")
+async def list_dead_letter_jobs(
+    limit: int = Query(default=100, ge=1, le=1000),
+    container: Container = Depends(get_container),
+    _identity=Depends(get_identity),
+) -> list[JobStatusResponse]:
+    """List ingestion jobs that exhausted their retries -- for manual
+    inspection/requeue by an operator. Empty list when the persistent job
+    queue isn't configured."""
+    if container.job_repository is None:
+        return []
+    return [
+        JobStatusResponse(
+            job_id=job.job_id, status=job.status, result=job.result, error=job.error,
+            progress_current=job.progress_current, progress_total=job.progress_total,
+            retry_count=job.retry_count,
+        )
+        for job in container.job_repository.list_dead_letter(limit=limit)
+    ]
 
 
 @router.get("/health", response_model=HealthResponse)
@@ -765,7 +859,7 @@ async def delete_document(
 @router.get("/audit/events", response_model=AuditEventsResponse)
 async def list_audit_events(
     container: Container = Depends(get_container),
-    _identity: Identity = Depends(get_identity),
+    _identity: Identity = Depends(require_admin),
     event_type: EventType | None = Query(default=None),
     key_id: str | None = Query(default=None),
     role: str | None = Query(default=None),
@@ -788,7 +882,7 @@ async def list_audit_events(
 @router.get("/diagnostics", response_model=DiagnosticsResponse)
 async def diagnostics(
     container: Container = Depends(get_container),
-    _identity: Identity = Depends(get_identity),
+    _identity: Identity = Depends(require_admin),
 ) -> DiagnosticsResponse:
     """Aggregate operational state for on-call debugging. Admin-only: this
     exposes internal provider/config details that shouldn't be public, even

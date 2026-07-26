@@ -10,8 +10,7 @@ from rag_hybrid_search.retrieval.passthrough_rerank import PassthroughReranker
 from rag_hybrid_search.retrieval.retriever import HybridRetriever
 from rag_hybrid_search.retrieval.sparse import SparseRetriever
 from rag_hybrid_search.storage.bm25_index import BM25Index
-from rag_hybrid_search.storage.index_manager import IndexManager
-from tests.fakes import FakeEmbeddingProvider, fake_pinecone_stores
+from tests.fakes import FakeEmbeddingProvider, build_index_manager, fake_pinecone_stores
 
 _GDPR_TEXT = """Article 5
 
@@ -32,7 +31,7 @@ def _build_pipeline_components(
 ):
     chunk_store, vector_store = fake_pinecone_stores()
     bm25_index = BM25Index(index_path=f"{tmp_dir}/bm25.pkl")
-    index_manager = IndexManager(chunk_store, vector_store, bm25_index)
+    index_manager = build_index_manager(chunk_store, vector_store, bm25_index)
     embedding_provider = FakeEmbeddingProvider()
 
     document = Document(document_id="doc-gdpr", source_path="/tmp/gdpr.txt", content=_GDPR_TEXT, format="text")
