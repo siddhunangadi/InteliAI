@@ -47,9 +47,9 @@ class PostgresBM25Repository:
                 for term, count in term_counts.items()
             )
 
-        with self._connections.connection() as conn:
+        with self._connections.connection() as conn, conn.cursor() as cur:
             if posting_rows:
-                conn.executemany(
+                cur.executemany(
                     """
                     insert into bm25_postings (organization_id, term, chunk_id, term_frequency)
                     values (%s, %s, %s, %s)
@@ -58,7 +58,7 @@ class PostgresBM25Repository:
                     """,
                     posting_rows,
                 )
-            conn.executemany(
+            cur.executemany(
                 """
                 insert into bm25_doc_stats (organization_id, chunk_id, doc_length)
                 values (%s, %s, %s)

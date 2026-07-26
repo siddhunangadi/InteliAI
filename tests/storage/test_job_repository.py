@@ -33,7 +33,10 @@ def repo(pool, org_id):
     with pool.connection() as conn:
         conn.execute("insert into organizations (id, name) values (%s, %s)", (org_id, "test-org"))
         conn.commit()
-    return PostgresJobRepository(pool, org_id)
+    yield PostgresJobRepository(pool, org_id)
+    with pool.connection() as conn:
+        conn.execute("delete from ingestion_jobs where organization_id = %s", (org_id,))
+        conn.execute("delete from organizations where id = %s", (org_id,))
 
 
 def test_enqueue_then_claim_returns_the_job(repo):

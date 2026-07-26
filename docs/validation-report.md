@@ -195,3 +195,80 @@ With every finding now evidence-backed, the priority order for actually implemen
 3. **F3** (dead combined-write path) — second-highest confirmed ROI, requires fixing `supports_combined_write()` first.
 4. **F2** (N+1 fetch) — confirmed real but smaller win than F3/F4 in absolute terms.
 5. **F1** (NVIDIA lock) — confirmed severe in isolation; sizing the correct concurrency limit (not just "remove the lock") needs one more targeted test (find the real NVIDIA rate limit) before implementing.
+
+---
+
+# Addendum — Postgres-backed path validation (real `RAG_SUPABASE_DB_URL`)
+
+This session got a real `RAG_SUPABASE_DB_URL` for the live `inteliai-rag` Supabase project (the "Scope note" above no longer applies for the repository/WorkerPool layer). No NVIDIA or Pinecone key was available this session, so F1-F3 and the NVIDIA/Pinecone-side numbers above are unchanged, real measurements from the prior session, not re-run. Everything below is new, real, against the live Postgres database — `PostgresDocumentRepository`, `PostgresChunkRepository`, `PostgresBM25Repository`, `PostgresComplianceRepository`, `PostgresJobRepository`, and `WorkerPool`, exercised directly (not through the full NVIDIA/Pinecone-dependent `IngestionPipeline`, which still needs those keys).
+
+**Credential handling:** the DB password was supplied ad hoc in this session, not committed. `.env.development` (tracked in git) was left untouched; the URL was passed inline as an environment variable to each one-shot Python process and never persisted to disk or shell history. Note the app itself has no dotenv loading anywhere (`Settings` is plain `pydantic-settings`, env-only) — `.env.development` is a human-readable template only, never actually read by the app.
+
+**Region note:** the `.env.development` template's example pooler host (`aws-0-us-east-1.pooler.supabase.com`) is correct for this project (`us-east-1`), but the direct-connection host (`db.<ref>.supabase.co`) only resolves to an IPv6 address from this environment, which has no outbound IPv6 route — the pooler host is not just "the recommended option," it's the only one that actually connects here.
+
+## Three previously-undetected crash bugs, found and fixed
+
+None of these were caught before because the integration test suite that exercises this exact code (`tests/storage/test_postgres_repositories.py`, `tests/storage/test_job_repository.py`) is `skipif`-gated on `RAG_SUPABASE_DB_URL` and had **never once run** — not in this project's history, not in CI, not manually — until this session. All three are one-line-per-call-site fixes, applied:
+
+1. **`conn.executemany()` doesn't exist on psycopg3's `Connection`.** `PostgresChunkRepository.record_many()` and `PostgresBM25Repository.record_many()` both called it (4 call sites total) — psycopg3 only has `executemany()` on a `Cursor`, not a `Connection` (confirmed: `hasattr(psycopg.Connection, "executemany")` is `False`). This meant **every real Postgres-backed chunk write and every real Postgres-backed BM25 write crashed with `AttributeError`, unconditionally, on every call** — the entire point of this milestone (incremental BM25, indexed dedup) was unreachable code. Fixed by opening a cursor (`with conn.cursor() as cur: cur.executemany(...)`).
+2. **`simhash()` returns unsigned 64-bit; `chunks.simhash` is a signed `bigint`.** Any simhash with the top bit set (~50% of all real text, at random) overflows Postgres's signed 64-bit range and fails with `NumericValueOutOfRange`. Nothing in the codebase ever reads `chunks.simhash` back into Python (near-dup matching goes through the `chunk_simhash_bands` table, computed from the original in-memory value at write time), so a lossless two's-complement wraparound before storage is a safe, no-behavior-change fix (`_to_signed_bigint()`, `chunk_repository.py`).
+3. **`legal_is_current` is `NOT NULL DEFAULT true`; `_legal_fields()` returned `None` for it on every non-legal chunk.** Since most real documents aren't `document_type="regulation"` (a non-legal chunk gets `legal_metadata=None` entirely, by the model's own design), this meant **every ordinary (non-compliance) document crashed on ingest** via `NotNullViolation` — this is not an edge case, it's the common case. Fixed by defaulting to `True` (matching both `LegalMetadata.is_current`'s own default and the column's own DB default) instead of `None`.
+
+Net effect before this session: the Postgres-backed write path was **completely non-functional** for any real document, compliance or not — not "falls back to scanning," strictly worse: it throws. This is a materially different (worse) finding than "the Scope note" in the original report anticipated ("get a working `RAG_SUPABASE_DB_URL` into the deployment" was framed as the main gap; the schema/driver-mismatch bugs above mean a working URL alone would not have been enough).
+
+## Integration test suite: run for the first time, 2 test-fixture bugs also found and fixed
+
+Running `test_postgres_repositories.py`/`test_job_repository.py` for the first time surfaced (and fixed) two test-only bugs, unrelated to production code:
+- `organization_id` fixture teardown deleted `from organizations where organization_id = %s` — but `organizations`' key column is `id`, not `organization_id` — so teardown threw `UndefinedColumn` on every test, every run, leaking a fresh `test-org` row (plus, before the bugs above were fixed, orphaned chunks/postings) into the live DB on every single test invocation. Fixed.
+- 5 of the tests inserted chunks referencing a `document_id` (`"doc-1"`/`"doc-2"`) that was never written to the `documents` table, so they only "worked" by accident once `record_many()` itself was broken (bug #1) — once fixed, they hit `documents`' real FK constraint. Fixed by inserting the document row first, matching what `IngestionPipeline`'s real unit-of-work always does.
+- `test_job_repository.py`'s `repo` fixture created an `organizations` row with **no teardown at all** — every run left that org and its jobs in the live DB permanently. Fixed (added cleanup).
+
+This session's misuse of the test DB (crashed runs before the fixes above landed) also left **28 orphaned `test-org` organizations** and **3 stuck `processing` jobs** in the live `inteliai-rag` project from repeated runs; all were identified and purged (see "Real measurements," cleanup is verified below).
+
+**Result after fixes: 27 of 28 tests pass for the first time ever.** The one remaining failure is real, not a fixture bug:
+
+## New finding — near-duplicate LSH banding has a real recall gap
+
+`test_chunk_repository_near_duplicate_candidates_via_lsh_bands` asserts that a single-word substitution ("...lazy dog **in** the park..." → "...lazy dog **at** the park...") is found as a near-duplicate candidate via the 8-bands×8-bits LSH scheme. It isn't:
+
+```
+simhash(original) = 15519638141880428831, bands = [31, 233, 98, 217, 169, 212, 96, 215]
+simhash(near_dup)  = 14375515891255408991, bands = [95, 249, 66, 209, 137,  23,128, 199]
+shared bands: 0        Hamming distance: 13/64 bits
+```
+
+`hashing.py`'s own docstring claims 8×8 was chosen because it "catches" exactly this class of near-duplicate ("measured against this module's own `simhash()` on realistic single-word-edit near-duplicates... 8x8 catches them"), citing `test_hashing.py`. That claim doesn't hold for this specific (also real, also realistic) example: 13/64 bits of difference is enough to miss all 8 bands simultaneously. **Not fixed here** — retuning LSH band/bit counts is a recall-vs-false-positive-rate tradeoff that needs a real near-dup corpus to evaluate properly, not a one-line change; flagged per the module's own docstring ("revisit against real corpus near-dup rates if recall proves insufficient at scale") — this session is exactly that revisit, and recall is confirmed insufficient for at least this realistic case.
+
+## F4 status: confirmed STILL falls back, and the fallback code path is currently unreachable
+
+Re-checked `query_router.py` directly: `route_query()` still calls `chunk_store.get_by_legal_metadata()` (lines 87, 95) unconditionally — never uses the injected `ComplianceRepository`, exactly as F4 described. Additionally, grepping `api/` for callers of `route_query()`/`query_router` found **none** — `route_query()` has no caller anywhere in the live application today. So F4's fallback isn't just "still there," the entire code path it lives in is currently dead code, not on any real request path. (The fast, indexed `PostgresComplianceRepository.find_matching()` — see measurements below — is fully working and would need to be wired into wherever compliance-intent queries actually get handled today, which this session did not locate.)
+
+## Real measurements (live Postgres, `inteliai-rag`, throwaway `organization_id`, cleaned up after)
+
+3,000 synthetic chunks/postings seeded through the real repository write path (not bulk SQL), 1/50 with legal metadata (`GDPR`/`EU`, ~60 chunks sharing one clause identity):
+
+| Operation | Real measurement | Notes |
+|---|---|---|
+| Chunk+BM25 write throughput (repository `record_many`, batches of 500) | 116.2ms/chunk this run; 40.9ms/chunk in an earlier 20,000-chunk run | Batch-size/network-variance sensitive; both are the real `executemany` path, not bulk `COPY` |
+| `filter_new_hashes()` (exact-dup dedup, indexed) | 712.4ms | |
+| `find_near_duplicate_candidates()` (LSH band lookup) | 697.0ms | Found 92 same-band candidates (see recall gap above for a case it misses) |
+| `PostgresComplianceRepository.find_matching()` (indexed, real repo call) | 705.9ms | 60 rows matched, correct |
+| Same filter, indexes forced off (`enable_indexscan/bitmapscan=off`) | 224.3ms | **Faster than the "indexed" call above** — see below |
+| `PostgresBM25Repository.record_many()`, single new chunk | 1213.2ms | |
+| `PostgresBM25Repository.search()` | 1021.1ms | |
+| `PostgresDocumentRepository.get_hash_for_path()` | 831.9ms | |
+
+**Every one of these single-round-trip calls clusters at ~700-1200ms regardless of query complexity or plan** — including the supposedly-slower forced-seq-scan comparison coming in *faster* than the indexed version. This is strong evidence that **network round-trip latency from this environment to the Supabase session pooler dominates every number above**, not Postgres query-execution cost (which the original report's Supabase-MCP-based `EXPLAIN ANALYZE` correctly measured at sub-millisecond, in-database). These are real, honestly-measured numbers for *this session's specific environment/network path* — they are not representative of latency from a co-located production deployment (e.g., a Render service in the same AWS region as the Supabase project), and should not be read as "Postgres queries take 700ms."
+
+**WorkerPool concurrency scaling — real, and clean.** 40 real jobs through `PostgresJobRepository` + `WorkerPool`, dummy 50ms-sleep processor (isolating queue/claim overhead from any NVIDIA/Pinecone cost):
+
+| Concurrency | Completed (of 40, 30s budget) | Wall time | Throughput |
+|---|---|---|---|
+| 1 worker | 21 | 30.0s (deadline hit) | 0.70 jobs/s |
+| 4 workers | 40 | 15.2s | 2.63 jobs/s |
+
+A **3.75x throughput increase for 4x concurrency** — near-linear, unlike F1's global-lock finding. Confirms the `WorkerPool`/`FOR UPDATE SKIP LOCKED` claim mechanism does what its docstring promises: real concurrent workers, no double-claims (verified via `ingestion_jobs` status counts matching exactly: every enqueued job ends up `queued` or `ready`, none lost or duplicated, across both concurrency levels in the same run).
+
+## Cleanup
+
+All synthetic data (orgs, documents, chunks, postings, jobs) created during this session's testing and validation was deleted from the live `inteliai-rag` project, including residue from crashed early attempts before the bugs above were found. Verified: `0` rows remaining under any `test-org`/`validation-throwaway` organization, `0` leftover `ingestion_jobs` in any status, `0` leftover `documents`, post-cleanup.

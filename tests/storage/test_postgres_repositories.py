@@ -47,9 +47,10 @@ def organization_id(pool):
     with pool.connection() as conn:
         for table in (
             "chunk_simhash_bands", "bm25_postings", "bm25_doc_stats", "bm25_corpus_stats",
-            "chunks", "documents", "organizations",
+            "chunks", "documents",
         ):
             conn.execute(f"delete from {table} where organization_id = %s", (org_id,))
+        conn.execute("delete from organizations where id = %s", (org_id,))
 
 
 def _chunk(chunk_id, document_id, text, chunk_index=0, **legal_kwargs):
@@ -74,6 +75,7 @@ def test_document_repository_records_and_looks_up_by_path(pool, organization_id)
 
 def test_chunk_repository_exact_hash_dedup_is_indexed(pool, organization_id):
     repo = PostgresChunkRepository(pool, organization_id)
+    PostgresDocumentRepository(pool, organization_id).record("doc-1", "/a.txt", "text")
     chunk = _chunk(str(uuid.uuid4()), "doc-1", "the quick brown fox")
     chash = chunk_hash(chunk.text)
     shash = simhash(chunk.text)
@@ -87,6 +89,9 @@ def test_chunk_repository_exact_hash_dedup_is_indexed(pool, organization_id):
 
 def test_chunk_repository_near_duplicate_candidates_via_lsh_bands(pool, organization_id):
     repo = PostgresChunkRepository(pool, organization_id)
+    doc_repo = PostgresDocumentRepository(pool, organization_id)
+    doc_repo.record("doc-1", "/a.txt", "text")
+    doc_repo.record("doc-2", "/b.txt", "text")
     original_text = "The quick brown fox jumps over the lazy dog in the park every morning"
     near_dup_text = "The quick brown fox jumps over the lazy dog at the park every morning"
     unrelated_text = "This is a completely unrelated sentence about baking sourdough bread"
@@ -104,8 +109,14 @@ def test_chunk_repository_near_duplicate_candidates_via_lsh_bands(pool, organiza
 
 def test_bm25_repository_incremental_record_and_search(pool, organization_id):
     repo = PostgresBM25Repository(pool, organization_id)
+    chunk_repo = PostgresChunkRepository(pool, organization_id)
+    doc_repo = PostgresDocumentRepository(pool, organization_id)
+    doc_repo.record("doc-1", "/a.txt", "text")
+    doc_repo.record("doc-2", "/b.txt", "text")
     fox_chunk = _chunk(str(uuid.uuid4()), "doc-1", "the quick brown fox jumps over the lazy dog")
     bread_chunk = _chunk(str(uuid.uuid4()), "doc-2", "completely unrelated sentence about baking bread")
+    chunk_repo.record_many("doc-1", [ChunkRecord(chunk=fox_chunk, chunk_hash=chunk_hash(fox_chunk.text), simhash=simhash(fox_chunk.text))])
+    chunk_repo.record_many("doc-2", [ChunkRecord(chunk=bread_chunk, chunk_hash=chunk_hash(bread_chunk.text), simhash=simhash(bread_chunk.text))])
 
     repo.record_many([fox_chunk, bread_chunk])
 
@@ -121,7 +132,12 @@ def test_bm25_repository_record_many_is_incremental_not_a_rebuild(pool, organiza
     re-touch the first document's postings/stats -- corpus stats accumulate,
     they don't get recomputed from scratch."""
     repo = PostgresBM25Repository(pool, organization_id)
+    chunk_repo = PostgresChunkRepository(pool, organization_id)
+    doc_repo = PostgresDocumentRepository(pool, organization_id)
+    doc_repo.record("doc-1", "/a.txt", "text")
+    doc_repo.record("doc-2", "/b.txt", "text")
     first = _chunk(str(uuid.uuid4()), "doc-1", "alpha beta gamma")
+    chunk_repo.record_many("doc-1", [ChunkRecord(chunk=first, chunk_hash=chunk_hash(first.text), simhash=simhash(first.text))])
     repo.record_many([first])
 
     with pool.connection() as conn:
@@ -132,6 +148,7 @@ def test_bm25_repository_record_many_is_incremental_not_a_rebuild(pool, organiza
     assert row == (1, 3)
 
     second = _chunk(str(uuid.uuid4()), "doc-2", "delta epsilon")
+    chunk_repo.record_many("doc-2", [ChunkRecord(chunk=second, chunk_hash=chunk_hash(second.text), simhash=simhash(second.text))])
     repo.record_many([second])
 
     with pool.connection() as conn:
@@ -144,7 +161,10 @@ def test_bm25_repository_record_many_is_incremental_not_a_rebuild(pool, organiza
 
 def test_bm25_repository_remove_chunks_decrements_corpus_stats(pool, organization_id):
     repo = PostgresBM25Repository(pool, organization_id)
+    chunk_repo = PostgresChunkRepository(pool, organization_id)
+    PostgresDocumentRepository(pool, organization_id).record("doc-1", "/a.txt", "text")
     chunk = _chunk(str(uuid.uuid4()), "doc-1", "alpha beta gamma")
+    chunk_repo.record_many("doc-1", [ChunkRecord(chunk=chunk, chunk_hash=chunk_hash(chunk.text), simhash=simhash(chunk.text))])
     repo.record_many([chunk])
 
     repo.remove_chunks([chunk.chunk_id])

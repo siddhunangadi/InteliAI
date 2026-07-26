@@ -8,6 +8,15 @@ _NUM_BANDS = 8
 _BAND_BITS = 8
 
 
+def _to_signed_bigint(value: int) -> int:
+    """simhash() returns an unsigned 64-bit int; chunks.simhash is a
+    (signed) bigint, so values >= 2**63 overflow it. Two's-complement
+    wraparound into the signed range -- lossless and never read back into
+    Python (bands are computed from the original unsigned value at write
+    time), so this only affects what's stored, not any comparison."""
+    return value - (1 << 64) if value >= (1 << 63) else value
+
+
 class PostgresChunkRepository:
     """Implements ChunkRepository (rag_hybrid_search/storage/repositories/base.py)
     against the ``chunks`` and ``chunk_simhash_bands`` tables. Takes a
@@ -33,8 +42,8 @@ class PostgresChunkRepository:
     def record_many(self, document_id: str, chunks: list[ChunkRecord]) -> None:
         if not chunks:
             return
-        with self._connections.connection() as conn:
-            conn.executemany(
+        with self._connections.connection() as conn, conn.cursor() as cur:
+            cur.executemany(
                 """
                 insert into chunks (
                     id, document_id, organization_id, chunk_index, text, chunk_hash, simhash,
@@ -57,7 +66,8 @@ class PostgresChunkRepository:
                 [
                     (
                         record.chunk.chunk_id, document_id, self._organization_id,
-                        record.chunk.chunk_index, record.chunk.text, record.chunk_hash, record.simhash,
+                        record.chunk.chunk_index, record.chunk.text, record.chunk_hash,
+                        _to_signed_bigint(record.simhash),
                         record.chunk.heading, record.chunk.page, record.chunk.char_count,
                         record.chunk.strategy_version,
                         *_legal_fields(record.chunk),
@@ -71,7 +81,7 @@ class PostgresChunkRepository:
                 for band_index, band_value in enumerate(simhash_bands(record.simhash, _NUM_BANDS, _BAND_BITS))
             ]
             if band_rows:
-                conn.executemany(
+                cur.executemany(
                     """
                     insert into chunk_simhash_bands (organization_id, band_index, band_value, chunk_id)
                     values (%s, %s, %s, %s)
@@ -104,7 +114,11 @@ class PostgresChunkRepository:
 def _legal_fields(chunk) -> tuple:
     lm = chunk.legal_metadata
     if lm is None:
-        return (None,) * 12
+        # legal_is_current is NOT NULL (default true) -- every other
+        # legal_* column is nullable, so only this one needs a non-None
+        # default for a non-legal chunk, matching LegalMetadata's own
+        # is_current=True default.
+        return (None, None, None, None, None, None, None, None, None, None, True, None)
     return (
         lm.regulation, lm.authority, lm.jurisdiction, lm.article,
         lm.section, lm.clause, lm.version, lm.effective_date,
