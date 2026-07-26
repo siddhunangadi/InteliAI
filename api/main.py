@@ -71,9 +71,14 @@ def create_app(settings: Settings | None = None) -> FastAPI:
             else:
                 logger.info("startup readiness check ok: %s", check["name"])
 
+        if container.worker_pool is not None:
+            container.worker_pool.start()
+
         yield
 
         container.job_store.shutdown()
+        if container.worker_pool is not None:
+            container.worker_pool.shutdown()
 
     app = FastAPI(
         title="rag-hybrid-search",

@@ -41,7 +41,7 @@ from pathlib import Path
 
 from fastapi import HTTPException, Request
 
-from api.jobs import JobStore
+from api.jobs import JobStore, WorkerPool, process_ingestion_payload
 from rag_hybrid_search.audit import AuditLog
 from rag_hybrid_search.config import Settings
 from rag_hybrid_search.ingestion.chunkers.base import Chunker
@@ -67,12 +67,14 @@ from rag_hybrid_search.storage.repositories.base import (
     ComplianceRepository,
     DocumentRepository,
     IngestionUnitOfWork,
+    JobRepository,
 )
 from rag_hybrid_search.storage.repositories.postgres.bm25_repository import PostgresBM25Repository
 from rag_hybrid_search.storage.repositories.postgres.chunk_repository import PostgresChunkRepository
 from rag_hybrid_search.storage.repositories.postgres.compliance_repository import PostgresComplianceRepository
 from rag_hybrid_search.storage.repositories.postgres.connection import PostgresConnectionPool
 from rag_hybrid_search.storage.repositories.postgres.document_repository import PostgresDocumentRepository
+from rag_hybrid_search.storage.repositories.postgres.job_repository import PostgresJobRepository
 from rag_hybrid_search.storage.repositories.postgres.unit_of_work import PostgresIngestionUnitOfWork
 from rag_hybrid_search.storage.repositories.scanning.bm25_repository import ScanningBM25Repository
 from rag_hybrid_search.storage.repositories.scanning.chunk_repository import ScanningChunkRepository
@@ -171,6 +173,11 @@ class Container:
     document_repository: DocumentRepository
     chunk_repository: ChunkRepository
     ingestion_uow: IngestionUnitOfWork
+    # Both None unless supabase_db_url is set -- the claim-based queue needs
+    # Postgres's FOR UPDATE SKIP LOCKED; without it, routes.py falls back to
+    # job_store (unchanged single-worker in-memory behavior).
+    job_repository: JobRepository | None = None
+    worker_pool: WorkerPool | None = None
 
     def build_ingestion_pipeline(self, loader: Loader, chunker: Chunker | None = None) -> IngestionPipeline:
         """Build an ``IngestionPipeline`` for a specific loader, reusing shared singletons.
@@ -306,7 +313,11 @@ def build_container(settings: Settings | None = None) -> Container:
         compliance_repository: ComplianceRepository = PostgresComplianceRepository(
             postgres_pool, settings.default_organization_id
         )
+        job_repository: JobRepository | None = PostgresJobRepository(
+            postgres_pool, settings.default_organization_id
+        )
     else:
+        job_repository = None
         document_repository = ScanningDocumentRepository(chunk_store)
         chunk_repository = ScanningChunkRepository()
         ingestion_uow = ScanningIngestionUnitOfWork(document_repository, chunk_repository)
@@ -336,7 +347,7 @@ def build_container(settings: Settings | None = None) -> Container:
         context_prune_margin=settings.context_prune_margin,
     )
 
-    return Container(
+    container = Container(
         settings=settings,
         embedding_provider=embedding_provider,
         generation_provider=generation_provider,
@@ -354,7 +365,24 @@ def build_container(settings: Settings | None = None) -> Container:
         document_repository=document_repository,
         chunk_repository=chunk_repository,
         ingestion_uow=ingestion_uow,
+        job_repository=job_repository,
     )
+
+    if job_repository is not None:
+        # worker_concurrency > 1 is only safe against the incremental
+        # Postgres-backed BM25/dedup repositories (job_repository is None
+        # otherwise) -- the scanning fallback's full local-pickle BM25
+        # rebuild isn't safe for concurrent workers, which is exactly the
+        # case this branch excludes.
+        container.worker_pool = WorkerPool(
+            job_repository,
+            lambda payload: process_ingestion_payload(payload, container),
+            concurrency=settings.worker_concurrency,
+            heartbeat_interval_s=settings.worker_heartbeat_interval_s,
+            heartbeat_timeout_s=settings.worker_heartbeat_timeout_s,
+        )
+
+    return container
 
 
 def get_container(request: Request) -> Container:

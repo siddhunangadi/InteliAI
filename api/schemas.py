@@ -68,7 +68,7 @@ class UploadAcceptedResponse(BaseModel):
     """Response body for POST /upload/async: the upload was accepted, not yet processed."""
 
     job_id: str
-    status: Literal["processing"] = "processing"
+    status: Literal["queued", "processing"] = "processing"
 
 
 class IndexResult(BaseModel):
@@ -89,9 +89,12 @@ class JobStatusResponse(BaseModel):
     """Response body for GET /jobs/{job_id}."""
 
     job_id: str
-    status: Literal["processing", "ready", "failed"]
+    status: Literal["queued", "processing", "ready", "failed", "dead_letter", "cancelled"]
     result: IndexResponse | None = None
     error: str | None = None
+    progress_current: int = 0
+    progress_total: int = 0
+    retry_count: int = 0
 
 
 class DocumentSummary(BaseModel):

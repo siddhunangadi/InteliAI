@@ -80,6 +80,23 @@ class Settings(BaseSettings):
     api_keys: str = ""
     rate_limit_per_minute: int = 60
 
+    # Worker queue (async ingestion). Only used when supabase_db_url is set
+    # -- the claim-based multi-worker queue needs Postgres's SKIP LOCKED;
+    # without it, /upload/async falls back to the single in-process worker
+    # (unchanged behavior for the no-Postgres deployment case).
+    #
+    # worker_concurrency > 1 is only safe when BM25 writes are incremental
+    # (Postgres-backed) -- the scanning fallback's full local-pickle rebuild
+    # is not safe for concurrent workers, so the container forces
+    # concurrency to 1 whenever supabase_db_url is unset, regardless of this
+    # setting (see api/dependencies.py).
+    worker_concurrency: int = 4
+    worker_job_max_retries: int = 5
+    # A claimed job with no heartbeat update in this long is assumed to
+    # belong to a crashed/killed worker and is reclaimed by the reaper.
+    worker_heartbeat_timeout_s: int = 120
+    worker_heartbeat_interval_s: int = 30
+
     @property
     def cors_allow_origins_list(self) -> list[str]:
         return [o.strip() for o in self.cors_allow_origins.split(",") if o.strip()]

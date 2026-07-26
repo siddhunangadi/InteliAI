@@ -25,8 +25,15 @@ class PostgresConnectionPool:
     in the composition root (api/dependencies.py) and shared by every
     repository and unit-of-work in the process."""
 
-    def __init__(self, dsn: str, min_size: int = 1, max_size: int = 10):
-        self._pool = ConnectionPool(dsn, min_size=min_size, max_size=max_size, open=True)
+    def __init__(self, dsn: str, min_size: int = 1, max_size: int = 10, statement_timeout_ms: int = 30_000):
+        # statement_timeout: a hung/runaway query used to be able to hold a
+        # pool connection indefinitely, starving every other repository call
+        # (and, once multiple workers share this pool, every other job) --
+        # no timeout existed anywhere on the Postgres path before this.
+        self._pool = ConnectionPool(
+            dsn, min_size=min_size, max_size=max_size, open=True,
+            kwargs={"options": f"-c statement_timeout={statement_timeout_ms}"},
+        )
 
     @contextmanager
     def connection(self) -> Iterator[psycopg.Connection]:

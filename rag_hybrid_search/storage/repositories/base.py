@@ -123,3 +123,74 @@ class ComplianceRepository(Protocol):
 
     def mark_superseded(self, chunk_id: str, is_current: bool, superseded_by: str | None) -> None:
         ...
+
+
+JobStatus = str  # "queued" | "processing" | "ready" | "failed" | "dead_letter" | "cancelled"
+
+
+class IngestionJob(NamedTuple):
+    job_id: str
+    status: JobStatus
+    payload: dict
+    result: dict | None
+    error: str | None
+    retry_count: int
+    max_retries: int
+    progress_current: int
+    progress_total: int
+
+
+class JobRepository(Protocol):
+    """Persistent, claim-based ingestion job queue (Postgres ``ingestion_jobs``
+    table). Replaces the old in-memory, single-process ``JobStore``:
+    job state survives a restart and multiple worker threads/processes can
+    safely claim from the same queue (``FOR UPDATE SKIP LOCKED``, no two
+    workers ever claim the same row).
+    """
+
+    def enqueue(self, payload: dict, *, idempotency_key: str | None, priority: int = 0) -> tuple[str, bool]:
+        """Insert a new queued job. If ``idempotency_key`` collides with an
+        existing job for this organization, returns that job's id instead of
+        inserting a duplicate. Returns (job_id, created) -- created=False on
+        an idempotency-key hit."""
+        ...
+
+    def claim(self, worker_id: str) -> IngestionJob | None:
+        """Atomically claim the highest-priority, oldest eligible queued job
+        (``available_at <= now()``), or None if the queue is empty. Sets
+        status='processing', records worker_id, starts the heartbeat."""
+        ...
+
+    def heartbeat(self, job_id: str) -> None:
+        """Extend a claimed job's liveness so the reaper doesn't reclaim it
+        mid-processing."""
+        ...
+
+    def complete(self, job_id: str, result: dict) -> None:
+        ...
+
+    def fail(self, job_id: str, error: str) -> None:
+        """Record a failure. Requeues with exponential backoff
+        (``available_at = now() + 2**retry_count`` seconds) if under
+        max_retries, otherwise marks 'dead_letter'."""
+        ...
+
+    def cancel(self, job_id: str) -> bool:
+        """Cancel a job that hasn't been claimed yet. Returns False (no-op)
+        if the job is already processing/finished -- ingestion isn't
+        cheaply interruptible mid-embedding-call, so cancellation only
+        covers the queued window."""
+        ...
+
+    def get(self, job_id: str) -> IngestionJob | None:
+        ...
+
+    def reap_stale_claims(self, heartbeat_timeout_s: int) -> int:
+        """Requeue any 'processing' job whose heartbeat is older than
+        ``heartbeat_timeout_s`` -- recovers work claimed by a worker that
+        crashed or was killed without a graceful shutdown. Returns the
+        number reclaimed."""
+        ...
+
+    def list_dead_letter(self, limit: int = 100) -> list[IngestionJob]:
+        ...
