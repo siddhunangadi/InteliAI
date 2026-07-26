@@ -62,15 +62,21 @@ from rag_hybrid_search.storage.pinecone_connection import PineconeConnection
 from rag_hybrid_search.storage.pinecone_vector_store import PineconeVectorStore
 from rag_hybrid_search.storage.pinecone_chunk_store import PineconeChunkStore
 from rag_hybrid_search.storage.repositories.base import (
+    BM25Repository,
     ChunkRepository,
+    ComplianceRepository,
     DocumentRepository,
     IngestionUnitOfWork,
 )
+from rag_hybrid_search.storage.repositories.postgres.bm25_repository import PostgresBM25Repository
 from rag_hybrid_search.storage.repositories.postgres.chunk_repository import PostgresChunkRepository
+from rag_hybrid_search.storage.repositories.postgres.compliance_repository import PostgresComplianceRepository
 from rag_hybrid_search.storage.repositories.postgres.connection import PostgresConnectionPool
 from rag_hybrid_search.storage.repositories.postgres.document_repository import PostgresDocumentRepository
 from rag_hybrid_search.storage.repositories.postgres.unit_of_work import PostgresIngestionUnitOfWork
+from rag_hybrid_search.storage.repositories.scanning.bm25_repository import ScanningBM25Repository
 from rag_hybrid_search.storage.repositories.scanning.chunk_repository import ScanningChunkRepository
+from rag_hybrid_search.storage.repositories.scanning.compliance_repository import ScanningComplianceRepository
 from rag_hybrid_search.storage.repositories.scanning.document_repository import ScanningDocumentRepository
 from rag_hybrid_search.storage.repositories.scanning.unit_of_work import ScanningIngestionUnitOfWork
 from rag_pipeline.generation_provider import MockProvider
@@ -270,18 +276,19 @@ def build_container(settings: Settings | None = None) -> Container:
     # BM25Index.__init__ starts empty (no disk read) -- without this, every
     # process restart silently wipes sparse/keyword retrieval to zero
     # results until the next document upload rebuilds it, even though
-    # bm25.pkl on disk still has the full corpus indexed. Sparse index stays
-    # local even on the pinecone backend (Task 5 of the migration migrates it).
+    # bm25.pkl on disk still has the full corpus indexed. Only relevant to
+    # the scanning fallback (no Postgres configured); the Postgres-backed
+    # BM25Repository has no local file, nothing to load.
     bm25_index.load()
     audit_log = AuditLog(data_dir / _AUDIT_LOG_FILENAME)
-    index_manager = IndexManager(chunk_store, vector_store, bm25_index, audit_log=audit_log)
 
     chunker = RecursiveChunker(chunk_size=settings.chunk_size, chunk_overlap=settings.chunk_overlap)
 
-    # Dedup repositories: Postgres-backed (O(1) indexed lookups) when
-    # configured, otherwise the scanning fallback (chunk_store.get_document_hash()'s
-    # full-corpus scan, no exact-hash pre-filter) -- same interface either
-    # way, IngestionPipeline never knows which it got.
+    # Repositories: Postgres-backed (O(1) indexed dedup, incremental BM25,
+    # indexed compliance lookups) when configured, otherwise the scanning
+    # fallback (chunk_store's/bm25_index's original full-scan/full-rebuild
+    # behavior) -- same interfaces either way, IngestionPipeline and
+    # IndexManager never know which they got.
     if settings.supabase_db_url:
         postgres_pool = PostgresConnectionPool(settings.supabase_db_url)
         document_repository: DocumentRepository = PostgresDocumentRepository(
@@ -293,14 +300,28 @@ def build_container(settings: Settings | None = None) -> Container:
         ingestion_uow: IngestionUnitOfWork = PostgresIngestionUnitOfWork(
             postgres_pool, settings.default_organization_id
         )
+        bm25_repository: BM25Repository = PostgresBM25Repository(
+            postgres_pool, settings.default_organization_id
+        )
+        compliance_repository: ComplianceRepository = PostgresComplianceRepository(
+            postgres_pool, settings.default_organization_id
+        )
     else:
         document_repository = ScanningDocumentRepository(chunk_store)
         chunk_repository = ScanningChunkRepository()
         ingestion_uow = ScanningIngestionUnitOfWork(document_repository, chunk_repository)
+        bm25_repository = ScanningBM25Repository(bm25_index)
+        compliance_repository = ScanningComplianceRepository(chunk_store)
+
+    index_manager = IndexManager(
+        chunk_store, vector_store, bm25_index,
+        bm25_repository=bm25_repository, compliance_repository=compliance_repository,
+        audit_log=audit_log,
+    )
 
     retriever = HybridRetriever(
         dense_retriever=DenseRetriever(embedding_provider, vector_store, chunk_store),
-        sparse_retriever=SparseRetriever(chunk_store, bm25_index),
+        sparse_retriever=SparseRetriever(chunk_store, bm25_repository),
         rerank_provider=_select_rerank_provider(settings),
         dense_weight=settings.rrf_dense_weight,
         sparse_weight=settings.rrf_sparse_weight,

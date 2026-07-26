@@ -7,17 +7,16 @@ from rag_hybrid_search.retrieval.rerank import CrossEncoderReranker
 from rag_hybrid_search.retrieval.retriever import HybridRetriever
 from rag_hybrid_search.retrieval.sparse import SparseRetriever
 from rag_hybrid_search.storage.bm25_index import BM25Index
-from rag_hybrid_search.storage.index_manager import IndexManager
 from rag_pipeline.generation_provider import MockProvider
 from rag_pipeline.rag_pipeline import RagPipeline
 
-from tests.fakes import FakeEmbeddingProvider, fake_pinecone_stores, scanning_repositories
+from tests.fakes import FakeEmbeddingProvider, build_index_manager, fake_pinecone_stores, scanning_repositories
 
 
 def build_pipeline_and_retriever(tmp_path):
     chunk_store, vector_store = fake_pinecone_stores()
     bm25_index = BM25Index(index_path=str(tmp_path / "bm25.pkl"))
-    index_manager = IndexManager(chunk_store, vector_store, bm25_index)
+    index_manager = build_index_manager(chunk_store, vector_store, bm25_index)
     embedding_provider = FakeEmbeddingProvider()
     documents, chunks, uow = scanning_repositories(chunk_store)
 

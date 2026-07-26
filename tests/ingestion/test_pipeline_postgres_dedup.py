@@ -13,9 +13,9 @@ from rag_hybrid_search.ingestion.loaders.text import TextLoader
 from rag_hybrid_search.ingestion.pipeline import IngestionPipeline
 from rag_hybrid_search.models import IndexStatus
 from rag_hybrid_search.storage.bm25_index import BM25Index
-from rag_hybrid_search.storage.index_manager import IndexManager
+from rag_hybrid_search.storage.repositories.base import ChunkRecord
 from rag_hybrid_search.storage.repositories.hashing import chunk_hash
-from tests.fakes import FakeEmbeddingProvider, fake_pinecone_stores
+from tests.fakes import FakeEmbeddingProvider, build_index_manager, fake_pinecone_stores
 
 
 class FakeDocumentRepository:
@@ -30,17 +30,25 @@ class FakeDocumentRepository:
 
 
 class FakeChunkRepository:
+    """No near-dup candidate narrowing (find_near_duplicate_candidates
+    returns None, same as the scanning fallback) -- these tests only
+    exercise the exact-hash fast path, not LSH narrowing (see
+    tests/storage/test_postgres_repositories.py for that)."""
+
     def __init__(self):
         self.known_hashes: set[str] = set()
-        self.recorded: list[tuple] = []
+        self.recorded: list[ChunkRecord] = []
 
     def filter_new_hashes(self, hashes: list[str]) -> set[str]:
         return set(hashes) - self.known_hashes
 
-    def record_many(self, document_id: str, chunks: list[tuple[str, str, str, int | None]]) -> None:
-        for _chunk_id, chash, _text, _index in chunks:
-            self.known_hashes.add(chash)
+    def record_many(self, document_id: str, chunks: list[ChunkRecord]) -> None:
+        for record in chunks:
+            self.known_hashes.add(record.chunk_hash)
         self.recorded.extend(chunks)
+
+    def find_near_duplicate_candidates(self, simhash: int) -> set[str] | None:
+        return None
 
 
 class FakeIngestionUnitOfWork:
@@ -63,7 +71,7 @@ class FakeIngestionUnitOfWork:
 def pipeline_and_repos(tmp_path):
     chunk_store, vector_store = fake_pinecone_stores()
     bm25 = BM25Index(index_path=str(tmp_path / "bm25.pkl"))
-    index_manager = IndexManager(chunk_store, vector_store, bm25)
+    index_manager = build_index_manager(chunk_store, vector_store, bm25)
     documents = FakeDocumentRepository()
     chunks = FakeChunkRepository()
     uow = FakeIngestionUnitOfWork(documents, chunks)
@@ -132,7 +140,7 @@ def test_scanning_fallback_is_interchangeable_with_postgres_shaped_repos(tmp_pat
 
     chunk_store, vector_store = fake_pinecone_stores()
     bm25 = BM25Index(index_path=str(tmp_path / "bm25.pkl"))
-    index_manager = IndexManager(chunk_store, vector_store, bm25)
+    index_manager = build_index_manager(chunk_store, vector_store, bm25)
     documents = ScanningDocumentRepository(chunk_store)
     chunks = ScanningChunkRepository()
     uow = ScanningIngestionUnitOfWork(documents, chunks)

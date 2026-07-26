@@ -5,8 +5,7 @@ from rag_hybrid_search.ingestion.loaders.text import TextLoader
 from rag_hybrid_search.ingestion.pipeline import IngestionPipeline
 from rag_hybrid_search.models import IndexStatus
 from rag_hybrid_search.storage.bm25_index import BM25Index
-from rag_hybrid_search.storage.index_manager import IndexManager
-from tests.fakes import FakeEmbeddingProvider, fake_pinecone_stores, scanning_repositories
+from tests.fakes import FakeEmbeddingProvider, build_index_manager, fake_pinecone_stores, scanning_repositories
 
 
 class _CountingEmbeddingProvider(FakeEmbeddingProvider):
@@ -27,7 +26,7 @@ class _CountingEmbeddingProvider(FakeEmbeddingProvider):
 def pipeline(tmp_path):
     chunk_store, vector_store = fake_pinecone_stores()
     bm25 = BM25Index(index_path=str(tmp_path / "bm25.pkl"))
-    index_manager = IndexManager(chunk_store, vector_store, bm25)
+    index_manager = build_index_manager(chunk_store, vector_store, bm25)
     documents, chunks, uow = scanning_repositories(chunk_store)
     return IngestionPipeline(
         loader=TextLoader(),
@@ -102,7 +101,7 @@ def test_ingesting_new_document_does_not_re_embed_existing_chunks(tmp_path):
     previously-ingested chunk's text again."""
     chunk_store, vector_store = fake_pinecone_stores()
     bm25 = BM25Index(index_path=str(tmp_path / "bm25.pkl"))
-    index_manager = IndexManager(chunk_store, vector_store, bm25)
+    index_manager = build_index_manager(chunk_store, vector_store, bm25)
     provider = _CountingEmbeddingProvider()
     documents, chunks, uow = scanning_repositories(chunk_store)
     pipeline = IngestionPipeline(

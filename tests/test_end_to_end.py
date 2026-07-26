@@ -9,8 +9,7 @@ from rag_hybrid_search.retrieval.rerank import CrossEncoderReranker
 from rag_hybrid_search.retrieval.retriever import HybridRetriever
 from rag_hybrid_search.retrieval.sparse import SparseRetriever
 from rag_hybrid_search.storage.bm25_index import BM25Index
-from rag_hybrid_search.storage.index_manager import IndexManager
-from tests.fakes import FakeEmbeddingProvider, fake_pinecone_stores, scanning_repositories
+from tests.fakes import FakeEmbeddingProvider, build_index_manager, fake_pinecone_stores, scanning_repositories
 
 SAMPLE_DOCS = [
     "tests/fixtures/sample_docs/setup.md",
@@ -24,7 +23,7 @@ def system(tmp_path):
     provider = FakeEmbeddingProvider()
     chunk_store, vector_store = fake_pinecone_stores(embedding_dimension=provider.dimension)
     bm25 = BM25Index(index_path=str(tmp_path / "bm25.pkl"))
-    index_manager = IndexManager(chunk_store, vector_store, bm25)
+    index_manager = build_index_manager(chunk_store, vector_store, bm25)
     documents, chunks, uow = scanning_repositories(chunk_store)
 
     pipeline = IngestionPipeline(

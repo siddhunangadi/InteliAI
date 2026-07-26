@@ -14,11 +14,12 @@ from rag_hybrid_search.providers.base import EmbeddingProvider
 from rag_hybrid_search.storage.base import ChunkStore
 from rag_hybrid_search.storage.index_manager import IndexManager
 from rag_hybrid_search.storage.repositories.base import (
+    ChunkRecord,
     ChunkRepository,
     DocumentRepository,
     IngestionUnitOfWork,
 )
-from rag_hybrid_search.storage.repositories.hashing import chunk_hash
+from rag_hybrid_search.storage.repositories.hashing import chunk_hash, simhash
 
 logger = logging.getLogger(__name__)
 
@@ -151,10 +152,6 @@ class IngestionPipeline:
             len(embeddings), type(self.embedding_provider).__name__,
             self.embedding_provider.model_name, self.embedding_provider.dimension, rss_mb(),
         )
-        if existing_pairs is None:
-            existing_pairs = self._existing_chunk_embeddings()
-        logger.debug("ingest: comparing against %d existing chunks for dedup", len(existing_pairs))
-
         # Exact-duplicate pre-filter: an O(1) indexed hash lookup catches
         # identical chunk text (e.g. a boilerplate clause repeated across
         # regulations) before it ever reaches the O(new x existing)
@@ -163,11 +160,22 @@ class IngestionPipeline:
         # (see storage/repositories/scanning/chunk_repository.py), which
         # reproduces the original no-pre-filter behavior identically.
         chunk_hashes = [chunk_hash(c.text) for c in new_chunks]
+        simhashes = [simhash(c.text) for c in new_chunks]
         new_hashes = self._chunk_repository.filter_new_hashes(chunk_hashes)
         exact_dup_mask = [h not in new_hashes for h in chunk_hashes]
         near_dup_idx = [i for i, is_exact in enumerate(exact_dup_mask) if not is_exact]
         near_dup_chunks = [new_chunks[i] for i in near_dup_idx]
         near_dup_embeddings = [embeddings[i] for i in near_dup_idx]
+
+        if existing_pairs is None:
+            # Caller didn't hand us a shared batch cache -- narrow via LSH
+            # instead of fetching every existing chunk's embedding
+            # (that full scan is exactly the O(corpus) bottleneck this
+            # replaces; see storage/repositories/postgres/chunk_repository.py).
+            existing_pairs = self._candidate_chunk_embeddings(
+                [simhashes[i] for i in near_dup_idx]
+            )
+        logger.debug("ingest: comparing against %d existing chunks for dedup", len(existing_pairs))
 
         # Two vectorized passes instead of an O(existing_count * new_count)
         # pure-Python loop: one against the corpus ingested before this
@@ -185,9 +193,9 @@ class IngestionPipeline:
 
         surviving_chunks: list[Chunk] = []
         surviving_records: list[EmbeddingRecord] = []
-        surviving_hashes: list[str] = []
+        surviving_chunk_records: list[ChunkRecord] = []
         dropped = 0
-        for i, (chunk, embedding, chash) in enumerate(zip(new_chunks, embeddings, chunk_hashes)):
+        for i, (chunk, embedding, chash, shash) in enumerate(zip(new_chunks, embeddings, chunk_hashes, simhashes)):
             if exact_dup_mask[i] or near_dup_result.get(i, False):
                 dropped += 1
                 logger.debug("ingest: dropped duplicate chunk_id=%s index=%d", chunk.chunk_id, chunk.chunk_index)
@@ -202,7 +210,7 @@ class IngestionPipeline:
             )
             surviving_chunks.append(chunk)
             surviving_records.append(record)
-            surviving_hashes.append(chash)
+            surviving_chunk_records.append(ChunkRecord(chunk=chunk, chunk_hash=chash, simhash=shash))
             existing_pairs.append((chunk, embedding))
 
         logger.info("ingest: dedup dropped %d/%d chunks, %d survive", dropped, len(new_chunks), len(surviving_chunks))
@@ -222,13 +230,7 @@ class IngestionPipeline:
         # Postgres), so this runs unconditionally either way.
         with self._ingestion_uow as uow:
             uow.documents.record(document.document_id, path, document.format)
-            uow.chunks.record_many(
-                document.document_id,
-                [
-                    (c.chunk_id, chash, c.text, c.chunk_index)
-                    for c, chash in zip(surviving_chunks, surviving_hashes)
-                ],
-            )
+            uow.chunks.record_many(document.document_id, surviving_chunk_records)
 
         status = self.index_manager.index(surviving_chunks, surviving_records, rebuild_bm25=rebuild_bm25)
         logger.info("ingest: index_manager.index() returned rss_mb=%.1f", rss_mb())
@@ -262,12 +264,31 @@ class IngestionPipeline:
                 attempt_texts = [t[:shrink_to] for t in attempt_texts]
         raise AssertionError("unreachable")  # loop always returns or raises
 
-    def _existing_chunk_embeddings(self) -> list[tuple[Chunk, list[float]]]:
-        # chunk_store already has the embedding for every existing chunk
-        # (it was computed once, when that chunk was first ingested) --
-        # re-embedding them here on every ingest() call would be pure waste
-        # scaling with corpus size, so reuse what's already stored instead.
+    def _candidate_chunk_embeddings(self, near_dup_simhashes: list[int]) -> list[tuple[Chunk, list[float]]]:
+        """Near-duplicate candidates for this document's chunks, found via
+        indexed LSH band lookups (O(new chunks), not O(corpus)) instead of
+        fetching every existing chunk's embedding.
+
+        Falls back to the full-corpus scan only when the ChunkRepository
+        can't narrow candidates at all (the scanning fallback, used when no
+        Postgres database is configured) -- same behavior as before this
+        existed in that case.
+        """
+        if not near_dup_simhashes:
+            return []
+        candidate_ids: set[str] = set()
+        for shash in near_dup_simhashes:
+            candidates = self._chunk_repository.find_near_duplicate_candidates(shash)
+            if candidates is None:
+                logger.debug("ingest: dedup candidate narrowing unavailable, falling back to full scan")
+                return [
+                    (item.chunk, item.embedding)
+                    for item in self.chunk_store.all_with_embeddings()
+                ]
+            candidate_ids.update(candidates)
+        if not candidate_ids:
+            return []
         return [
             (item.chunk, item.embedding)
-            for item in self.chunk_store.all_with_embeddings()
+            for item in self.chunk_store.get_many_with_embeddings(list(candidate_ids))
         ]

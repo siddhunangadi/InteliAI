@@ -269,6 +269,22 @@ class PineconeChunkStore(ChunkStore):
             return None
         return _metadata_to_chunk(chunk_id, result.vectors[chunk_id].metadata)
 
+    def get_many_with_embeddings(self, chunk_ids: list[str]) -> list[ChunkEmbedding]:
+        """Targeted multi-get by known id -- O(len(chunk_ids)), a single
+        Pinecone fetch() call, not a corpus scan. Used by the near-duplicate
+        check to fetch embeddings for a small LSH-narrowed candidate set
+        instead of every existing chunk (see ingestion/pipeline.py)."""
+        if not chunk_ids:
+            return []
+        result = self._client.index.fetch(ids=chunk_ids)
+        return [
+            ChunkEmbedding(
+                chunk=_metadata_to_chunk(chunk_id, vector.metadata),
+                embedding=list(vector.values),
+            )
+            for chunk_id, vector in result.vectors.items()
+        ]
+
     def _scan_all(self) -> Iterator[tuple[str, dict, list[float]]]:
         # index.list() yields ListResponse pages (page.vectors is a list of
         # ListItem objects with .id), not plain id strings -- fetch() needs

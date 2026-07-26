@@ -23,13 +23,17 @@ class PostgresDocumentRepository:
             return row[0] if row is not None else None
 
     def record(self, document_id: str, source_path: str, format: str) -> None:
+        # documents.id IS document_id (sha256 content hash, see loaders/base.py) --
+        # not a separately generated key -- so every other table's
+        # document_id foreign key carries the same identifier the app uses
+        # everywhere else (Chunk.document_id, legal_superseded_by, ...).
         with self._connections.connection() as conn:
             conn.execute(
                 """
-                insert into documents (organization_id, source_path, format, content_hash, status)
-                values (%s, %s, %s, %s, 'indexed')
+                insert into documents (id, organization_id, source_path, format, content_hash, status)
+                values (%s, %s, %s, %s, %s, 'indexed')
                 on conflict (organization_id, content_hash) do update
                     set status = 'indexed', updated_at = now()
                 """,
-                (self._organization_id, source_path, format, document_id),
+                (document_id, self._organization_id, source_path, format, document_id),
             )
